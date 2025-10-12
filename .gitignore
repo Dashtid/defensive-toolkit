@@ -1,0 +1,94 @@
+# Defensive Toolkit .gitignore
+
+# Sensitive data
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.txt
+passwords.txt
+api-keys.txt
+secrets.yml
+.env
+.env.*
+
+# Investigation data
+evidence/
+case-files/
+incident-data/
+*.pcap
+*.cap
+captures/
+memory-dumps/
+*.raw
+*.dmp
+
+# Logs (keep templates, ignore actual logs)
+*.log
+logs/
+output/
+results/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# SIEM exports
+splunk-exports/
+sentinel-exports/
+elk-exports/
+*.spl
+*.json.gz
+
+# Temporary analysis files
+tmp/
+temp/
+*.tmp
+analysis-*/*.csv
+analysis-*/*.xlsx
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Reports (keep templates)
+reports/*.pdf
+reports/*.docx
+reports/*.html
+
+# Local config overrides
+config.local.yml
+config.local.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Forensic images
+*.dd
+*.img
+*.e01
+*.aff
