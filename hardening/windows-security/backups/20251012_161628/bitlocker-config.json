@@ -1,0 +1,26 @@
+{
+  "MountPoint": "C:",
+  "VolumeStatus": 1,
+  "EncryptionPercentage": 100.0,
+  "KeyProtector": [
+    {
+      "KeyProtectorId": "{0805916E-5BAD-4660-AE93-2FCA3128BD17}",
+      "AutoUnlockProtector": null,
+      "KeyProtectorType": 3,
+      "KeyFileName": "",
+      "RecoveryPassword": "385286-230351-638638-339449-227051-010252-019382-423830",
+      "KeyCertificateType": null,
+      "Thumbprint": ""
+    },
+    {
+      "KeyProtectorId": "{526F1415-3DF0-4A20-9532-C6DB88E15054}",
+      "AutoUnlockProtector": null,
+      "KeyProtectorType": 1,
+      "KeyFileName": "",
+      "RecoveryPassword": "",
+      "KeyCertificateType": null,
+      "Thumbprint": ""
+    }
+  ],
+  "ProtectionStatus": 1
+}
