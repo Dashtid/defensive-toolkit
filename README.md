@@ -3,6 +3,21 @@
 Blue team security tools for detection, monitoring, incident response, and threat hunting.
 
 ## Overview
+n## Implementation Status
+
+| Category | Status | Contents |
+|----------|--------|----------|
+| **Detection Rules** | [OK] Implemented | 6 Sigma rules, 3 YARA rulesets, organized by MITRE ATT&CK |
+| **Incident Response** | [OK] Implemented | 2 playbooks (ransomware, malware), 2 triage scripts |
+| **Threat Hunting** | [OK] Implemented | KQL, SPL, and EQL queries for major SIEM platforms |
+| **Hardening** | [OK] Implemented | Windows security hardening (3 levels + audit/backup) |
+| **Monitoring** | [OK] Implemented | SIEM integration, log forwarding, dashboards, health checks |
+| **Forensics** | [OK] Implemented | Memory analysis, disk forensics, artifact collection, timelines |
+| **Vulnerability Mgmt** | [*] Planned | Vulnerability scanning and reporting |
+| **Log Analysis** | [*] Planned | Log parsing and analysis tools |
+| **Automation** | [*] Planned | Security automation workflows |
+| **Compliance** | [*] Planned | Compliance checking tools |
+
 
 This repository contains defensive security tools, detection rules, hardening scripts, and incident response playbooks for protecting systems and detecting threats.
 
