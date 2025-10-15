@@ -1,0 +1,110 @@
+---
+name: "Baseline Security Policy"
+description: "Basic security configuration requirements for all systems"
+version: "1.0"
+author: "Defensive Toolkit"
+
+checks:
+  # File System Checks
+  - id: "FS-001"
+    type: "file_exists"
+    description: "Verify system logging directory exists"
+    severity: "high"
+    path: "/var/log"
+    should_exist: true
+
+  - id: "FS-002"
+    type: "permission"
+    description: "Verify log directory has restrictive permissions"
+    severity: "high"
+    path: "/var/log"
+    mode: "0755"
+
+  # Service Checks
+  - id: "SVC-001"
+    type: "service_status"
+    description: "Verify firewall service is running"
+    severity: "critical"
+    service: "ufw"  # Linux
+    service_windows: "mpssvc"  # Windows Firewall
+    expected_status: "running"
+
+  - id: "SVC-002"
+    type: "service_status"
+    description: "Verify telnet service is disabled"
+    severity: "high"
+    service: "telnet"
+    expected_status: "stopped"
+
+  # Port Checks
+  - id: "NET-001"
+    type: "port_status"
+    description: "Verify Telnet port 23 is closed"
+    severity: "critical"
+    port: 23
+    expected_status: "closed"
+
+  - id: "NET-002"
+    type: "port_status"
+    description: "Verify FTP port 21 is closed"
+    severity: "high"
+    port: 21
+    expected_status: "closed"
+
+  # User Account Checks
+  - id: "USR-001"
+    type: "user_exists"
+    description: "Verify Guest account does not exist"
+    severity: "medium"
+    username: "Guest"
+    should_exist: false
+
+  # Command-based Checks
+  - id: "CMD-001"
+    type: "command"
+    description: "Verify password aging is configured"
+    severity: "medium"
+    command_linux: "grep -E '^PASS_MAX_DAYS' /etc/login.defs"
+    command_windows: "net accounts"
+    expected_return_code: 0
+
+  - id: "CMD-002"
+    type: "command"
+    description: "Verify anti-malware is installed (Windows)"
+    severity: "critical"
+    command_windows: "powershell -Command \"Get-MpComputerStatus\""
+    expected_return_code: 0
+
+  - id: "CMD-003"
+    type: "command"
+    description: "Verify no world-writable files in system directories"
+    severity: "high"
+    command_linux: "find /etc /usr/bin /usr/sbin -type f -perm -o+w 2>/dev/null | wc -l"
+    expected_output: "0"
+    match_type: "exact"
+    expected_return_code: 0
+
+  # File Content Checks
+  - id: "CFG-001"
+    type: "file_content"
+    description: "Verify SSH root login is disabled"
+    severity: "critical"
+    path: "/etc/ssh/sshd_config"
+    content: "PermitRootLogin no"
+    match_type: "regex"
+
+  - id: "CFG-002"
+    type: "file_content"
+    description: "Verify SSH protocol 2 is enforced"
+    severity: "high"
+    path: "/etc/ssh/sshd_config"
+    content: "Protocol 2"
+    match_type: "contains"
+
+  - id: "CFG-003"
+    type: "file_content"
+    description: "Verify password-based SSH auth is disabled"
+    severity: "medium"
+    path: "/etc/ssh/sshd_config"
+    content: "PasswordAuthentication no"
+    match_type: "regex"
