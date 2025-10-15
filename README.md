@@ -13,7 +13,7 @@ n## Implementation Status
 | **Hardening** | [OK] Implemented | Windows security hardening (3 levels + audit/backup) |
 | **Monitoring** | [OK] Implemented | SIEM integration, log forwarding, dashboards, health checks |
 | **Forensics** | [OK] Implemented | Memory analysis, disk forensics, artifact collection, timelines |
-| **Vulnerability Mgmt** | [*] Planned | Vulnerability scanning and reporting |
+| **Vulnerability Mgmt** | [OK] Implemented | OpenVAS/Nmap/Trivy scanners, SBOM, risk scoring, reporting |
 | **Log Analysis** | [*] Planned | Log parsing and analysis tools |
 | **Automation** | [*] Planned | Security automation workflows |
 | **Compliance** | [*] Planned | Compliance checking tools |
