@@ -1,0 +1,27 @@
+title: Windows Event Log Cleared
+id: 67890123-6789-6789-6789-678901234f01
+status: stable
+description: Detects clearing of Windows event logs, often done by attackers to cover their tracks
+references:
+    - https://attack.mitre.org/techniques/T1070/001/
+    - https://docs.microsoft.com/en-us/windows/win32/eventlog/clearing-an-event-log
+author: Defensive Toolkit
+date: 2025-10-15
+modified: 2025-10-15
+tags:
+    - attack.defense_evasion
+    - attack.t1070.001
+logsource:
+    product: windows
+    service: security
+detection:
+    selection_wevtutil:
+        EventID: 1102
+    selection_powershell:
+        EventID: 104
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate administrative maintenance
+    - Log rotation policies
+    - System cleanup scripts
+level: high

@@ -1,0 +1,141 @@
+// Suspicious PowerShell Activity Hunt
+// Platform: Azure Sentinel / Microsoft Defender
+// Author: Defensive Toolkit
+// Date: 2025-10-15
+// Description: Hunts for suspicious PowerShell execution patterns including
+//              encoded commands, download cradles, and obfuscation techniques
+// MITRE ATT&CK: T1059.001 (PowerShell)
+
+// Query 1: Encoded PowerShell Commands
+SecurityEvent
+| where EventID == 4688
+| where Process has_any ("powershell.exe", "pwsh.exe")
+| where CommandLine has_any ("-enc", "-encodedcommand", "-ec", "FromBase64String")
+| extend EncodedCommand = extract(@"-[Ee]n?c?o?d?e?d?[Cc]?o?m?m?a?n?d?\s+([A-Za-z0-9+/=]+)", 1, CommandLine)
+| where isnotempty(EncodedCommand)
+| project TimeGenerated, Computer, Account, Process, CommandLine, ParentProcessName
+| order by TimeGenerated desc
+
+// Query 2: PowerShell Download Cradles
+SecurityEvent
+| where EventID == 4688
+| where Process has_any ("powershell.exe", "pwsh.exe")
+| where CommandLine has_any (
+    "Net.WebClient",
+    "DownloadFile",
+    "DownloadString",
+    "Invoke-WebRequest",
+    "Invoke-RestMethod",
+    "iwr",
+    "irm",
+    "wget",
+    "curl",
+    "BitsTransfer"
+)
+| where CommandLine has_any ("http://", "https://")
+| extend URL = extract(@"(https?://[^\s\)\"']+)", 1, CommandLine)
+| project TimeGenerated, Computer, Account, Process, CommandLine, URL, ParentProcessName
+| order by TimeGenerated desc
+
+// Query 3: PowerShell Obfuscation Techniques
+SecurityEvent
+| where EventID == 4688
+| where Process has_any ("powershell.exe", "pwsh.exe")
+| where CommandLine has_any (
+    "replace",
+    "join",
+    "split",
+    "-f ",
+    "char",
+    "invoke-expression",
+    "iex",
+    "&(",
+    "invoke-command"
+)
+| extend ObfuscationScore =
+    iff(CommandLine contains "replace", 1, 0) +
+    iff(CommandLine contains "split", 1, 0) +
+    iff(CommandLine contains "join", 1, 0) +
+    iff(CommandLine contains "-f ", 1, 0) +
+    iff(CommandLine contains "iex", 2, 0) +
+    iff(CommandLine contains "invoke-expression", 2, 0)
+| where ObfuscationScore >= 2
+| project TimeGenerated, Computer, Account, CommandLine, ObfuscationScore, ParentProcessName
+| order by ObfuscationScore desc, TimeGenerated desc
+
+// Query 4: PowerShell with Suspicious Execution Flags
+SecurityEvent
+| where EventID == 4688
+| where Process has_any ("powershell.exe", "pwsh.exe")
+| where CommandLine has_any (
+    "-WindowStyle Hidden",
+    "-w hidden",
+    "-ExecutionPolicy Bypass",
+    "-ep bypass",
+    "-NoProfile",
+    "-NonInteractive",
+    "-nop",
+    "-noni"
+)
+| extend SuspiciousFlags =
+    iff(CommandLine contains_cs "-WindowStyle Hidden" or CommandLine contains_cs "-w hidden", 1, 0) +
+    iff(CommandLine contains_cs "-ExecutionPolicy Bypass" or CommandLine contains_cs "-ep bypass", 1, 0) +
+    iff(CommandLine contains_cs "-NoProfile" or CommandLine contains_cs "-nop", 1, 0) +
+    iff(CommandLine contains_cs "-NonInteractive" or CommandLine contains_cs "-noni", 1, 0)
+| where SuspiciousFlags >= 2
+| project TimeGenerated, Computer, Account, CommandLine, SuspiciousFlags, ParentProcessName
+| order by TimeGenerated desc
+
+// Query 5: PowerShell Reflection and In-Memory Execution
+SecurityEvent
+| where EventID == 4688
+| where Process has_any ("powershell.exe", "pwsh.exe")
+| where CommandLine has_any (
+    "System.Reflection",
+    "Assembly.Load",
+    "[Reflection.Assembly]",
+    "MemoryStream",
+    "EncodedCommand",
+    "VirtualAlloc"
+)
+| project TimeGenerated, Computer, Account, CommandLine, ParentProcessName
+| order by TimeGenerated desc
+
+// Query 6: PowerShell Spawned from Uncommon Parents
+SecurityEvent
+| where EventID == 4688
+| where Process has_any ("powershell.exe", "pwsh.exe")
+| where ParentProcessName !has_any (
+    "explorer.exe",
+    "powershell.exe",
+    "pwsh.exe",
+    "code.exe",
+    "ServiceHost.exe",
+    "svchost.exe",
+    "wmiprvse.exe"
+)
+| summarize Count=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated),
+    Computers=make_set(Computer), Accounts=make_set(Account),
+    CommandLines=make_set(CommandLine) by ParentProcessName, Process
+| where Count >= 3
+| order by Count desc
+
+// Query 7: PowerShell with Remote Execution
+DeviceProcessEvents
+| where FileName in~ ("powershell.exe", "pwsh.exe")
+| where ProcessCommandLine has_any (
+    "Invoke-Command",
+    "Enter-PSSession",
+    "-ComputerName",
+    "New-PSSession",
+    "-Session"
+)
+| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName
+| order by Timestamp desc
+
+// Usage Instructions:
+// 1. Run each query separately to hunt for specific behaviors
+// 2. Adjust time ranges as needed: | where TimeGenerated > ago(7d)
+// 3. Add to watchlist for automated alerting
+// 4. Combine queries with "union" for comprehensive hunting
+// 5. Export results for further analysis or threat intelligence

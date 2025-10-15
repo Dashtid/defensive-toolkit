@@ -1,0 +1,164 @@
+name: Validate Detection Rules
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'detection-rules/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'detection-rules/**'
+
+jobs:
+  validate-sigma:
+    name: Validate Sigma Rules
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install sigma-cli PyYAML
+
+    - name: Validate Sigma rule syntax
+      run: |
+        echo "[+] Validating Sigma rules..."
+        for file in detection-rules/sigma/**/*.yml; do
+          if [ -f "$file" ]; then
+            echo "Checking: $file"
+            sigma check "$file" || exit 1
+          fi
+        done
+        echo "[OK] All Sigma rules valid"
+
+    - name: Convert Sigma rules (test)
+      run: |
+        echo "[+] Testing Sigma rule conversion..."
+        sigma convert -t splunk detection-rules/sigma/execution/*.yml > /dev/null || exit 1
+        sigma convert -t elasticsearch detection-rules/sigma/persistence/*.yml > /dev/null || exit 1
+        echo "[OK] Sigma rule conversion successful"
+
+  validate-yara:
+    name: Validate YARA Rules
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install YARA
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y yara
+
+    - name: Validate YARA rule syntax
+      run: |
+        echo "[+] Validating YARA rules..."
+        for file in detection-rules/yara/*.yar; do
+          if [ -f "$file" ]; then
+            echo "Checking: $file"
+            yara -C "$file" || exit 1
+          fi
+        done
+        echo "[OK] All YARA rules valid"
+
+  lint-powershell:
+    name: Lint PowerShell Scripts
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Run PSScriptAnalyzer
+      shell: pwsh
+      run: |
+        Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+        $errors = @()
+        Get-ChildItem -Path . -Filter *.ps1 -Recurse | ForEach-Object {
+          Write-Host "Analyzing: $($_.FullName)"
+          $results = Invoke-ScriptAnalyzer -Path $_.FullName -Severity Error,Warning
+          if ($results) {
+            $errors += $results
+            $results | Format-Table -AutoSize
+          }
+        }
+        if ($errors.Count -gt 0) {
+          Write-Error "PSScriptAnalyzer found $($errors.Count) issue(s)"
+          exit 1
+        }
+        Write-Host "[OK] All PowerShell scripts passed analysis"
+
+  lint-bash:
+    name: Lint Bash Scripts
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install ShellCheck
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+
+    - name: Run ShellCheck
+      run: |
+        echo "[+] Checking Bash scripts..."
+        find . -name "*.sh" -type f -exec shellcheck {} + || exit 1
+        echo "[OK] All Bash scripts passed ShellCheck"
+
+  validate-yaml:
+    name: Validate YAML Files
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install yamllint
+      run: |
+        pip install yamllint
+
+    - name: Validate YAML syntax
+      run: |
+        echo "[+] Validating YAML files..."
+        find . -name "*.yml" -o -name "*.yaml" | xargs yamllint -d relaxed || exit 1
+        echo "[OK] All YAML files valid"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        exit-code: '1'
+        severity: 'CRITICAL,HIGH'
+
+  all-checks:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    needs: [validate-sigma, validate-yara, lint-powershell, lint-bash, validate-yaml, security-scan]
+    if: success()
+
+    steps:
+    - name: Success
+      run: |
+        echo "[OK] All validation checks passed successfully!"

@@ -1,0 +1,196 @@
+{
+  "dashboard": {
+    "title": "Security Operations Overview",
+    "tags": ["security", "siem", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "1m",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "type": "stat",
+        "title": "Security Events (Last Hour)",
+        "targets": [
+          {
+            "expr": "sum(rate(security_events_total[1h]))",
+            "legendFormat": "Events/sec"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          }
+        }
+      },
+      {
+        "id": 2,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "type": "stat",
+        "title": "Critical Alerts (Last 24h)",
+        "targets": [
+          {
+            "expr": "sum(security_alerts{severity=\"critical\"})",
+            "legendFormat": "Critical"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 1, "color": "yellow"},
+              {"value": 10, "color": "red"}
+            ]
+          }
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+        "type": "graph",
+        "title": "Security Events Timeline",
+        "targets": [
+          {
+            "expr": "sum by (event_type) (rate(security_events_total[5m]))",
+            "legendFormat": "{{event_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Events/sec"},
+          {"format": "short"}
+        ],
+        "xaxis": {"mode": "time"}
+      },
+      {
+        "id": 4,
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 18},
+        "type": "piechart",
+        "title": "Events by Severity",
+        "targets": [
+          {
+            "expr": "sum by (severity) (security_alerts)",
+            "legendFormat": "{{severity}}"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 18},
+        "type": "table",
+        "title": "Top Failed Logon Attempts",
+        "targets": [
+          {
+            "expr": "topk(10, sum by (username) (failed_logon_attempts))",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 28},
+        "type": "graph",
+        "title": "PowerShell Execution Events",
+        "targets": [
+          {
+            "expr": "sum(rate(powershell_execution_events[5m]))",
+            "legendFormat": "PowerShell Events"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 28},
+        "type": "graph",
+        "title": "Network Connection Anomalies",
+        "targets": [
+          {
+            "expr": "sum by (destination) (network_connection_anomalies)",
+            "legendFormat": "{{destination}}"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 38},
+        "type": "stat",
+        "title": "Detection Rules Active",
+        "targets": [
+          {
+            "expr": "count(detection_rules{enabled=\"true\"})",
+            "legendFormat": "Active Rules"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 38},
+        "type": "stat",
+        "title": "Systems Monitored",
+        "targets": [
+          {
+            "expr": "count(up{job=\"node_exporter\"})",
+            "legendFormat": "Systems"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 38},
+        "type": "stat",
+        "title": "SIEM Health",
+        "targets": [
+          {
+            "expr": "avg(siem_health_score)",
+            "legendFormat": "Health %"
+          }
+        ],
+        "options": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 70, "color": "yellow"},
+              {"value": 90, "color": "green"}
+            ]
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "timerange",
+          "type": "interval",
+          "options": [
+            {"text": "1h", "value": "1h"},
+            {"text": "6h", "value": "6h"},
+            {"text": "12h", "value": "12h"},
+            {"text": "24h", "value": "24h"},
+            {"text": "7d", "value": "7d"}
+          ],
+          "current": {"text": "1h", "value": "1h"}
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Critical Alerts",
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{severity=\"critical\"}",
+          "iconColor": "red"
+        }
+      ]
+    }
+  }
+}

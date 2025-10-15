@@ -1,0 +1,30 @@
+title: Suspicious Scheduled Task Creation
+id: 45678901-4567-4567-4567-456789012def
+status: stable
+description: Detects creation of scheduled tasks that may be used for persistence or privilege escalation
+references:
+    - https://attack.mitre.org/techniques/T1053/005/
+    - https://docs.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-start-page
+author: Defensive Toolkit
+date: 2025-10-15
+modified: 2025-10-15
+tags:
+    - attack.persistence
+    - attack.t1053.005
+    - attack.privilege_escalation
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID: 4698
+    filter_system:
+        TaskName|startswith:
+            - '\Microsoft\Windows\'
+    condition: selection and not filter_system
+falsepositives:
+    - Administrative tasks
+    - Software updates
+    - Backup solutions
+    - Monitoring tools
+level: medium

@@ -1,0 +1,30 @@
+title: Suspicious WMI Command Execution
+id: 23456789-2345-2345-2345-234567890bcd
+status: stable
+description: Detects suspicious WMI command execution often used for remote command execution and lateral movement
+references:
+    - https://attack.mitre.org/techniques/T1047/
+    - https://docs.microsoft.com/en-us/windows/win32/wmisdk/wmic
+author: Defensive Toolkit
+date: 2025-10-15
+modified: 2025-10-15
+tags:
+    - attack.execution
+    - attack.t1047
+    - attack.lateral_movement
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_wmic:
+        Image|endswith: '\wmic.exe'
+        CommandLine|contains:
+            - 'process call create'
+            - '/node:'
+            - 'shadowcopy delete'
+    condition: selection_wmic
+falsepositives:
+    - Administrative scripts
+    - System management tools
+    - Backup solutions using WMI
+level: high
