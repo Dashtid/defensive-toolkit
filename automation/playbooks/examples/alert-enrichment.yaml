@@ -1,0 +1,90 @@
+---
+name: "Alert Triage and Enrichment"
+description: "Automated alert enrichment and intelligent triage"
+version: "1.0"
+author: "Defensive Toolkit"
+
+variables:
+  alert_id: ""
+  alert_type: ""
+  source_ip: ""
+  severity: "unknown"
+
+tasks:
+  - name: "Start alert processing"
+    action: log
+    parameters:
+      message: "Processing alert ${alert_id}: ${alert_type}"
+      level: info
+
+  - name: "Enrich source IP"
+    action: log
+    parameters:
+      message: "Enriching source IP: ${source_ip}"
+      level: info
+
+  - name: "Check threat intelligence"
+    action: log
+    parameters:
+      message: "Querying threat intel feeds for IOCs"
+      level: info
+
+  - name: "Geolocate IP"
+    action: log
+    parameters:
+      message: "Performing geolocation lookup"
+      level: info
+
+  - name: "Check reputation databases"
+    action: log
+    parameters:
+      message: "Checking IP reputation (VirusTotal, AbuseIPDB)"
+      level: info
+
+  - name: "Correlate with other alerts"
+    action: log
+    parameters:
+      message: "Correlating with recent alerts from same source"
+      level: info
+
+  - name: "Calculate risk score"
+    action: set_variable
+    parameters:
+      name: severity
+      value: "high"
+
+  - name: "Route alert based on severity"
+    action: conditional
+    parameters:
+      condition: "severity == 'high' or severity == 'critical'"
+      if_true:
+        - name: "Escalate to Tier 2"
+          action: log
+          parameters:
+            message: "HIGH/CRITICAL alert - Escalating to Tier 2 analyst"
+            level: error
+
+        - name: "Create incident"
+          action: log
+          parameters:
+            message: "Creating incident for investigation"
+            level: warning
+
+      if_false:
+        - name: "Queue for review"
+          action: log
+          parameters:
+            message: "Queueing alert for routine review"
+            level: info
+
+  - name: "Update SIEM"
+    action: log
+    parameters:
+      message: "Updating SIEM with enrichment data"
+      level: info
+
+  - name: "Log completion"
+    action: log
+    parameters:
+      message: "Alert enrichment completed for ${alert_id}"
+      level: info

@@ -1,0 +1,89 @@
+---
+name: "Automated Phishing Response"
+description: "Automated analysis and response to phishing email reports"
+version: "1.0"
+author: "Defensive Toolkit"
+
+variables:
+  email_subject: ""
+  sender_email: ""
+  attachments: []
+  suspicious_score: 0
+
+tasks:
+  - name: "Log incident start"
+    action: log
+    parameters:
+      message: "Starting phishing email analysis"
+      level: info
+
+  - name: "Extract email indicators"
+    action: log
+    parameters:
+      message: "Extracting IOCs from email: ${email_subject}"
+      level: info
+
+  - name: "Analyze sender reputation"
+    action: log
+    parameters:
+      message: "Checking sender reputation: ${sender_email}"
+      level: info
+
+  - name: "Scan attachments"
+    action: conditional
+    parameters:
+      condition: "len(attachments) > 0"
+      if_true:
+        - name: "Log attachment scan"
+          action: log
+          parameters:
+            message: "Scanning ${len(attachments)} attachments"
+            level: warning
+
+  - name: "Calculate risk score"
+    action: set_variable
+    parameters:
+      name: suspicious_score
+      value: 75
+
+  - name: "Determine response"
+    action: conditional
+    parameters:
+      condition: "suspicious_score > 70"
+      if_true:
+        - name: "High risk - Quarantine email"
+          action: log
+          parameters:
+            message: "HIGH RISK: Quarantining email"
+            level: error
+
+        - name: "Block sender"
+          action: log
+          parameters:
+            message: "Blocking sender: ${sender_email}"
+            level: warning
+
+        - name: "Create incident ticket"
+          action: log
+          parameters:
+            message: "Creating incident ticket for investigation"
+            level: info
+
+        - name: "Notify SOC team"
+          action: log
+          parameters:
+            message: "Notifying SOC team of high-risk phishing attempt"
+            level: warning
+
+      if_false:
+        - name: "Low risk - Move to spam"
+          action: log
+          parameters:
+            message: "Moving email to spam folder"
+            level: info
+
+  - name: "Log incident completion"
+    action: log
+    parameters:
+      message: "Phishing response workflow completed"
+      level: info
