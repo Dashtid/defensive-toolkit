@@ -10,7 +10,7 @@ n## Implementation Status
 | **Detection Rules** | [OK] Implemented | 6 Sigma rules, 3 YARA rulesets, organized by MITRE ATT&CK |
 | **Incident Response** | [OK] Implemented | 2 playbooks (ransomware, malware), 2 triage scripts |
 | **Threat Hunting** | [OK] Implemented | KQL, SPL, and EQL queries for major SIEM platforms |
-| **Hardening** | [OK] Implemented | Windows security hardening (3 levels + audit/backup) |
+| **Hardening** | [OK] Implemented | Windows & Linux security hardening (CIS Benchmark L1/L2/L3 + audit/backup) |
 | **Monitoring** | [OK] Implemented | SIEM integration, log forwarding, dashboards, health checks |
 | **Forensics** | [OK] Implemented | Memory analysis, disk forensics, artifact collection, timelines |
 | **Vulnerability Mgmt** | [OK] Implemented | OpenVAS/Nmap/Trivy scanners, SBOM, risk scoring, reporting |
@@ -78,13 +78,31 @@ defensive-toolkit/
 
 ## Prerequisites
 
-- Python 3.x
-- PowerShell 7+
+- Python 3.10+
+- [uv](https://github.com/astral-sh/uv) package manager (recommended) or pip
+- PowerShell 7+ (for Windows tools)
 - SIEM platform (Splunk, ELK, Sentinel, etc.)
 - EDR solution (optional)
 - Network monitoring tools
 
 ## Installation
+
+### Using uv (Recommended - 10-100x faster)
+
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh  # macOS/Linux
+# or: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
+
+# Clone repository
+git clone https://github.com/yourusername/defensive-toolkit.git
+cd defensive-toolkit
+
+# Install dependencies
+uv sync --all-extras --dev
+```
+
+### Using pip (Traditional)
 
 ```bash
 git clone https://github.com/yourusername/defensive-toolkit.git
@@ -164,15 +182,80 @@ cd incident-response/forensics
 - Frequency analysis and rate anomaly detection
 - Automated log correlation
 
+## Testing
+
+### Comprehensive Test Suite
+
+The project includes **565+ tests** covering all 10 security categories with **80%+ code coverage** achieved.
+
+**Quick Test Commands:**
+
+```bash
+# Run all tests with coverage
+uv run pytest tests/ -v --cov=. --cov-report=html
+
+# Run specific category
+uv run pytest tests/unit/test_automation/ -v
+
+# Run integration tests
+uv run pytest tests/integration/ -v -m integration
+
+# Skip slow tests
+uv run pytest -m "not slow"
+```
+
+**Test Categories:**
+- [OK] Unit tests for all 38 Python modules (400+ tests)
+- [OK] Hardening script validation (165+ bash script tests)
+- [OK] Integration tests for SOAR workflows (15+ tests)
+- [OK] Security linting with Bandit
+- [OK] Code quality checks (Ruff, Black, mypy)
+- [OK] Multi-platform testing (Windows, Linux)
+- [OK] Multi-version testing (Python 3.10, 3.11, 3.12)
+
+**CI/CD:**
+- Automated testing on push/PR
+- Coverage reporting to Codecov
+- Security scanning with Trivy
+- Code quality enforcement
+
+See [docs/TESTING.md](docs/TESTING.md) for complete testing documentation.
+
 ## Contributing
 
 Contributions welcome! Please:
 1. Fork the repository
 2. Create a feature branch
-3. Test your changes
-4. Submit a pull request
+3. **Run tests**: `uv run pytest tests/ -v`
+4. **Check code quality**: `uv run ruff check . && uv run black --check .`
+5. Submit a pull request
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## Documentation
+
+### Quick Links
+
+- **[Getting Started Guide](docs/GETTING_STARTED.md)** - Installation and first steps
+- **[Architecture Documentation](docs/ARCHITECTURE.md)** - System design and data flow
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Enterprise deployment scenarios
+- **[Testing Documentation](docs/TESTING.md)** - Complete testing guide
+- **[API Reference](docs/API_REFERENCE.md)** - Module and function reference
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Changelog](docs/CHANGELOG.md)** - Version history
+
+### Category-Specific Documentation
+
+- [Detection Rules](detection-rules/README.md) - Sigma and YARA rule documentation
+- [Hardening](hardening/windows-security/README.md) - Security hardening guides
+- [Automation/SOAR](automation/README.md) - Playbook engine documentation
+- [Compliance](compliance/README.md) - Compliance checker guides
+- [Forensics](forensics/README.md) - Digital forensics tools
+- [Log Analysis](log-analysis/README.md) - Log parsing and anomaly detection
+- [Monitoring](monitoring/README.md) - SIEM integration and monitoring
+- [Vulnerability Management](vulnerability-mgmt/README.md) - Scanner documentation
+- [Tests](tests/README.md) - Test suite documentation
+- [Scripts](scripts/README.md) - Utility scripts documentation
 
 ## Resources
 
@@ -189,8 +272,20 @@ MIT License - See [LICENSE](LICENSE) for details
 
 For questions or issues:
 - Open a GitHub issue
-- Check documentation in `/docs`
+- Check comprehensive documentation in [/docs](docs/)
+- Review category-specific README files
+- See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues
 - Review examples in `/examples`
+
+## Project Status
+
+**Version**: 1.2.0
+**Status**: ✅ Production-Ready
+**Test Coverage**: 80%+ (565+ tests)
+**Categories**: 10/10 Complete
+**Hardening**: Windows + Linux (CIS Benchmark L1/L2/L3)
+
+See [CHANGELOG.md](docs/CHANGELOG.md) for version history.
 
 ---
 

@@ -1,0 +1,37 @@
+# Coverage.py configuration
+# Note: Most configuration is in pyproject.toml under [tool.coverage.*]
+# This file is kept for backwards compatibility and legacy tools
+
+[run]
+branch = True
+source = .
+omit =
+    */tests/*
+    */test_*
+    */__pycache__/*
+    */venv/*
+    */.venv/*
+    */site-packages/*
+    */examples/*
+parallel = True
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    if typing.TYPE_CHECKING:
+    @abstractmethod
+    @abc.abstractmethod
+
+[html]
+directory = htmlcov
+
+[json]
+output = coverage.json

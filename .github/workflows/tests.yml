@@ -1,0 +1,152 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Install dependencies with uv
+      run: |
+        uv sync --all-extras --dev
+
+    - name: Run unit tests
+      run: |
+        uv run pytest tests/unit/ -v --tb=short --cov=. --cov-report=xml --cov-report=term-missing
+
+    - name: Run integration tests
+      run: |
+        uv run pytest tests/integration/ -v --tb=short -m integration
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+    - name: Generate coverage report
+      if: always()
+      run: |
+        uv run coverage report
+        uv run coverage html
+
+    - name: Upload coverage HTML
+      if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: htmlcov/
+
+  security-lint:
+    name: Security Linting
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Run Bandit security linter
+      run: |
+        uv run bandit -r . -x tests,venv,.venv -f json -o bandit-report.json || true
+        uv run bandit -r . -x tests,venv,.venv -f screen
+
+    - name: Upload Bandit report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bandit-security-report
+        path: bandit-report.json
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Run Ruff linter
+      run: |
+        uv run ruff check . --output-format=github
+
+    - name: Run Black formatter check
+      run: |
+        uv run black --check --diff .
+
+    - name: Run mypy type checker
+      continue-on-error: true
+      run: |
+        uv run mypy . || echo "Type checking has issues (non-blocking)"
+
+  test-matrix-summary:
+    name: Test Results Summary
+    runs-on: ubuntu-latest
+    needs: [test, security-lint, code-quality]
+    if: always()
+
+    steps:
+    - name: Check test results
+      run: |
+        echo "[+] Test Suite: ${{ needs.test.result }}"
+        echo "[+] Security Lint: ${{ needs.security-lint.result }}"
+        echo "[+] Code Quality: ${{ needs.code-quality.result }}"
+
+        if [[ "${{ needs.test.result }}" == "failure" ]]; then
+          echo "[X] Tests failed!"
+          exit 1
+        elif [[ "${{ needs.test.result }}" == "success" ]]; then
+          echo "[OK] All tests passed!"
+        fi

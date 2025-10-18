@@ -1,0 +1,39 @@
+name: Test Security Policy
+version: 1.0
+enforced: true
+
+password_policy:
+  min_length: 12
+  require_uppercase: true
+  require_lowercase: true
+  require_numbers: true
+  require_special_chars: true
+  password_history: 5
+  max_age_days: 90
+
+account_lockout:
+  enabled: true
+  threshold: 5
+  duration_minutes: 30
+  reset_after_minutes: 60
+
+audit_policy:
+  log_failed_logins: true
+  log_successful_logins: true
+  log_privilege_use: true
+  log_policy_changes: true
+  log_file_access: false
+
+network_security:
+  firewall_enabled: true
+  allowed_ports:
+    - 22
+    - 80
+    - 443
+  blocked_countries: []
+  rate_limiting: true
+
+encryption:
+  disk_encryption_required: true
+  tls_min_version: "1.2"
+  enforce_https: true

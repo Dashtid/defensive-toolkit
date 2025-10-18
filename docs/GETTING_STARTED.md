@@ -40,8 +40,19 @@ git clone https://github.com/yourusername/defensive-toolkit.git
 cd defensive-toolkit
 ```
 
-### 2. Install Python Dependencies
+### 2. Install Dependencies
 
+**Using uv (Recommended - 10-100x faster)**:
+```bash
+# Install uv package manager
+curl -LsSf https://astral.sh/uv/install.sh | sh  # macOS/Linux
+# or: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
+
+# Install dependencies
+uv sync --all-extras --dev
+```
+
+**Using pip (Traditional)**:
 ```bash
 pip install -r requirements.txt
 ```
