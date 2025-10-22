@@ -84,12 +84,12 @@ Issues = "https://github.com/Dashtid/defensive-toolkit/issues"
 Documentation = "https://github.com/Dashtid/defensive-toolkit/blob/main/docs/README.md"
 Changelog = "https://github.com/Dashtid/defensive-toolkit/blob/main/docs/CHANGELOG.md"
 
-[project.scripts]
-# CLI entry points for utility scripts
-toolkit-cleanup = "scripts.cleanup:main"
-toolkit-validate = "scripts.validate_project:main"
-toolkit-gendocs = "scripts.generate_docs:main"
-toolkit-api = "api.main:main"
+# [project.scripts]
+# CLI entry points disabled for now - use python scripts directly
+# toolkit-cleanup = "scripts.cleanup:main"
+# toolkit-validate = "scripts.validate_project:main"
+# toolkit-gendocs = "scripts.generate_docs:main"
+# toolkit-api = "api.main:main"
 
 [build-system]
 requires = ["hatchling"]
