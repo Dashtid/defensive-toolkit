@@ -1,7 +1,7 @@
 [project]
 name = "defensive-toolkit"
-version = "1.4.0"
-description = "100% Open Source blue team security platform with production Docker deployment, monitoring, and REST API"
+version = "1.5.0"
+description = "100% Open Source blue team security platform with comprehensive test suite (700+ tests, 80%+ coverage)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -95,9 +95,9 @@ toolkit-api = "api.main:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv]
-# UV-specific configuration
-dev-dependencies = [
+[dependency-groups]
+# Development dependencies (new format replacing tool.uv.dev-dependencies)
+dev = [
     "pytest>=8.3.0",
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.14.0",
@@ -113,6 +113,7 @@ dev-dependencies = [
     "coverage[toml]>=7.6.0",
 ]
 
+[tool.uv]
 # UV cache configuration for faster builds
 cache-keys = [
     { file = "pyproject.toml" },
