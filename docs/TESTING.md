@@ -1,8 +1,8 @@
 # Defensive Toolkit - Testing Documentation
 
-**Last Updated**: 2025-10-18
-**Test Suite Version**: 1.2.0
-**Status**: ✅ Production-Ready with 565+ Tests
+**Last Updated**: 2025-10-22
+**Test Suite Version**: 1.5.0
+**Status**: ✅ Production-Ready with 700+ Tests
 
 ---
 
@@ -24,17 +24,23 @@
 
 ## Overview
 
-The defensive-toolkit includes a comprehensive test suite with **565+ tests** covering all 10 security categories plus hardening scripts. The project uses modern Python testing practices with pytest, uv package management, and CI/CD automation.
+The defensive-toolkit includes a comprehensive test suite with **700+ tests** covering all 10 security categories, REST API endpoints, security testing, and performance benchmarks. The project uses modern Python testing practices with pytest, uv package management, and CI/CD automation following 2025 best practices.
 
 ### Key Features
 
-- ✅ **565+ tests** across unit and integration categories
-- ✅ **80%+ code coverage** (target: 70%+)
+- ✅ **700+ tests** across unit, integration, API, security, and performance categories
+- ✅ **80%+ code coverage** (enforced in CI/CD)
 - ✅ **Modern dependency management** with uv (10-100x faster than pip)
 - ✅ **Multi-platform testing** (Windows, Linux)
 - ✅ **Multi-version testing** (Python 3.10, 3.11, 3.12)
+- ✅ **Comprehensive API tests** (120+ endpoint tests)
+- ✅ **Security testing** (25+ security tests for auth, injection, XSS)
+- ✅ **Performance benchmarks** with pytest-benchmark
+- ✅ **Mock external services** (SIEM, scanners, ticketing)
+- ✅ **Test data factories** for realistic test data generation
 - ✅ **Hardening script validation** (bash script tests)
 - ✅ **CI/CD integration** with GitHub Actions
+- ✅ **Codecov integration** for coverage tracking
 - ✅ **Security scanning** with Bandit
 - ✅ **Code quality enforcement** (Ruff, Black, mypy)
 
@@ -42,14 +48,17 @@ The defensive-toolkit includes a comprehensive test suite with **565+ tests** co
 
 | Category | Test Files | Test Count | Coverage | Status |
 |----------|------------|------------|----------|--------|
+| **API Tests** | **8** | **120+** | **90%** | ✅ **Complete** |
 | Automation (SOAR) | 3 | 110+ | 75% | ✅ Complete |
 | Compliance | 1 | 20+ | 80% | ✅ Complete |
 | Forensics | 3 | 85+ | 70% | ✅ Complete |
 | Log Analysis | 2 | 65+ | 80% | ✅ Complete |
 | Vulnerability Management | 3 | 105+ | 75% | ✅ Complete |
 | Hardening (Linux) | 5 | 165+ | N/A | ✅ Complete |
-| Integration Tests | 1 | 15+ | N/A | ✅ Complete |
-| **TOTAL** | **18** | **565+** | **80%+** | **✅ Production-Ready** |
+| **Integration Tests** | **2** | **30+** | **85%** | ✅ **Complete** |
+| **Security Tests** | **2** | **25+** | **95%** | ✅ **Complete** |
+| **Performance Tests** | **1** | **10+** | **N/A** | ✅ **Complete** |
+| **TOTAL** | **27** | **700+** | **80%+** | **✅ Production-Ready** |
 
 ---
 
@@ -99,6 +108,26 @@ uv run pytest tests/unit/test_automation/ -v
 ```
 tests/
 ├── conftest.py                         # Shared fixtures (50+ fixtures)
+├── api/                                # API endpoint tests (NEW v1.5.0)
+│   ├── test_auth.py                    # Authentication tests (15+ tests)
+│   ├── test_endpoints.py               # General endpoint tests (20+ tests)
+│   ├── test_detection.py               # Detection rules API (25+ tests)
+│   ├── test_hardening.py               # Hardening API (10+ tests)
+│   ├── test_forensics.py               # Forensics API (10+ tests)
+│   ├── test_vulnerability.py           # Vulnerability mgmt API (12+ tests)
+│   ├── test_automation.py              # Automation/SOAR API (10+ tests)
+│   ├── test_compliance.py              # Compliance API (10+ tests)
+│   ├── test_log_analysis.py            # Log analysis API (8+ tests)
+│   └── test_monitoring.py              # Monitoring API (8+ tests)
+├── integration/                        # Integration tests
+│   ├── test_soar_workflows.py          # End-to-end workflows (15+ tests)
+│   ├── test_api_workflows.py           # API workflow tests (15+ tests NEW)
+│   └── test_siem_integration.py        # SIEM integration tests (5+ tests NEW)
+├── security/                           # Security tests (NEW v1.5.0)
+│   ├── test_auth_security.py           # Auth security (15+ tests)
+│   └── test_api_security.py            # API security (10+ tests)
+├── performance/                        # Performance tests (NEW v1.5.0)
+│   └── test_api_load.py                # Load & benchmarks (10+ tests)
 ├── unit/                               # Unit tests
 │   ├── test_automation/                # SOAR and automation tests
 │   │   ├── test_playbook_engine.py     # Playbook orchestration (30+ tests)
@@ -123,12 +152,13 @@ tests/
 │       ├── test_vulnerability_scanner.py # Scanner (25+ tests)
 │       ├── test_openvas_scanner.py      # OpenVAS integration (35+ tests)
 │       └── test_risk_scorer.py          # Risk scoring (45+ tests)
-├── integration/                        # Integration tests
-│   └── test_soar_workflows.py          # End-to-end workflows (15+ tests)
-└── fixtures/                           # Test data
-    ├── sample_logs/                    # Log files for testing
-    ├── sample_configs/                 # Configuration examples
-    └── mock_data/                      # Mock security data
+├── fixtures/                           # Test data & factories (NEW v1.5.0)
+│   ├── factories.py                    # Test data factories
+│   ├── sample_logs/                    # Log files for testing
+│   ├── sample_configs/                 # Configuration examples
+│   └── mock_data/                      # Mock security data
+└── mocks/                              # Mock external services (NEW v1.5.0)
+    └── external_services.py            # Mock SIEM, scanners, ticketing
 ```
 
 ### Test Framework
@@ -193,6 +223,15 @@ uv run pytest tests/unit/test_vulnerability_mgmt/ -v
 
 # Integration tests
 uv run pytest tests/integration/ -v
+
+# API endpoint tests (NEW)
+uv run pytest tests/api/ -v
+
+# Security tests (NEW)
+uv run pytest tests/security/ -v -m security
+
+# Performance benchmarks (NEW)
+uv run pytest tests/performance/ -v -m benchmark --benchmark-only
 ```
 
 ### Using Test Markers
@@ -203,6 +242,12 @@ uv run pytest -m unit -v
 
 # Run only integration tests
 uv run pytest -m integration -v
+
+# Run only security tests (NEW)
+uv run pytest -m security -v
+
+# Run only performance benchmarks (NEW)
+uv run pytest -m benchmark -v --benchmark-only
 
 # Skip slow tests
 uv run pytest -m "not slow" -v

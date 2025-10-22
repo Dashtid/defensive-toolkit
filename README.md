@@ -1,9 +1,25 @@
 # Defensive Toolkit
 
-Blue team security tools for detection, monitoring, incident response, and threat hunting.
+**100% Open Source** Blue Team Security Platform
 
-## Overview
-n## Implementation Status
+[![Run Tests](https://github.com/Dashtid/defensive-toolkit/actions/workflows/tests.yml/badge.svg)](https://github.com/Dashtid/defensive-toolkit/actions/workflows/tests.yml)
+[![Docker Build & Security Scan](https://github.com/Dashtid/defensive-toolkit/actions/workflows/docker.yml/badge.svg)](https://github.com/Dashtid/defensive-toolkit/actions/workflows/docker.yml)
+[![Validate Rules](https://github.com/Dashtid/defensive-toolkit/actions/workflows/validate-rules.yml/badge.svg)](https://github.com/Dashtid/defensive-toolkit/actions/workflows/validate-rules.yml)
+
+> Comprehensive security tools for detection, monitoring, incident response, and threat hunting - built entirely on open-source technologies.
+
+## Why Open Source?
+
+- **Zero Cost**: No licensing fees, ever
+- **Complete Transparency**: Audit all code for security
+- **Data Sovereignty**: Full control over your data
+- **No Vendor Lock-In**: Switch tools anytime
+- **Community-Driven**: Powered by the global security community
+- **Self-Hosted**: Deploy anywhere you control
+
+**See [Open Source Stack Guide](docs/OPEN_SOURCE_STACK.md) for complete details.**
+
+## Implementation Status
 
 | Category | Status | Contents |
 |----------|--------|----------|
@@ -18,8 +34,30 @@ n## Implementation Status
 | **Compliance** | [OK] Implemented | CIS/NIST checkers, multi-framework mapper, policy validation, drift detection |
 | **Log Analysis** | [OK] Implemented | Universal log parser, anomaly detection, pattern matching |
 
-**PROJECT COMPLETE: 10/10 CATEGORIES IMPLEMENTED**
+**PROJECT COMPLETE: 10/10 CATEGORIES + REST API IMPLEMENTED**
 
+## Docker Quick Start
+
+```bash
+# 1. Clone repository
+git clone https://github.com/Dashtid/defensive-toolkit.git
+cd defensive-toolkit
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env: Set SECRET_KEY and other variables
+
+# 3. Deploy
+bash scripts/deploy.sh
+
+# 4. Access services
+#   API: https://localhost
+#   Docs: https://localhost/docs
+#   Grafana: http://localhost:3000 (admin/changeme)
+#   Prometheus: http://localhost:9090
+```
+
+**See [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) for complete instructions.**
 
 This repository contains defensive security tools, detection rules, hardening scripts, and incident response playbooks for protecting systems and detecting threats.
 
@@ -64,7 +102,6 @@ defensive-toolkit/
 
 ### Threat Hunting
 - KQL queries (Azure Sentinel)
-- Splunk SPL queries
 - Elastic EQL queries
 - PowerShell hunting scripts
 - Behavioral analytics
@@ -81,7 +118,7 @@ defensive-toolkit/
 - Python 3.10+
 - [uv](https://github.com/astral-sh/uv) package manager (recommended) or pip
 - PowerShell 7+ (for Windows tools)
-- SIEM platform (Splunk, ELK, Sentinel, etc.)
+- SIEM platform (Wazuh, Elastic, OpenSearch, Graylog)
 - EDR solution (optional)
 - Network monitoring tools
 
@@ -112,11 +149,81 @@ pip install -r requirements.txt
 
 ## Quick Start
 
+### REST API Server (NEW in v1.2.0)
+
+The toolkit now includes a comprehensive REST API for programmatic access to all security categories.
+
+```bash
+# Start the API server
+uvicorn api.main:app --reload
+
+# Or use the CLI
+python -m api.main
+
+# Access interactive documentation
+# Swagger UI: http://localhost:8000/docs
+# ReDoc: http://localhost:8000/redoc
+```
+
+**API Features:**
+- [+] JWT Authentication with OAuth2
+- [+] API Key Authentication
+- [+] Rate Limiting
+- [+] 10 Security Category Endpoints
+- [+] OpenAPI/Swagger Documentation
+- [+] Comprehensive Error Handling
+
+**Quick API Example:**
+```bash
+# Login
+curl -X POST http://localhost:8000/api/v1/auth/token \
+  -d "username=admin&password=changeme123"
+
+# List detection rules
+curl -X GET http://localhost:8000/api/v1/detection/rules \
+  -H "Authorization: Bearer <token>"
+
+# Scan for vulnerabilities
+curl -X POST http://localhost:8000/api/v1/vulnerability/scan \
+  -H "Authorization: Bearer <token>" \
+  -d '{"target": "192.168.1.1", "scan_type": "quick"}'
+```
+
+**Full API Documentation:** [docs/API.md](docs/API.md)
+
+### Postman Collection (NEW in v1.4.1)
+
+Explore the API with our comprehensive Postman collection:
+
+```bash
+# 1. Import collection in Postman
+# File: postman/Defensive-Toolkit-API.postman_collection.json
+
+# 2. Import environment
+# Local Dev: postman/Local-Development.postman_environment.json
+# Docker: postman/Docker.postman_environment.json
+# Production: postman/Production.postman_environment.json
+
+# 3. Run "Login" request in Authentication folder
+# 4. Access token is automatically set for all requests
+# 5. Explore 50+ pre-configured API requests
+```
+
+**Features:**
+- [+] 10 API category folders with 50+ requests
+- [+] Automatic JWT token management
+- [+] Pre-configured environments
+- [+] Example request bodies
+- [+] Test scripts for validation
+- [+] Newman CLI support for automation
+
+**Postman Documentation:** [postman/README.md](postman/README.md)
+
 ### Deploy Detection Rules
 ```bash
 # Deploy Sigma rules to your SIEM
 cd detection-rules/sigma
-python deploy-sigma-rules.py --target splunk
+python deploy-sigma-rules.py --target sentinel
 
 # Deploy Yara rules
 cd detection-rules/yara
@@ -186,7 +293,7 @@ cd incident-response/forensics
 
 ### Comprehensive Test Suite
 
-The project includes **565+ tests** covering all 10 security categories with **80%+ code coverage** achieved.
+The project includes **700+ tests** covering all 10 security categories, REST API endpoints, security testing, and performance benchmarks with **80%+ code coverage** enforced in CI/CD.
 
 **Quick Test Commands:**
 
@@ -194,8 +301,14 @@ The project includes **565+ tests** covering all 10 security categories with **8
 # Run all tests with coverage
 uv run pytest tests/ -v --cov=. --cov-report=html
 
-# Run specific category
-uv run pytest tests/unit/test_automation/ -v
+# Run API endpoint tests
+uv run pytest tests/api/ -v
+
+# Run security tests
+uv run pytest tests/security/ -v -m security
+
+# Run performance benchmarks
+uv run pytest tests/performance/ -v -m benchmark --benchmark-only
 
 # Run integration tests
 uv run pytest tests/integration/ -v -m integration
@@ -205,9 +318,14 @@ uv run pytest -m "not slow"
 ```
 
 **Test Categories:**
-- [OK] Unit tests for all 38 Python modules (400+ tests)
+- [OK] API endpoint tests (120+ tests covering all 10 categories)
+- [OK] Unit tests for all Python modules (400+ tests)
+- [OK] Integration & workflow tests (30+ tests)
+- [OK] Security tests (25+ auth, injection, XSS tests)
+- [OK] Performance benchmarks (10+ load tests)
 - [OK] Hardening script validation (165+ bash script tests)
-- [OK] Integration tests for SOAR workflows (15+ tests)
+- [OK] Mock external services (SIEM, scanners, ticketing)
+- [OK] Test data factories for realistic test data
 - [OK] Security linting with Bandit
 - [OK] Code quality checks (Ruff, Black, mypy)
 - [OK] Multi-platform testing (Windows, Linux)

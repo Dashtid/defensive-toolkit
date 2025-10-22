@@ -1,0 +1,1076 @@
+{
+  "info": {
+    "name": "Defensive Toolkit API",
+    "description": "100% Open Source Blue Team Security Platform\n\nComprehensive REST API for detection, monitoring, incident response, and threat hunting.\n\nVersion: 1.4.1\nDocumentation: https://github.com/Dashtid/defensive-toolkit\n\n## Quick Start\n1. Select an environment (Local, Docker, or Production)\n2. Run the 'Login' request in Authentication folder\n3. Access token will be automatically set for all requests\n4. Explore the API!\n\n## Authentication\nThe collection automatically handles JWT token management:\n- Login sets access_token and refresh_token\n- Pre-request scripts auto-refresh expired tokens\n- All authenticated requests use {{accessToken}} variable",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "defensive-toolkit"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-refresh token if expired",
+          "const tokenExpiry = pm.environment.get('tokenExpiry');",
+          "const now = new Date().getTime();",
+          "",
+          "if (tokenExpiry && now >= tokenExpiry) {",
+          "    const refreshToken = pm.environment.get('refreshToken');",
+          "    if (refreshToken) {",
+          "        pm.sendRequest({",
+          "            url: pm.environment.get('baseUrl') + pm.environment.get('apiPrefix') + '/auth/refresh',",
+          "            method: 'POST',",
+          "            header: {'Content-Type': 'application/json'},",
+          "            body: {",
+          "                mode: 'raw',",
+          "                raw: JSON.stringify({ refresh_token: refreshToken })",
+          "            }",
+          "        }, (err, res) => {",
+          "            if (!err && res.code === 200) {",
+          "                const data = res.json();",
+          "                pm.environment.set('accessToken', data.access_token);",
+          "                pm.environment.set('refreshToken', data.refresh_token);",
+          "                pm.environment.set('tokenExpiry', now + (data.expires_in * 1000));",
+          "            }",
+          "        });",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains tokens', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('access_token');",
+                  "    pm.expect(json).to.have.property('refresh_token');",
+                  "    pm.expect(json.token_type).to.equal('bearer');",
+                  "});",
+                  "",
+                  "// Store tokens",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('accessToken', json.access_token);",
+                  "    pm.environment.set('refreshToken', json.refresh_token);",
+                  "    const expiry = new Date().getTime() + (json.expires_in * 1000);",
+                  "    pm.environment.set('tokenExpiry', expiry);",
+                  "    console.log('Tokens stored successfully');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "description": "Username (default: admin)"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "description": "Password (default: changeme123)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "token"]
+            },
+            "description": "Authenticate with username and password to receive JWT tokens.\n\nDefault credentials:\n- Username: admin\n- Password: changeme123\n\nReturns:\n- access_token: Valid for 15 minutes\n- refresh_token: Valid for 30 days"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('accessToken', json.access_token);",
+                  "    pm.environment.set('refreshToken', json.refresh_token);",
+                  "    pm.environment.set('tokenExpiry', new Date().getTime() + (json.expires_in * 1000));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "refresh"]
+            },
+            "description": "Refresh access token using refresh token"
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "me"]
+            },
+            "description": "Get information about the currently authenticated user"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "logout"]
+            },
+            "description": "Logout and invalidate current session"
+          }
+        }
+      ],
+      "description": "Authentication endpoints for JWT token management"
+    },
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Root",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Get API information and version"
+          }
+        },
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('API is healthy', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.status).to.equal('healthy');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check API health status"
+          }
+        },
+        {
+          "name": "Metrics",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/metrics",
+              "host": ["{{baseUrl}}"],
+              "path": ["metrics"]
+            },
+            "description": "Prometheus metrics endpoint"
+          }
+        }
+      ],
+      "description": "Health check and monitoring endpoints"
+    },
+    {
+      "name": "Detection Rules",
+      "item": [
+        {
+          "name": "List Rules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/detection/rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "detection", "rules"]
+            },
+            "description": "List all detection rules (Sigma, YARA, Suricata)"
+          }
+        },
+        {
+          "name": "Create Rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Suspicious PowerShell Execution\",\n  \"description\": \"Detects suspicious encoded PowerShell commands\",\n  \"rule_type\": \"sigma\",\n  \"content\": \"detection:\\n  selection:\\n    EventID: 4688\\n    CommandLine|contains: '-enc'\",\n  \"severity\": \"high\",\n  \"mitre_attack\": [\"T1059.001\"],\n  \"tags\": [\"powershell\", \"execution\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/detection/rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "detection", "rules"]
+            },
+            "description": "Create a new detection rule"
+          }
+        },
+        {
+          "name": "Deploy Rule to SIEM",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rule_id\": \"rule-uuid-here\",\n  \"siem_platform\": \"wazuh\",\n  \"manager_host\": \"wazuh.example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/detection/rules/deploy",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "detection", "rules", "deploy"]
+            },
+            "description": "Deploy rule to open-source SIEM (Wazuh, Elastic, OpenSearch, Graylog)"
+          }
+        }
+      ],
+      "description": "Detection rule management endpoints"
+    },
+    {
+      "name": "Incident Response",
+      "item": [
+        {
+          "name": "List Incidents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/incident-response/incidents?severity_filter=high",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "incident-response", "incidents"],
+              "query": [
+                {
+                  "key": "severity_filter",
+                  "value": "high",
+                  "description": "Filter by severity: low, medium, high, critical"
+                },
+                {
+                  "key": "status_filter",
+                  "value": "open",
+                  "description": "Filter by status: open, investigating, contained, resolved",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List all security incidents with optional filters"
+          }
+        },
+        {
+          "name": "Create Incident",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Ransomware Detection\",\n  \"description\": \"Suspicious file encryption activity detected on host WS-001\",\n  \"severity\": \"critical\",\n  \"mitre_tactics\": [\"TA0040\"],\n  \"mitre_techniques\": [\"T1486\"],\n  \"affected_hosts\": [\"WS-001\"],\n  \"iocs\": [\"sha256:abc123...\", \"192.168.1.100\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/incident-response/incidents",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "incident-response", "incidents"]
+            },
+            "description": "Create a new security incident"
+          }
+        },
+        {
+          "name": "Execute Playbook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playbook_name\": \"ransomware-response\",\n  \"incident_id\": \"incident-uuid\",\n  \"parameters\": {\n    \"isolate_host\": true,\n    \"notify_security_team\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/incident-response/playbooks/execute",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "incident-response", "playbooks", "execute"]
+            },
+            "description": "Execute an incident response playbook"
+          }
+        }
+      ],
+      "description": "Incident response management endpoints"
+    },
+    {
+      "name": "Threat Hunting",
+      "item": [
+        {
+          "name": "Execute Hunt Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lateral Movement Detection\",\n  \"platform\": \"wazuh\",\n  \"query\": \"rule.id:60122 AND data.win.eventdata.logonType:3\",\n  \"time_range\": \"24h\",\n  \"mitre_tactics\": [\"TA0008\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/threat-hunting/query",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "threat-hunting", "query"]
+            },
+            "description": "Execute threat hunting query on open-source SIEM"
+          }
+        },
+        {
+          "name": "List Queries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/threat-hunting/queries",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "threat-hunting", "queries"]
+            },
+            "description": "List available threat hunting queries"
+          }
+        }
+      ],
+      "description": "Threat hunting query execution endpoints"
+    },
+    {
+      "name": "Hardening",
+      "item": [
+        {
+          "name": "Scan System",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"192.168.1.100\",\n  \"scan_type\": \"full\",\n  \"os_type\": \"linux\",\n  \"compliance_frameworks\": [\"cis\", \"stig\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/hardening/scan",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "hardening", "scan"]
+            },
+            "description": "Scan system for hardening compliance (Linux, Windows, macOS)"
+          }
+        },
+        {
+          "name": "List Hardening Scripts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/hardening/scripts?os=linux",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "hardening", "scripts"],
+              "query": [
+                {
+                  "key": "os",
+                  "value": "linux",
+                  "description": "Filter by OS: linux, windows, macos"
+                }
+              ]
+            },
+            "description": "List available hardening scripts by operating system"
+          }
+        },
+        {
+          "name": "Apply Hardening",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"192.168.1.100\",\n  \"script_id\": \"linux-cis-level1\",\n  \"dry_run\": true,\n  \"backup\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/hardening/apply",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "hardening", "apply"]
+            },
+            "description": "Apply hardening configuration to target system"
+          }
+        },
+        {
+          "name": "Check Compliance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"192.168.1.100\",\n  \"framework\": \"cis\",\n  \"level\": \"level1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/hardening/compliance",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "hardening", "compliance"]
+            },
+            "description": "Check compliance against security frameworks (CIS, STIG, NIST)"
+          }
+        }
+      ],
+      "description": "System hardening and compliance scanning endpoints"
+    },
+    {
+      "name": "Monitoring",
+      "item": [
+        {
+          "name": "Get System Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/monitoring/metrics?host=192.168.1.100",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "monitoring", "metrics"],
+              "query": [
+                {
+                  "key": "host",
+                  "value": "192.168.1.100",
+                  "description": "Target host"
+                }
+              ]
+            },
+            "description": "Get system metrics (CPU, memory, disk, network)"
+          }
+        },
+        {
+          "name": "List Alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/monitoring/alerts?severity=critical&status=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "monitoring", "alerts"],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "critical",
+                  "description": "Filter by severity: low, medium, high, critical"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Filter by status: active, resolved, acknowledged"
+                }
+              ]
+            },
+            "description": "List security alerts from monitoring systems"
+          }
+        },
+        {
+          "name": "Create Alert Rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"High CPU Usage\",\n  \"description\": \"Alert when CPU usage exceeds 90% for 5 minutes\",\n  \"metric\": \"cpu_usage\",\n  \"condition\": \"gt\",\n  \"threshold\": 90,\n  \"duration\": \"5m\",\n  \"severity\": \"warning\",\n  \"action\": \"email\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/monitoring/alerts/rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "monitoring", "alerts", "rules"]
+            },
+            "description": "Create a new monitoring alert rule"
+          }
+        },
+        {
+          "name": "Get Dashboard Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/monitoring/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "monitoring", "dashboard"]
+            },
+            "description": "Get dashboard data for security monitoring overview"
+          }
+        }
+      ],
+      "description": "Security monitoring and alerting endpoints"
+    },
+    {
+      "name": "Forensics",
+      "item": [
+        {
+          "name": "Analyze Artifact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artifact_path\": \"/evidence/disk-image.dd\",\n  \"artifact_type\": \"disk\",\n  \"analysis_type\": \"full\",\n  \"extract_metadata\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/forensics/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "forensics", "analyze"]
+            },
+            "description": "Analyze forensic artifacts (disk images, memory dumps, logs)"
+          }
+        },
+        {
+          "name": "Generate Timeline",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"/evidence/disk-image.dd\",\n  \"start_time\": \"2025-01-01T00:00:00Z\",\n  \"end_time\": \"2025-01-31T23:59:59Z\",\n  \"timezone\": \"UTC\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/forensics/timeline",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "forensics", "timeline"]
+            },
+            "description": "Generate forensic timeline from artifacts"
+          }
+        },
+        {
+          "name": "Collect Evidence",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"192.168.1.100\",\n  \"collection_type\": \"live\",\n  \"artifacts\": [\"memory\", \"processes\", \"network\", \"files\"],\n  \"output_path\": \"/evidence/case-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/forensics/collect",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "forensics", "collect"]
+            },
+            "description": "Collect forensic evidence from target system"
+          }
+        },
+        {
+          "name": "Search Artifacts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artifact_path\": \"/evidence/disk-image.dd\",\n  \"search_term\": \"malware.exe\",\n  \"search_type\": \"filename\",\n  \"case_sensitive\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/forensics/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "forensics", "search"]
+            },
+            "description": "Search within forensic artifacts"
+          }
+        }
+      ],
+      "description": "Digital forensics analysis endpoints"
+    },
+    {
+      "name": "Vulnerability Management",
+      "item": [
+        {
+          "name": "Run Vulnerability Scan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targets\": [\"192.168.1.0/24\"],\n  \"scan_type\": \"full\",\n  \"scanner\": \"openvas\",\n  \"schedule\": \"immediate\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/vulnerability/scan",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "vulnerability", "scan"]
+            },
+            "description": "Run vulnerability scan with OpenVAS, Trivy, or other scanners"
+          }
+        },
+        {
+          "name": "List Vulnerabilities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/vulnerability/list?severity=high&status=open",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "vulnerability", "list"],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "high",
+                  "description": "Filter by severity: low, medium, high, critical"
+                },
+                {
+                  "key": "status",
+                  "value": "open",
+                  "description": "Filter by status: open, mitigated, resolved, false_positive"
+                }
+              ]
+            },
+            "description": "List discovered vulnerabilities"
+          }
+        },
+        {
+          "name": "Generate SBOM",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"docker-image:latest\",\n  \"target_type\": \"container\",\n  \"format\": \"cyclonedx\",\n  \"include_dependencies\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/vulnerability/sbom",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "vulnerability", "sbom"]
+            },
+            "description": "Generate Software Bill of Materials (SBOM)"
+          }
+        },
+        {
+          "name": "Get Risk Score",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cve_id\": \"CVE-2025-1234\",\n  \"asset_criticality\": \"high\",\n  \"exposure\": \"internet_facing\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/vulnerability/risk-score",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "vulnerability", "risk-score"]
+            },
+            "description": "Calculate risk score for vulnerability"
+          }
+        }
+      ],
+      "description": "Vulnerability scanning and management endpoints"
+    },
+    {
+      "name": "Automation & SOAR",
+      "item": [
+        {
+          "name": "List Playbooks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/automation/playbooks",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "automation", "playbooks"]
+            },
+            "description": "List available SOAR playbooks"
+          }
+        },
+        {
+          "name": "Execute Workflow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"phishing-response\",\n  \"trigger_data\": {\n    \"email_subject\": \"Urgent: Update your credentials\",\n    \"sender\": \"attacker@evil.com\",\n    \"recipients\": [\"user@example.com\"]\n  },\n  \"auto_approve\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/automation/workflows/execute",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "automation", "workflows", "execute"]
+            },
+            "description": "Execute SOAR workflow"
+          }
+        },
+        {
+          "name": "Get Workflow Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/automation/workflows/status?workflow_id=12345",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "automation", "workflows", "status"],
+              "query": [
+                {
+                  "key": "workflow_id",
+                  "value": "12345",
+                  "description": "Workflow execution ID"
+                }
+              ]
+            },
+            "description": "Get workflow execution status"
+          }
+        },
+        {
+          "name": "Create Integration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"SIEM Integration\",\n  \"type\": \"wazuh\",\n  \"config\": {\n    \"host\": \"wazuh.example.com\",\n    \"port\": 55000,\n    \"username\": \"api-user\",\n    \"password\": \"secure-password\"\n  },\n  \"enabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/automation/integrations",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "automation", "integrations"]
+            },
+            "description": "Create external system integration"
+          }
+        }
+      ],
+      "description": "Security automation and orchestration (SOAR) endpoints"
+    },
+    {
+      "name": "Compliance",
+      "item": [
+        {
+          "name": "List Frameworks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/compliance/frameworks",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "compliance", "frameworks"]
+            },
+            "description": "List supported compliance frameworks (CIS, NIST, PCI-DSS, HIPAA, SOC2)"
+          }
+        },
+        {
+          "name": "Run Compliance Check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"framework\": \"cis\",\n  \"version\": \"8.0\",\n  \"targets\": [\"192.168.1.100\", \"192.168.1.101\"],\n  \"controls\": [\"1.1\", \"1.2\", \"2.1\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/compliance/check",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "compliance", "check"]
+            },
+            "description": "Run compliance check against framework controls"
+          }
+        },
+        {
+          "name": "Get Compliance Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/compliance/reports?framework=cis&format=pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "compliance", "reports"],
+              "query": [
+                {
+                  "key": "framework",
+                  "value": "cis",
+                  "description": "Framework name"
+                },
+                {
+                  "key": "format",
+                  "value": "pdf",
+                  "description": "Report format: pdf, html, json"
+                }
+              ]
+            },
+            "description": "Get compliance assessment report"
+          }
+        },
+        {
+          "name": "Validate Policy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"policy_file\": \"security_policy.yml\",\n  \"target\": \"192.168.1.100\",\n  \"strict_mode\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/compliance/policy/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "compliance", "policy", "validate"]
+            },
+            "description": "Validate system against security policy"
+          }
+        }
+      ],
+      "description": "Compliance framework assessment endpoints"
+    },
+    {
+      "name": "Log Analysis",
+      "item": [
+        {
+          "name": "Parse Logs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"log_file\": \"/var/log/syslog\",\n  \"log_type\": \"syslog\",\n  \"parse_format\": \"json\",\n  \"filters\": {\n    \"severity\": [\"error\", \"critical\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/log-analysis/parse",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "log-analysis", "parse"]
+            },
+            "description": "Parse and normalize log files"
+          }
+        },
+        {
+          "name": "Detect Anomalies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"log_source\": \"web-server\",\n  \"time_range\": \"24h\",\n  \"baseline_period\": \"7d\",\n  \"sensitivity\": \"medium\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/log-analysis/anomalies",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "log-analysis", "anomalies"]
+            },
+            "description": "Detect anomalies in log data using baseline analysis"
+          }
+        },
+        {
+          "name": "Correlate Events",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_sources\": [\"firewall\", \"ids\", \"auth\"],\n  \"time_window\": \"5m\",\n  \"correlation_rules\": [\"brute-force\", \"port-scan\"],\n  \"min_events\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/log-analysis/correlate",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "log-analysis", "correlate"]
+            },
+            "description": "Correlate security events across multiple log sources"
+          }
+        },
+        {
+          "name": "Generate Statistics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"log_source\": \"all\",\n  \"time_range\": \"24h\",\n  \"group_by\": \"source_ip\",\n  \"aggregations\": [\"count\", \"unique_users\", \"top_events\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/log-analysis/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "log-analysis", "stats"]
+            },
+            "description": "Generate log statistics and aggregations"
+          }
+        }
+      ],
+      "description": "Log parsing, analysis, and correlation endpoints"
+    }
+  ]
+}

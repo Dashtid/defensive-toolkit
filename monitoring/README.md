@@ -1,11 +1,11 @@
 # Security Monitoring & Alerting
 
-Comprehensive security monitoring infrastructure for SIEM integration, log collection, dashboards, and health checks.
+**100% Open Source** security monitoring infrastructure for SIEM integration, log collection, dashboards, and health checks.
 
 ## Overview
 
 This directory contains tools and configurations for:
-- **SIEM Integration**: Deploy detection rules to Splunk, Azure Sentinel, Elastic
+- **Open Source SIEM Integration**: Deploy detection rules to Wazuh, Elastic, OpenSearch, Graylog
 - **Log Collection**: Automated forwarding from Windows and Linux systems
 - **Dashboards**: Pre-built security operation dashboards (Grafana, Kibana)
 - **Health Monitoring**: Monitor security tool status and health
@@ -15,11 +15,11 @@ This directory contains tools and configurations for:
 
 ```
 monitoring/
-├── siem/                    # SIEM integration scripts
-│   ├── splunk/             Splunk deployment automation
-│   ├── sentinel/           Azure Sentinel deployment
-│   ├── elastic/            Elastic Security deployment
-│   └── wazuh/              Wazuh SIEM integration
+├── siem/                    # Open-source SIEM integrations
+│   ├── wazuh/              Wazuh SIEM (recommended)
+│   ├── elastic/            Elastic Security
+│   ├── opensearch/         OpenSearch Security Analytics
+│   └── graylog/            Graylog log management
 ├── collectors/              # Log collection & forwarding
 │   ├── windows/            Windows Event Log forwarding
 │   └── linux/              Linux syslog forwarding
@@ -32,38 +32,36 @@ monitoring/
 
 ## Quick Start
 
-### 1. Deploy Detection Rules to SIEM
+### 1. Deploy Detection Rules to Open Source SIEM
 
-**Splunk:**
+**Wazuh (Recommended):**
 ```bash
-cd siem/splunk
-pip install -r requirements.txt
+cd siem/wazuh
+pip install pyyaml requests sigma-cli
 
-# Edit configuration
-nano splunk_config.yml
+# Configure
+export WAZUH_PASSWORD="your-password"
+nano wazuh_config.yml
 
 # Deploy rules
-python deploy_sigma_rules.py --config splunk_config.yml
+python deploy_rules.py --config wazuh_config.yml
 ```
 
-**Azure Sentinel:**
+**Elastic Security:**
 ```bash
-cd siem/sentinel
+cd siem/elastic
 pip install -r requirements.txt
 
-# Configure Azure credentials
-az login
-
-# Edit configuration
-nano sentinel_config.yml
+# Configure
+export ELASTIC_PASSWORD="your-password"
 
 # Deploy rules
-python deploy_sigma_rules.py --config sentinel_config.yml
+python deploy_sigma_rules.py
 ```
 
 ### 2. Configure Log Forwarding
 
-**Windows (Splunk Universal Forwarder):**
+**Windows (Universal Forwarder):**
 ```powershell
 cd collectors/windows
 
@@ -134,7 +132,7 @@ schtasks /create /tn "Security Health Check" /tr "powershell.exe -File C:\path\t
 - PyYAML: `pip install pyyaml`
 
 **Splunk:**
-- Splunk instance with API access
+- instance with API access
 - Admin credentials
 - `pip install splunk-sdk`
 
@@ -148,7 +146,7 @@ schtasks /create /tn "Security Health Check" /tr "powershell.exe -File C:\path\t
 
 Edit the relevant `*_config.yml` file for your SIEM platform:
 
-**Splunk Example:**
+**Example:**
 ```yaml
 splunk:
   host: splunk.example.com
@@ -177,7 +175,7 @@ sentinel:
 
 ### Windows Event Log Forwarding
 
-The `forward-logs-splunk.ps1` script configures Splunk Universal Forwarder to collect:
+The `forward-logs-splunk.ps1` script configures Universal Forwarder to collect:
 
 **Standard Logs:**
 - Security events (authentication, authorization)
@@ -199,7 +197,7 @@ The `forward-logs-splunk.ps1` script configures Splunk Universal Forwarder to co
 # With Sysmon
 .\forward-logs-splunk.ps1 -IndexerHost splunk.example.com -EnableSysmon
 
-# Custom Splunk installation path
+# Custom installation path
 .\forward-logs-splunk.ps1 -SplunkHome "D:\Splunk" -IndexerHost splunk.example.com
 ```
 
@@ -270,7 +268,7 @@ The `check-security-tools.ps1` script monitors:
 - Windows Firewall (all profiles)
 - Event Log service
 - Security event log (recent events)
-- Splunk Universal Forwarder (if installed)
+- Universal Forwarder (if installed)
 - Sysmon (if installed)
 - Disk space
 - Windows Update status
@@ -390,7 +388,7 @@ sigma convert -t splunk detection-rules/sigma/execution/suspicious_powershell_ex
 
 **Solution (Windows):**
 ```powershell
-# Check Splunk Forwarder service
+# Check Forwarder service
 Get-Service SplunkForwarder
 
 # Check logs

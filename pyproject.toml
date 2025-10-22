@@ -1,14 +1,14 @@
 [project]
 name = "defensive-toolkit"
-version = "1.1.0"
-description = "Blue team security tools for detection, monitoring, incident response, and threat hunting"
+version = "1.4.0"
+description = "100% Open Source blue team security platform with production Docker deployment, monitoring, and REST API"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
     { name = "David Dashti", email = "david.at.dashti@outlook.com" }
 ]
-keywords = ["security", "blue-team", "detection", "incident-response", "forensics", "compliance"]
+keywords = ["security", "blue-team", "detection", "incident-response", "forensics", "compliance", "open-source", "wazuh", "misp", "thehive"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Information Technology",
@@ -39,6 +39,17 @@ dependencies = [
     "click>=8.1.7",
     "colorama>=0.4.6",
     "python-json-logger>=2.0.7",
+    # API dependencies
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.12",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    # Monitoring
+    "prometheus-client>=0.20.0",
+    "prometheus-fastapi-instrumentator>=7.0.0",
 ]
 
 [project.optional-dependencies]
@@ -78,6 +89,7 @@ Changelog = "https://github.com/Dashtid/defensive-toolkit/blob/main/docs/CHANGEL
 toolkit-cleanup = "scripts.cleanup:main"
 toolkit-validate = "scripts.validate_project:main"
 toolkit-gendocs = "scripts.generate_docs:main"
+toolkit-api = "api.main:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -91,6 +103,9 @@ dev-dependencies = [
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.24.0",
     "pytest-xdist>=3.6.0",  # Parallel test execution
+    "pytest-benchmark>=5.1.0",  # Performance benchmarking
+    "faker>=30.8.2",  # Test data generation
+    "httpx>=0.27.2",  # Async HTTP client for testing
     "bandit>=1.8.0",  # Security linting
     "black>=24.10.0",  # Code formatting
     "ruff>=0.8.0",  # Fast linting
@@ -122,12 +137,16 @@ addopts = [
     "--cov-report=html",  # HTML coverage report
     "--cov-report=term-missing",  # Terminal report with missing lines
     "--cov-report=json",  # JSON report for CI/CD
-    "--cov-fail-under=70",  # Fail if coverage below 70%
+    "--cov-report=xml",  # XML report for CI/CD (Codecov)
+    "--cov-fail-under=80",  # Fail if coverage below 80%
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "security: marks tests as security tests",
+    "performance: marks tests as performance tests",
+    "benchmark: marks tests that use pytest-benchmark",
     "windows: marks tests that require Windows platform",
     "linux: marks tests that require Linux platform",
     "requires_network: marks tests that require network access",

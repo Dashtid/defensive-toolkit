@@ -1,0 +1,54 @@
+# Wazuh SIEM Configuration
+# https://wazuh.com/
+
+wazuh:
+  # Wazuh Manager connection
+  manager_host: localhost
+  manager_port: 55000
+  protocol: https
+
+  # Authentication
+  username: admin
+  password: ${WAZUH_PASSWORD}  # Set via environment variable
+
+  # API Configuration
+  verify_ssl: true
+  timeout: 30
+
+  # Rule Deployment
+  rules_directory: /var/ossec/etc/rules
+  decoders_directory: /var/ossec/etc/decoders
+
+  # Custom rule settings
+  custom_rule_level: 7  # Rule severity level (0-15)
+  rule_group: custom_detection
+
+  # Alert Configuration
+  alert_format: json
+  alert_output: /var/ossec/logs/alerts/alerts.json
+
+  # Integration
+  enable_integration: true
+  integration_type: shuffle  # shuffle, thehive, misp
+
+# Deployment Options
+deployment:
+  # Deploy as custom rules
+  deploy_custom_rules: true
+
+  # Restart Wazuh manager after deployment
+  auto_restart: false
+
+  # Backup existing rules before deployment
+  backup_rules: true
+  backup_directory: /var/ossec/etc/rules/backup
+
+  # Validation
+  validate_before_deploy: true
+  dry_run: false
+
+# Logging
+logging:
+  level: INFO
+  file: ./wazuh_deployment.log
+  format: "[%(asctime)s] %(levelname)s - %(message)s"

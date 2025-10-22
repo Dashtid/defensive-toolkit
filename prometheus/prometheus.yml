@@ -1,0 +1,116 @@
+# Prometheus Configuration for Defensive Toolkit
+# Monitors API metrics, system health, and security events
+# Version: 1.3.0
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'defensive-toolkit'
+    environment: 'production'
+
+# Alertmanager configuration (optional - uncomment to enable)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - 'alertmanager:9093'
+
+# Load alert rules
+rule_files:
+  - 'alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # ============================================================================
+  # Prometheus itself
+  # ============================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # ============================================================================
+  # Defensive Toolkit API
+  # ============================================================================
+  - job_name: 'defensive-toolkit-api'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['api:8000']
+        labels:
+          service: 'api'
+          component: 'fastapi'
+    # Relabel configs for better metric organization
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: api:8000
+
+  # ============================================================================
+  # Nginx Reverse Proxy
+  # ============================================================================
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']  # Requires nginx-prometheus-exporter
+        labels:
+          service: 'nginx'
+          component: 'reverse-proxy'
+
+  # ============================================================================
+  # Node Exporter (System Metrics) - Optional
+  # ============================================================================
+  # - job_name: 'node-exporter'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'
+  #         component: 'system'
+
+  # ============================================================================
+  # Wazuh Manager - Optional
+  # ============================================================================
+  # - job_name: 'wazuh'
+  #   static_configs:
+  #     - targets: ['wazuh:55000']
+  #       labels:
+  #         service: 'wazuh'
+  #         component: 'siem'
+  #   metrics_path: '/api/metrics'
+  #   bearer_token_file: /etc/prometheus/secrets/wazuh-token
+
+  # ============================================================================
+  # OpenSearch - Optional
+  # ============================================================================
+  # - job_name: 'opensearch'
+  #   static_configs:
+  #     - targets: ['opensearch:9200']
+  #       labels:
+  #         service: 'opensearch'
+  #         component: 'search'
+  #   metrics_path: '/_prometheus/metrics'
+
+  # ============================================================================
+  # PostgreSQL - Optional
+  # ============================================================================
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+  #       labels:
+  #         service: 'postgres'
+  #         component: 'database'
+
+  # ============================================================================
+  # Redis - Optional
+  # ============================================================================
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+  #       labels:
+  #         service: 'redis'
+  #         component: 'cache'

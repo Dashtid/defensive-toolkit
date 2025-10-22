@@ -1,13 +1,13 @@
 # Detection Rules
 
-Comprehensive detection rules for SIEM platforms, endpoint detection, and file analysis.
+**100% Open Source** detection rules for SIEM platforms, endpoint detection, and file analysis.
 
 ## Overview
 
 This directory contains detection rules in multiple formats:
-- **Sigma Rules**: SIEM-agnostic detection logic (YAML format)
+- **Sigma Rules**: SIEM-agnostic detection logic (YAML format) - converts to any open-source SIEM
 - **YARA Rules**: File-based malware and threat detection
-- **Snort/Suricata**: Network intrusion detection rules
+- **Suricata/Zeek**: Open-source network intrusion detection rules
 - **EDR Logic**: Endpoint detection and response queries
 
 ## Directory Structure
@@ -31,8 +31,8 @@ detection-rules/
 │   ├── ransomware.yar      # Ransomware detection
 │   ├── suspicious_scripts.yar
 │   └── malware_families.yar
-├── snort/                   # Network IDS rules
-└── edr/                     # EDR-specific queries
+├── suricata/                # Suricata IDS rules
+└── zeek/                    # Zeek network analysis scripts
 ```
 
 ## Sigma Rules
@@ -41,14 +41,13 @@ detection-rules/
 
 Sigma is an open-source, generic signature format for SIEM systems. Rules are written once in YAML and can be converted to any SIEM query language.
 
-**Supported SIEM Platforms:**
-- Splunk (SPL)
-- Elastic (EQL/KQL)
-- Azure Sentinel (KQL)
-- QRadar (AQL)
-- ArcSight
-- LogRhythm
-- Sumo Logic
+**Supported Open Source SIEM Platforms:**
+- **Wazuh** (Wazuh Query Language)
+- **Elastic** (EQL/Lucene/KQL)
+- **OpenSearch** (Lucene Query DSL)
+- **Graylog** (Graylog Query Language)
+
+For deployment guides, see [monitoring/siem/](../monitoring/siem/)
 
 ### Using Sigma Rules
 
@@ -58,26 +57,32 @@ Sigma is an open-source, generic signature format for SIEM systems. Rules are wr
 pip install sigma-cli
 ```
 
-#### 2. Convert Rules to Your SIEM
+#### 2. Convert Rules to Your Open Source SIEM
 
 ```bash
-# Convert to Splunk SPL
-sigma convert -t splunk detection-rules/sigma/execution/*.yml
+# Convert to Wazuh format
+sigma convert -t wazuh detection-rules/sigma/execution/*.yml
 
 # Convert to Elastic EQL
 sigma convert -t elasticsearch detection-rules/sigma/persistence/*.yml
 
-# Convert to Azure Sentinel KQL
-sigma convert -t sentinel detection-rules/sigma/credential-access/*.yml
+# Convert to OpenSearch (Lucene)
+sigma convert -t opensearch detection-rules/sigma/credential-access/*.yml
+
+# Convert to Graylog
+sigma convert -t graylog detection-rules/sigma/lateral-movement/*.yml
 ```
 
 #### 3. Deploy to SIEM
 
 ```bash
-# Example: Deploy all execution rules to Splunk
-for file in detection-rules/sigma/execution/*.yml; do
-    sigma convert -t splunk "$file" >> splunk_alerts.txt
-done
+# Automated deployment to Wazuh
+cd monitoring/siem/wazuh
+python deploy_rules.py --config wazuh_config.yml
+
+# Automated deployment to OpenSearch
+cd monitoring/siem/opensearch
+python deploy_rules.py --config opensearch_config.yml
 ```
 
 ### Sigma Rule Structure
@@ -227,19 +232,24 @@ rule RuleName
 8. Document and Maintain
 ```
 
-## Integration with SIEM
+## Integration with Open Source SIEM
 
-### Splunk
+### Wazuh
 
-```spl
-# Import Sigma rule as Splunk alert
-index=windows EventCode=4688
-| eval CommandLine=lower(CommandLine)
-| search CommandLine="*-encodedcommand*" OR CommandLine="*-enc*"
-| search (Image="*\\powershell.exe" OR Image="*\\pwsh.exe")
+```xml
+<!-- Example Wazuh rule converted from Sigma -->
+<rule id="100001" level="10">
+  <if_sid>60000</if_sid>
+  <field name="win.eventdata.image">powershell.exe|pwsh.exe</field>
+  <field name="win.eventdata.commandLine">-enc|-encodedcommand</field>
+  <description>Suspicious encoded PowerShell command detected</description>
+  <mitre>
+    <id>T1059.001</id>
+  </mitre>
+</rule>
 ```
 
-### Elastic
+### Elastic / OpenSearch
 
 ```json
 {
@@ -255,14 +265,11 @@ index=windows EventCode=4688
 }
 ```
 
-### Azure Sentinel
+### Graylog
 
-```kql
-SecurityEvent
-| where EventID == 4688
-| where NewProcessName has_any ("powershell.exe", "pwsh.exe")
-| where CommandLine has_any ("-enc", "-encodedcommand")
-| project TimeGenerated, Computer, Account, CommandLine
+```
+# Graylog search query
+event_id:4688 AND process_name:(powershell.exe OR pwsh.exe) AND command_line:(*-enc* OR *-encodedcommand*)
 ```
 
 ## Contributing Detection Rules
@@ -294,7 +301,8 @@ When contributing new rules:
 ### Detection Engineering
 - [Florian Roth's Detection Rules](https://github.com/Neo23x0/signature-base)
 - [Elastic Detection Rules](https://github.com/elastic/detection-rules)
-- [Splunk Security Content](https://github.com/splunk/security_content)
+- [Wazuh Ruleset](https://github.com/wazuh/wazuh-ruleset)
+- [OpenSearch Security Analytics](https://github.com/opensearch-project/security-analytics)
 
 ---
 

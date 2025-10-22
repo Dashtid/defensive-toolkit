@@ -1,15 +1,29 @@
 # Security Automation & Orchestration (SOAR)
 
-Python-based security automation framework for orchestrating incident response, threat detection, and vulnerability management workflows using YAML playbooks.
+**100% Open Source** security automation framework for orchestrating incident response, threat detection, and vulnerability management workflows.
 
 ## Overview
 
 This automation framework provides:
 - **YAML Playbook Engine**: Define security workflows as code
 - **Pre-built Actions**: Containment, enrichment, notification, analysis
-- **Integration Connectors**: SIEM, ticketing, email, existing toolkit
+- **Open Source Integrations**: TheHive, Shuffle, MISP, Wazuh, Elastic
 - **Example Playbooks**: Phishing response, malware containment, vulnerability remediation, alert triage
 - **Audit Logging**: Complete execution trails for compliance
+
+## Open Source SOAR Platforms
+
+### TheHive
+Scalable incident response platform with case management.
+- **Location**: `soar/thehive/`
+- **Use Case**: Security incident management and collaboration
+- **Documentation**: [TheHive README](soar/thehive/README.md)
+
+### Shuffle
+General-purpose security automation with visual workflow builder.
+- **Location**: `soar/shuffle/`
+- **Use Case**: Workflow automation and orchestration
+- **Documentation**: [Shuffle README](soar/shuffle/README.md)
 
 ## Quick Start
 
@@ -497,7 +511,7 @@ All playbook executions are logged:
 ## Additional Resources
 
 ### SOAR Platforms
-- Splunk SOAR: https://www.splunk.com/en_us/products/splunk-security-orchestration-and-automation.html
+- SOAR: https://www.splunk.com/en_us/products/splunk-security-orchestration-and-automation.html
 - Microsoft Sentinel: https://azure.microsoft.com/en-us/products/microsoft-sentinel/
 - Palo Alto Cortex XSOAR: https://www.paloaltonetworks.com/cortex/cortex-xsoar
 
