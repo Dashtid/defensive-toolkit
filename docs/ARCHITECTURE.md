@@ -1,14 +1,15 @@
 # Defensive Toolkit - Architecture Documentation
 
-**Version**: 1.0.0
-**Last Updated**: 2025-10-18
-**Status**: ✅ Production-Ready
+**Version**: 1.2.0
+**Last Updated**: 2025-10-22
+**Status**: ✅ Production-Ready (with REST API)
 
 ---
 
 ## Table of Contents
 
 - [Executive Summary](#executive-summary)
+- [REST API Architecture](#rest-api-architecture-new-in-v120)
 - [System Architecture](#system-architecture)
 - [Module Categories](#module-categories)
 - [Data Flow](#data-flow)
@@ -41,6 +42,286 @@ The Defensive Toolkit is a **comprehensive, enterprise-grade defensive security 
 3. **Production-Ready**: Comprehensive error handling, logging, and documentation
 4. **Security by Default**: Never commits credentials, validates inputs, follows least privilege
 5. **Extensibility**: Easy to add new rules, playbooks, queries, and integrations
+
+---
+
+## REST API Architecture (NEW in v1.2.0)
+
+### Overview
+
+Version 1.2.0 introduces a comprehensive REST API layer that exposes all 10 security categories through HTTP endpoints. The API follows modern best practices with JWT authentication, rate limiting, and comprehensive OpenAPI documentation.
+
+### API Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Client Applications                      │
+│         (Web Dashboards, CLI Tools, External Services)          │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │ HTTPS
+                       │
+┌──────────────────────▼──────────────────────────────────────────┐
+│                     FastAPI Application                          │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                    Middleware Layer                        │ │
+│  │  • CORS • Rate Limiting • Request Logging • Security Headers│ │
+│  └────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                 Authentication Layer                       │ │
+│  │  • JWT Token Validation • API Key Verification             │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                    API Routers                             │ │
+│  │  Detection | IR | Hunting | Hardening | Monitoring         │ │
+│  │  Forensics | Vuln Mgmt | Automation | Compliance | Logs    │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└───────────────────────┬─────────────────────────────────────────┘
+                        │
+┌───────────────────────▼─────────────────────────────────────────┐
+│                   Core Security Modules                          │
+│  Detection Rules • IR Playbooks • Threat Hunting Queries         │
+│  Hardening Scripts • Monitoring Tools • Forensics Analyzers     │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### API Components
+
+#### 1. FastAPI Application (`api/main.py`)
+- **Entry Point**: Central application with all routers registered
+- **Lifecycle Management**: Startup/shutdown events for initialization
+- **Documentation**: Auto-generated Swagger UI and ReDoc
+- **Error Handling**: Consistent error responses across all endpoints
+
+#### 2. Configuration Management (`api/config.py`)
+- **Environment-Based**: All settings via `.env` file
+- **Pydantic Settings**: Type-safe configuration with validation
+- **Security Defaults**: Secure defaults for production deployment
+
+#### 3. Authentication System (`api/auth.py`)
+- **JWT Tokens**: Short-lived access tokens (15 min) + refresh tokens (30 days)
+- **OAuth2 Compatible**: Standard OAuth2 password flow
+- **API Keys**: Alternative authentication for service-to-service
+- **Password Hashing**: Bcrypt with secure salting
+- **Token Blacklisting**: Logout support with token invalidation
+
+#### 4. Middleware Stack (`api/middleware.py`)
+
+**CORS Middleware** (First)
+- Configurable allowed origins
+- Credential support for authenticated requests
+
+**Security Headers Middleware**
+- HSTS for HTTPS enforcement
+- CSP for content security
+- X-Frame-Options to prevent clickjacking
+- X-Content-Type-Options to prevent MIME sniffing
+
+**Request Logging Middleware**
+- Structured JSON logging
+- Request/response tracking
+- Performance metrics (process time)
+
+**Rate Limiting Middleware** (Last)
+- In-memory rate limiting (Redis support available)
+- Per-client IP tracking
+- Configurable limits per endpoint type:
+  - General: 100/minute
+  - Authentication: 5/minute
+  - Heavy operations: 10/minute
+
+#### 5. API Routers (10 Categories)
+
+Each security category has a dedicated router:
+
+| Router | Endpoint Prefix | Key Operations |
+|--------|----------------|----------------|
+| `detection.py` | `/api/v1/detection` | List, create, deploy detection rules |
+| `incident_response.py` | `/api/v1/incident-response` | Manage incidents, execute playbooks |
+| `threat_hunting.py` | `/api/v1/threat-hunting` | Execute queries, list hunt templates |
+| `hardening.py` | `/api/v1/hardening` | Scan systems, apply configurations |
+| `monitoring.py` | `/api/v1/monitoring` | Get metrics, configure alerts |
+| `forensics.py` | `/api/v1/forensics` | Analyze artifacts, generate timelines |
+| `vulnerability.py` | `/api/v1/vulnerability` | Scan targets, manage findings |
+| `automation.py` | `/api/v1/automation` | Execute SOAR playbooks |
+| `compliance.py` | `/api/v1/compliance` | Check compliance, generate reports |
+| `log_analysis.py` | `/api/v1/log-analysis` | Parse logs, detect anomalies |
+
+#### 6. Pydantic Models (`api/models.py`)
+- **Request Validation**: Automatic input validation
+- **Response Serialization**: Consistent output formatting
+- **Type Safety**: Full typing for IDE support
+- **Documentation**: Models appear in OpenAPI schema
+
+### Authentication Flow
+
+```
+┌──────────┐                                  ┌──────────┐
+│  Client  │                                  │   API    │
+└─────┬────┘                                  └────┬─────┘
+      │                                            │
+      │  POST /api/v1/auth/token                  │
+      │  username=admin&password=xxx              │
+      ├──────────────────────────────────────────►│
+      │                                            │
+      │  ◄─ JWT Tokens (access + refresh)         │
+      │◄───────────────────────────────────────────┤
+      │  {access_token, refresh_token}             │
+      │                                            │
+      │  GET /api/v1/detection/rules               │
+      │  Authorization: Bearer <access_token>      │
+      ├──────────────────────────────────────────►│
+      │                                            │
+      │  ◄─ Protected Resource                    │
+      │◄───────────────────────────────────────────┤
+      │  {rules: [...]}                            │
+      │                                            │
+      │  (After 15 minutes - token expired)        │
+      │                                            │
+      │  POST /api/v1/auth/refresh                 │
+      │  {refresh_token: "..."}                    │
+      ├──────────────────────────────────────────►│
+      │                                            │
+      │  ◄─ New JWT Tokens                        │
+      │◄───────────────────────────────────────────┤
+      │  {access_token, refresh_token}             │
+      │                                            │
+```
+
+### API Security Features
+
+#### 1. Input Validation
+- Pydantic models validate all inputs
+- Type checking and constraint enforcement
+- Prevents injection attacks
+
+#### 2. Rate Limiting
+- Prevents brute force attacks
+- Protects against DoS
+- Configurable per endpoint type
+
+#### 3. CORS Protection
+- Whitelist-based origin validation
+- No wildcard (*) in production
+- Credential-aware CORS
+
+#### 4. Security Headers
+- HSTS enforces HTTPS
+- CSP prevents XSS
+- X-Frame-Options prevents clickjacking
+
+#### 5. Token Security
+- Short-lived access tokens (15 min)
+- Secure refresh token rotation
+- Token blacklisting on logout
+- Bcrypt password hashing
+
+#### 6. Error Handling
+- No sensitive data in error messages
+- Consistent error format
+- Proper HTTP status codes
+- Detailed logging (server-side only)
+
+### API Deployment Options
+
+#### Option 1: Development Server
+```bash
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### Option 2: Production with Gunicorn
+```bash
+gunicorn api.main:app \
+  --workers 4 \
+  --worker-class uvicorn.workers.UvicornWorker \
+  --bind 0.0.0.0:8000 \
+  --access-logfile - \
+  --error-logfile -
+```
+
+#### Option 3: Docker Container
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY . .
+RUN pip install -e ".[all]"
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+#### Option 4: Behind Reverse Proxy (Recommended)
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name api.yourdomain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### API Integration Examples
+
+#### Python Client
+```python
+import requests
+
+# Login
+response = requests.post(
+    "http://localhost:8000/api/v1/auth/token",
+    data={"username": "admin", "password": "changeme123"}
+)
+tokens = response.json()
+access_token = tokens["access_token"]
+
+# Use API
+headers = {"Authorization": f"Bearer {access_token}"}
+response = requests.get(
+    "http://localhost:8000/api/v1/detection/rules",
+    headers=headers
+)
+rules = response.json()
+```
+
+#### JavaScript/TypeScript Client
+```typescript
+// Login
+const authResponse = await fetch('http://localhost:8000/api/v1/auth/token', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'username=admin&password=changeme123'
+});
+const tokens = await authResponse.json();
+
+// Use API
+const rulesResponse = await fetch('http://localhost:8000/api/v1/detection/rules', {
+  headers: {'Authorization': `Bearer ${tokens.access_token}`}
+});
+const rules = await rulesResponse.json();
+```
+
+### Performance Considerations
+
+- **Async/Await**: FastAPI uses async for non-blocking I/O
+- **Connection Pooling**: Database connections reused
+- **Caching**: Redis support for distributed caching
+- **Rate Limiting**: In-memory (single instance) or Redis (distributed)
+- **Response Compression**: Automatic gzip compression
+- **Worker Processes**: Scale horizontally with multiple workers
+
+### Monitoring & Observability
+
+- **Health Endpoint**: `/health` for load balancer checks
+- **Metrics Endpoint**: `/api/v1/monitoring/metrics` for system stats
+- **Structured Logging**: JSON logs for SIEM integration
+- **OpenTelemetry Ready**: Can integrate distributed tracing
+- **Prometheus Compatible**: Metrics exportable to Prometheus
 
 ---
 
@@ -218,7 +499,7 @@ defensive-toolkit/
 - T1003 - OS Credential Dumping
 - T1070 - Indicator Removal
 
-**Integration**: Converts to Splunk, Sentinel, Elastic, QRadar via Sigma CLI
+**Integration**: Converts to Sentinel, Elastic, QRadar via Sigma CLI
 
 ### 2. Incident Response
 
@@ -241,7 +522,7 @@ Analysis → Containment → Eradication → Recovery → Lessons Learned
 
 **Components**:
 - **KQL Queries** (7): Azure Sentinel/Defender for Endpoint
-- **SPL Queries** (10): Splunk lateral movement detection
+- **SPL Queries** (10): lateral movement detection
 - **EQL Queries** (20): Elastic Security credential access hunting
 
 **Hunt Categories**:
@@ -270,7 +551,7 @@ Analysis → Containment → Eradication → Recovery → Lessons Learned
 **Components**:
 - **SIEM Integration**: Syslog forwarder, WEF configuration
 - **Log Forwarding**: Rsyslog, WinRM setup
-- **Dashboards**: Grafana and Splunk templates
+- **Dashboards**: Grafana and templates
 - **Health Checks**: System, security, performance monitoring
 
 ### 6. Forensics

@@ -316,11 +316,11 @@ crontab -e
 
 ## SIEM Integration
 
-### Splunk Integration
+### Integration
 
 **Deploy Detection Rules**:
 ```bash
-# Convert Sigma rules to Splunk SPL
+# Convert Sigma rules to SPL
 uv run sigma convert -t splunk detection-rules/sigma/execution/*.yml > splunk-detections.spl
 
 # Upload to Splunk

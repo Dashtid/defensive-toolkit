@@ -1,0 +1,160 @@
+# Docker Compose for Defensive Toolkit - Development Environment
+# Includes hot reload, debugging, and development tools
+# Version: 1.3.0
+
+version: '3.9'
+
+services:
+  # ============================================================================
+  # API - Development Mode with Hot Reload
+  # ============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for dev dependencies
+    container_name: defensive-toolkit-api-dev
+    restart: unless-stopped
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - SECRET_KEY=dev_secret_key_not_for_production
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:5173
+      - RATE_LIMIT_ENABLED=false  # Disabled for development
+      - LOG_LEVEL=DEBUG
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot reload
+      - ./api:/app/api
+      - ./detection-rules:/app/detection-rules
+      - ./logs:/app/logs
+      - ./data:/app/data
+    networks:
+      - defensive-net-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # Prometheus - Development
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: defensive-toolkit-prometheus-dev
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'  # Shorter retention for dev
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-dev-data:/prometheus
+    networks:
+      - defensive-net-dev
+
+  # ============================================================================
+  # Grafana - Development
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: defensive-toolkit-grafana-dev
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_LOG_LEVEL=debug
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - grafana-dev-data:/var/lib/grafana
+    networks:
+      - defensive-net-dev
+    depends_on:
+      - prometheus
+
+  # ============================================================================
+  # PostgreSQL - Development Database (Optional)
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: defensive-toolkit-postgres-dev
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=toolkit
+      - POSTGRES_PASSWORD=toolkit_dev_password
+      - POSTGRES_DB=defensive_toolkit
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    networks:
+      - defensive-net-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toolkit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # Redis - Development Cache (Optional)
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: defensive-toolkit-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-dev-data:/data
+    networks:
+      - defensive-net-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # Mailhog - Email Testing (Optional)
+  # ============================================================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: defensive-toolkit-mailhog-dev
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - defensive-net-dev
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  defensive-net-dev:
+    driver: bridge
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  prometheus-dev-data:
+    driver: local
+  grafana-dev-data:
+    driver: local
+  postgres-dev-data:
+    driver: local
+  redis-dev-data:
+    driver: local

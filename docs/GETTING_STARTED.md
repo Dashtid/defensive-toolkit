@@ -158,7 +158,7 @@ sudo ./incident-response/scripts/linux-triage.sh -o /tmp/evidence -q
 
 **Splunk:**
 
-1. Open Splunk > Search & Reporting
+1. Open > Search & Reporting
 2. Copy query from `threat-hunting/queries/spl/`
 3. Paste into search bar
 4. Adjust time range and index
