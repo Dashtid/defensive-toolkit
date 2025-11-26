@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2025-11-26
+
+### Added
+- **Enhanced Detection Rules** (2025 Threat Landscape):
+  - 33 new Sigma rules across 11 MITRE ATT&CK tactics (39 total)
+  - 22 new YARA rules for modern malware detection
+  - 79% MITRE ATT&CK technique coverage
+- **2025 Threat-Specific YARA Rules**:
+  - Infostealers: LummaC2, Vidar, RedLine, StrelaStealer, Raccoon v2
+  - Ransomware: LockBit 4.0, BlackCat/ALPHV, Qilin, RansomHub
+  - Loaders: HijackLoader, SocGholish, BatLoader, GootLoader
+  - C2 Frameworks: Cobalt Strike, Sliver, Brute Ratel C4
+- **New Sigma Detection Categories**:
+  - Execution: MSHTA, Regsvr32, LOLBAS, Paste-and-Run attacks
+  - Credential Access: DCSync, Kerberoasting, Browser credential theft
+  - Defense Evasion: AMSI bypass, ETW tampering, Process hollowing
+  - Lateral Movement: PsExec, WinRM, RDP hijacking
+  - Command & Control: Cobalt Strike, Sliver, DNS beaconing
+- **Detection Validation Infrastructure**:
+  - `scripts/validate_detection_rules.py` - Comprehensive rule validator
+  - Unit tests for Sigma and YARA rule syntax/structure
+  - JSON export for CI/CD integration
+- **Portfolio Documentation**:
+  - `COVERAGE_MATRIX.md` - Full MITRE ATT&CK coverage map
+  - Updated README with 2025 threat statistics
+  - Detection engineering workflow documentation
+
+### Changed
+- Updated pyproject.toml to modern dependency-groups format
+- Added hatch build targets for wheel packaging
+- Improved YARA rule extraction with proper brace matching
+
+### Fixed
+- YARA rule syntax errors (unreferenced strings in conditions)
+- Validation script brace matching for nested rule structures
+
+---
+
+## [1.2.0] - 2025-11-26
+
+### Added
+- **Linux Hardening Suite** (CIS Benchmark L1/L2/L3):
+  - Comprehensive Linux security hardening scripts
+  - Audit mode for compliance checking
+  - Backup and restore capabilities
+- **Hardening Test Suite**:
+  - Unit tests for hardening configuration validation
+  - Cross-platform test coverage
+
+---
+
 ## [1.1.0] - 2025-10-18
 
 ### Added
@@ -169,6 +220,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.3.0 | 2025-11-26 | Enhanced detection rules with 2025 threat coverage |
+| 1.2.0 | 2025-11-26 | Linux hardening suite with CIS Benchmark support |
 | 1.1.0 | 2025-10-18 | Comprehensive testing, documentation, modernization |
 | 1.0.0 | 2025-10-15 | Initial release with 10 complete categories |
 
