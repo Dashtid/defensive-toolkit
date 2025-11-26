@@ -1,0 +1,57 @@
+title: ETW (Event Tracing for Windows) Tampering
+id: d1b2c3d4-4444-7777-dddd-444444444444
+status: stable
+description: |
+    Detects attempts to tamper with Event Tracing for Windows (ETW) to evade
+    detection. ETW is used by security tools, EDR, and SIEM to collect telemetry.
+    Attackers disable or modify ETW to blind security monitoring. Increasingly
+    observed in sophisticated malware including LockBit 4.0.
+references:
+    - https://attack.mitre.org/techniques/T1562/006/
+    - https://www.mdsec.co.uk/2020/03/hiding-your-net-etw/
+    - https://blog.xpnsec.com/hiding-your-dotnet-complus-etwenabled/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.defense_evasion
+    - attack.t1562.006
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_etw_patching:
+        CommandLine|contains:
+            - 'EtwEventWrite'
+            - 'NtTraceEvent'
+            - 'EtwpEventWriteFull'
+            - 'EtwEventWriteEx'
+            - 'ntdll!EtwEventWrite'
+    selection_etw_env:
+        CommandLine|contains:
+            - 'COMPlus_ETWEnabled=0'
+            - 'set COMPlus_ETWEnabled'
+            - '$env:COMPlus_ETWEnabled'
+            - '[Environment]::SetEnvironmentVariable'
+    selection_powershell_etw:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'Reflection.Assembly'
+            - 'GetField'
+            - 'etwEnabled'
+            - 'm_enabled'
+    selection_logman:
+        Image|endswith: '\logman.exe'
+        CommandLine|contains:
+            - 'stop'
+            - 'delete'
+            - 'Microsoft-Windows-Threat-Intelligence'
+            - 'EventLog-Security'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate ETW management by administrators
+    - Performance troubleshooting
+level: high

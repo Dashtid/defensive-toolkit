@@ -1,0 +1,69 @@
+title: Active Directory Enumeration Detection
+id: f1b2c3d4-1111-9999-ffff-111111111111
+status: stable
+description: |
+    Detects Active Directory enumeration activities commonly performed by
+    attackers during reconnaissance. This includes LDAP queries, BloodHound
+    collection, and AD exploration tools. Identity attacks increased 4x in 2025.
+references:
+    - https://attack.mitre.org/techniques/T1087/002/
+    - https://attack.mitre.org/techniques/T1069/002/
+    - https://redcanary.com/blog/threat-detection/2025-threat-detection-report/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.discovery
+    - attack.t1087.002
+    - attack.t1069.002
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_bloodhound:
+        CommandLine|contains:
+            - 'SharpHound'
+            - 'BloodHound'
+            - 'Invoke-BloodHound'
+            - '-CollectionMethod'
+            - '-Domain '
+            - '--CollectAll'
+    selection_adexplorer:
+        Image|endswith:
+            - '\ADExplorer.exe'
+            - '\ADExplorer64.exe'
+        CommandLine|contains: '-snapshot'
+    selection_powerview:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'Get-DomainUser'
+            - 'Get-DomainGroup'
+            - 'Get-DomainComputer'
+            - 'Get-DomainController'
+            - 'Get-DomainTrust'
+            - 'Get-DomainGPO'
+            - 'Get-NetUser'
+            - 'Get-NetGroup'
+            - 'Get-NetComputer'
+            - 'Find-LocalAdminAccess'
+            - 'Invoke-UserHunter'
+            - 'Invoke-ShareFinder'
+    selection_net_commands:
+        Image|endswith:
+            - '\net.exe'
+            - '\net1.exe'
+        CommandLine|contains:
+            - 'group "Domain Admins"'
+            - 'group "Enterprise Admins"'
+            - 'group "Schema Admins"'
+            - 'user /domain'
+            - 'group /domain'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate AD administration
+    - IT inventory and documentation
+    - Security assessments
+level: medium

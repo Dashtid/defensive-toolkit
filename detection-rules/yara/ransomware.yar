@@ -66,7 +66,8 @@ rule Ransomware_Note_Pattern
         (
             (1 of ($decrypt*) and 1 of ($encrypt*)) or
             (1 of ($payment*) and 1 of ($deadline*)) or
-            (1 of ($encrypt*) and 1 of ($payment*) and 1 of ($warning*))
+            (1 of ($encrypt*) and 1 of ($payment*) and 1 of ($warning*)) or
+            (1 of ($contact*) and 1 of ($payment*))
         )
 }
 

@@ -1,0 +1,84 @@
+title: Kerberoasting Attack Detection
+id: e1b2c3d4-2222-8888-eeee-222222222222
+status: stable
+description: |
+    Detects Kerberoasting attacks where attackers request Kerberos service
+    tickets (TGS) for service accounts and crack them offline to obtain
+    passwords. This is a common credential access technique that doesn't
+    require elevated privileges. Identity attacks increased 4x in 2025.
+references:
+    - https://attack.mitre.org/techniques/T1558/003/
+    - https://redcanary.com/blog/threat-detection/2025-threat-detection-report/
+    - https://adsecurity.org/?p=3458
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.credential_access
+    - attack.t1558.003
+    - detection.emerging_threats
+logsource:
+    product: windows
+    service: security
+detection:
+    selection_event:
+        EventID: 4769
+    selection_encryption:
+        TicketEncryptionType:
+            - '0x17'
+            - '0x18'
+            - '23'
+            - '24'
+    selection_service_name:
+        ServiceName|endswith: '$'
+    filter_machine_accounts:
+        TargetUserName|endswith: '$'
+    condition: selection_event and selection_encryption and not selection_service_name and not filter_machine_accounts
+falsepositives:
+    - Legacy applications using RC4 encryption
+    - Misconfigured service accounts
+level: high
+---
+title: Kerberoasting Tools Execution
+id: e1b2c3d4-2222-8888-eeee-222222222223
+status: stable
+description: |
+    Detects execution of known Kerberoasting tools and PowerShell commands.
+references:
+    - https://attack.mitre.org/techniques/T1558/003/
+    - https://github.com/GhostPack/Rubeus
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.credential_access
+    - attack.t1558.003
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_rubeus:
+        CommandLine|contains:
+            - 'Rubeus'
+            - 'kerberoast'
+            - '/spn:'
+            - '/ticket:'
+            - 'asreproast'
+    selection_powershell_kerberoast:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'Invoke-Kerberoast'
+            - 'Get-DomainSPNTicket'
+            - 'Request-SPNTicket'
+            - 'Get-SPNTicket'
+    selection_impacket:
+        CommandLine|contains:
+            - 'GetUserSPNs'
+            - 'secretsdump'
+    condition: 1 of selection_*
+falsepositives:
+    - Penetration testing
+    - Security assessments
+level: high

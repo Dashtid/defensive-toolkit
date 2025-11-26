@@ -1,0 +1,64 @@
+title: Shadow Copy Deletion - Ransomware Preparation
+id: 55556666-1111-eeee-1111-111111111111
+status: stable
+description: |
+    Detects deletion of Volume Shadow Copies, a critical step in ransomware
+    attacks to prevent recovery from backups. Attackers delete shadow copies
+    before encrypting files to maximize damage and increase ransom payment
+    likelihood. This technique is used by virtually all ransomware families.
+references:
+    - https://attack.mitre.org/techniques/T1490/
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-291a
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.impact
+    - attack.t1490
+    - threat.ransomware
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_vssadmin:
+        Image|endswith: '\vssadmin.exe'
+        CommandLine|contains:
+            - 'delete shadows'
+            - 'Delete Shadows'
+            - 'resize shadowstorage'
+    selection_wmic:
+        Image|endswith: '\wmic.exe'
+        CommandLine|contains:
+            - 'shadowcopy delete'
+            - 'shadowcopy call delete'
+    selection_powershell:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'Get-WmiObject Win32_ShadowCopy'
+            - 'Delete()'
+            - 'Remove-WmiObject'
+            - 'Win32_ShadowCopy'
+    selection_diskshadow:
+        Image|endswith: '\diskshadow.exe'
+        CommandLine|contains:
+            - 'delete shadows'
+    selection_bcdedit:
+        Image|endswith: '\bcdedit.exe'
+        CommandLine|contains:
+            - 'set {default} recoveryenabled No'
+            - 'set {default} bootstatuspolicy ignoreallfailures'
+    selection_wbadmin:
+        Image|endswith: '\wbadmin.exe'
+        CommandLine|contains:
+            - 'delete catalog'
+            - 'delete systemstatebackup'
+            - 'delete backup'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate backup management operations
+    - System administrators managing disk space
+    - Disaster recovery testing
+level: critical

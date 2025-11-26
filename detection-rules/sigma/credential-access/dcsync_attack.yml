@@ -1,0 +1,83 @@
+title: DCSync Attack Detection
+id: e1b2c3d4-1111-8888-eeee-111111111111
+status: stable
+description: |
+    Detects DCSync attacks where an attacker uses replication privileges to
+    impersonate a Domain Controller and request password hashes from AD.
+    This technique allows credential theft without accessing domain controller
+    memory or filesystems. Used by APT groups and ransomware operators.
+references:
+    - https://attack.mitre.org/techniques/T1003/006/
+    - https://adsecurity.org/?p=1729
+    - https://blog.stealthbits.com/what-is-dcsync-an-introduction/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.credential_access
+    - attack.t1003.006
+    - detection.emerging_threats
+logsource:
+    product: windows
+    service: security
+detection:
+    selection_event:
+        EventID: 4662
+    selection_properties:
+        Properties|contains:
+            - '1131f6aa-9c07-11d1-f79f-00c04fc2dcd2'
+            - '1131f6ad-9c07-11d1-f79f-00c04fc2dcd2'
+            - '89e95b76-444d-4c62-991a-0facbeda640c'
+    filter_legitimate_dc:
+        SubjectUserName|endswith: '$'
+        SubjectUserName|contains: 'DC'
+    condition: selection_event and selection_properties and not filter_legitimate_dc
+falsepositives:
+    - Legitimate domain controller replication
+    - Azure AD Connect synchronization
+    - Authorized security assessments
+level: critical
+---
+title: DCSync Tools Execution
+id: e1b2c3d4-1111-8888-eeee-111111111112
+status: stable
+description: |
+    Detects execution of tools commonly used for DCSync attacks,
+    including Mimikatz, Impacket secretsdump, and similar utilities.
+references:
+    - https://attack.mitre.org/techniques/T1003/006/
+    - https://github.com/gentilkiwi/mimikatz
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.credential_access
+    - attack.t1003.006
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_mimikatz:
+        CommandLine|contains:
+            - 'lsadump::dcsync'
+            - 'lsadump::netsync'
+            - 'lsadump::replicate'
+    selection_impacket:
+        CommandLine|contains:
+            - 'secretsdump'
+            - '-just-dc'
+            - 'GetNPUsers'
+            - 'GetUserSPNs'
+    selection_powershell:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'Invoke-DCSync'
+            - 'Invoke-Mimikatz'
+            - 'Get-ADReplAccount'
+    condition: 1 of selection_*
+falsepositives:
+    - Penetration testing activities
+    - Security assessments
+level: critical

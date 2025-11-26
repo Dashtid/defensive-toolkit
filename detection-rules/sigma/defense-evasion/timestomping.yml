@@ -1,0 +1,51 @@
+title: File Timestomping Detection
+id: d1b2c3d4-3333-7777-dddd-333333333333
+status: stable
+description: |
+    Detects attempts to modify file timestamps to blend in with legitimate files
+    or evade time-based forensic analysis. Attackers use timestomping to hide
+    when malicious files were created or modified.
+references:
+    - https://attack.mitre.org/techniques/T1070/006/
+    - https://www.forensicfocus.com/articles/detecting-timestomping/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.defense_evasion
+    - attack.t1070.006
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_powershell_timestamp:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'CreationTime'
+            - 'LastWriteTime'
+            - 'LastAccessTime'
+            - 'SetCreationTime'
+            - 'SetLastWriteTime'
+            - 'SetLastAccessTime'
+            - '[IO.File]::SetCreationTime'
+            - '[IO.File]::SetLastWriteTime'
+    selection_timestomp_tools:
+        Image|endswith:
+            - '\timestomp.exe'
+            - '\SetMACE.exe'
+            - '\nTimestomp.exe'
+        CommandLine|contains:
+            - 'timestomp'
+            - '-m -a -c -e'
+    selection_nircmd:
+        Image|endswith: '\nircmd.exe'
+        CommandLine|contains: 'setfiletime'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate file management scripts
+    - Backup and restore software
+    - Software development workflows
+level: medium

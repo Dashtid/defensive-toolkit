@@ -1,0 +1,81 @@
+title: WMI Event Subscription Persistence
+id: b1b2c3d4-1111-5555-bbbb-111111111111
+status: stable
+description: |
+    Detects WMI event subscription creation used for persistence.
+    Attackers use WMI event consumers to execute payloads when specific
+    system events occur (e.g., system startup, user logon). This is a
+    fileless persistence technique that survives reboots.
+references:
+    - https://attack.mitre.org/techniques/T1546/003/
+    - https://www.elastic.co/guide/en/security/current/wmi-event-subscription.html
+    - https://pentestlab.blog/2020/01/21/persistence-wmi-event-subscription/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1546.003
+    - detection.emerging_threats
+logsource:
+    category: wmi_event
+    product: windows
+detection:
+    selection_consumer_creation:
+        EventType: 'WmiConsumerCreation'
+    selection_filter_creation:
+        EventType: 'WmiFilterCreation'
+    selection_binding_creation:
+        EventType: 'WmiBindingCreation'
+    selection_process_based:
+        Destination|contains:
+            - 'CommandLineEventConsumer'
+            - 'ActiveScriptEventConsumer'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate monitoring software
+    - Enterprise management tools (SCCM, Intune)
+    - Hardware vendor management utilities
+level: high
+---
+title: WMI Event Subscription via PowerShell
+id: b1b2c3d4-1111-5555-bbbb-111111111112
+status: stable
+description: |
+    Detects WMI event subscription creation via PowerShell commands.
+    This technique is used by sophisticated attackers for fileless
+    persistence mechanisms.
+references:
+    - https://attack.mitre.org/techniques/T1546/003/
+    - https://www.mandiant.com/resources/blog/apt29-abuses-wmi
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.persistence
+    - attack.t1546.003
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_powershell:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+    selection_wmi_commands:
+        CommandLine|contains:
+            - 'Set-WmiInstance'
+            - 'New-CimInstance'
+            - '__EventFilter'
+            - '__EventConsumer'
+            - '__FilterToConsumerBinding'
+            - 'CommandLineEventConsumer'
+            - 'ActiveScriptEventConsumer'
+            - 'Register-WmiEvent'
+    condition: all of selection_*
+falsepositives:
+    - Legitimate WMI administration scripts
+    - Enterprise monitoring deployment
+level: high

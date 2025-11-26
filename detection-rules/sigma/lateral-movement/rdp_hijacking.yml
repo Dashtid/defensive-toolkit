@@ -1,0 +1,93 @@
+title: RDP Session Hijacking Detection
+id: 11112222-3333-aaaa-3333-333333333333
+status: stable
+description: |
+    Detects RDP session hijacking techniques where attackers take over
+    existing RDP sessions without credentials using tscon.exe or similar
+    methods. This allows lateral movement while appearing as a legitimate user.
+references:
+    - https://attack.mitre.org/techniques/T1563/002/
+    - https://medium.com/@networksecurity/rdp-hijacking-how-to-hijack-rds-and-remoteapp-sessions-transparently-to-move-through-an-d37dce50b3a3
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.lateral_movement
+    - attack.t1563.002
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_tscon:
+        Image|endswith: '\tscon.exe'
+        CommandLine|contains:
+            - '/dest:'
+            - '/password:'
+    selection_session_query:
+        Image|endswith:
+            - '\query.exe'
+            - '\quser.exe'
+            - '\qwinsta.exe'
+        CommandLine|contains:
+            - 'session'
+            - 'user'
+    selection_rdpclip_injection:
+        ParentImage|endswith: '\svchost.exe'
+        Image|endswith: '\rdpclip.exe'
+    selection_mstsc_suspicious:
+        Image|endswith: '\mstsc.exe'
+        CommandLine|contains:
+            - '/shadow:'
+            - '/control'
+            - '/noConsentPrompt'
+    condition: selection_tscon or selection_mstsc_suspicious
+falsepositives:
+    - Legitimate RDP administration
+    - Help desk remote assistance
+    - Terminal server management
+level: high
+---
+title: RDP Tunneling Detection
+id: 11112222-3333-aaaa-3333-333333333334
+status: stable
+description: |
+    Detects RDP tunneling techniques used to bypass network restrictions
+    or access internal systems through an intermediate host.
+references:
+    - https://attack.mitre.org/techniques/T1572/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.lateral_movement
+    - attack.command_and_control
+    - attack.t1572
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_netsh_portproxy:
+        Image|endswith: '\netsh.exe'
+        CommandLine|contains:
+            - 'interface portproxy'
+            - 'v4tov4'
+            - 'listenport=3389'
+            - 'connectport=3389'
+    selection_ssh_tunnel:
+        CommandLine|contains:
+            - 'ssh'
+            - '-L 3389:'
+            - '-R 3389:'
+            - ':3389:'
+    selection_plink:
+        Image|endswith: '\plink.exe'
+        CommandLine|contains:
+            - '-L'
+            - '-R'
+            - '3389'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate SSH tunneling for remote access
+    - Authorized port forwarding
+level: high

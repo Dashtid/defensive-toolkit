@@ -1,0 +1,74 @@
+title: DNS Beaconing and C2 Communication Detection
+id: 44445555-3333-dddd-3333-333333333333
+status: stable
+description: |
+    Detects DNS-based command and control communication patterns.
+    Attackers use DNS for C2 because it often bypasses network security
+    controls. Detection focuses on suspicious DNS query patterns,
+    encoded payloads, and known C2 infrastructure.
+references:
+    - https://attack.mitre.org/techniques/T1071/004/
+    - https://attack.mitre.org/techniques/T1568/002/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.command_and_control
+    - attack.t1071.004
+    - attack.t1568.002
+    - detection.emerging_threats
+logsource:
+    category: dns_query
+    product: windows
+detection:
+    selection_long_subdomain:
+        QueryName|re: '[a-zA-Z0-9]{32,}\.'
+    selection_high_entropy:
+        QueryName|re: '[a-z0-9]{20,}\.[a-z]{2,6}$'
+    selection_txt_queries:
+        QueryType: 'TXT'
+        QueryName|re: '[a-zA-Z0-9-]{10,}\.'
+    selection_dga_pattern:
+        QueryName|re: '[bcdfghjklmnpqrstvwxz]{4,}'
+    condition: 1 of selection_*
+falsepositives:
+    - CDN subdomains
+    - Legitimate long hostnames
+    - Cloud service providers
+level: medium
+---
+title: DNS C2 Tool Execution
+id: 44445555-3333-dddd-3333-333333333334
+status: stable
+description: |
+    Detects execution of known DNS tunneling and C2 tools.
+references:
+    - https://attack.mitre.org/techniques/T1071/004/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.command_and_control
+    - attack.t1071.004
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_dns_tools:
+        Image|endswith:
+            - '\dnscat2.exe'
+            - '\dnscat.exe'
+            - '\iodine.exe'
+            - '\dnsexfiltrator.exe'
+            - '\godoh.exe'
+    selection_cobalt_dns:
+        CommandLine|contains:
+            - 'dns://'
+            - '-dns '
+            - '--dns'
+            - 'mode dns'
+    condition: 1 of selection_*
+falsepositives:
+    - Security testing
+    - DNS debugging tools
+level: high

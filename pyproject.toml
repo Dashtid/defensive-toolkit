@@ -83,21 +83,24 @@ toolkit-gendocs = "scripts.generate_docs:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv]
-# UV-specific configuration
-dev-dependencies = [
+[tool.hatch.build.targets.wheel]
+packages = ["scripts", "detection-rules", "forensics", "hardening", "incident-response", "threat-hunting", "monitoring", "vulnerability-mgmt", "automation", "compliance", "log-analysis"]
+
+[dependency-groups]
+dev = [
     "pytest>=8.3.0",
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.24.0",
-    "pytest-xdist>=3.6.0",  # Parallel test execution
-    "bandit>=1.8.0",  # Security linting
-    "black>=24.10.0",  # Code formatting
-    "ruff>=0.8.0",  # Fast linting
-    "mypy>=1.13.0",  # Type checking
+    "pytest-xdist>=3.6.0",
+    "bandit>=1.8.0",
+    "black>=24.10.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
     "coverage[toml]>=7.6.0",
 ]
 
+[tool.uv]
 # UV cache configuration for faster builds
 cache-keys = [
     { file = "pyproject.toml" },

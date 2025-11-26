@@ -1,0 +1,54 @@
+title: Named Pipe Impersonation Privilege Escalation
+id: c1b2c3d4-2222-6666-cccc-222222222222
+status: stable
+description: |
+    Detects named pipe impersonation attacks used for privilege escalation.
+    Attackers create named pipes and wait for privileged processes to connect,
+    then impersonate the connecting client's security context. Common in
+    tools like PrintSpoofer, PetitPotam, and various potato exploits.
+references:
+    - https://attack.mitre.org/techniques/T1134/001/
+    - https://itm4n.github.io/printspoofer-abusing-impersonate-privileges/
+    - https://github.com/antonioCoco/JuicyPotatoNG
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.privilege_escalation
+    - attack.t1134.001
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_potato_tools:
+        Image|endswith:
+            - '\JuicyPotato.exe'
+            - '\JuicyPotatoNG.exe'
+            - '\RottenPotato.exe'
+            - '\SweetPotato.exe'
+            - '\PrintSpoofer.exe'
+            - '\RoguePotato.exe'
+            - '\GodPotato.exe'
+            - '\SharpEfsPotato.exe'
+    selection_pipe_creation:
+        CommandLine|contains:
+            - 'CreateNamedPipe'
+            - 'ImpersonateNamedPipeClient'
+            - 'ConnectNamedPipe'
+            - '\pipe\spoolss'
+            - '\pipe\efsrpc'
+            - '\pipe\lsarpc'
+            - '\pipe\netlogon'
+            - '\pipe\samr'
+    selection_cmd_pattern:
+        CommandLine|contains:
+            - '-t *'
+            - '-p c:\windows'
+            - '-l 1337'
+            - '-c {'
+    condition: selection_potato_tools or (selection_pipe_creation and selection_cmd_pattern)
+falsepositives:
+    - Penetration testing activities
+    - Security research
+level: critical

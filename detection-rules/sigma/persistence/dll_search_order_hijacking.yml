@@ -1,0 +1,58 @@
+title: DLL Search Order Hijacking Indicators
+id: b1b2c3d4-2222-5555-bbbb-222222222222
+status: stable
+description: |
+    Detects indicators of DLL search order hijacking where attackers
+    place malicious DLLs in directories that are searched before the
+    legitimate DLL location. This includes suspicious DLL loads from
+    user-writable directories.
+references:
+    - https://attack.mitre.org/techniques/T1574/001/
+    - https://hijacklibs.net/
+    - https://www.mandiant.com/resources/blog/dll-side-loading-a-thorn-in-the-side-of-the-anti-virus-industry
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.defense_evasion
+    - attack.t1574.001
+    - detection.emerging_threats
+logsource:
+    category: image_load
+    product: windows
+detection:
+    selection_suspicious_paths:
+        ImageLoaded|contains:
+            - '\Users\'
+            - '\Temp\'
+            - '\AppData\Local\Temp\'
+            - '\Downloads\'
+            - '\Desktop\'
+            - '\ProgramData\'
+    selection_common_hijacked_dlls:
+        ImageLoaded|endswith:
+            - '\version.dll'
+            - '\cryptsp.dll'
+            - '\cryptbase.dll'
+            - '\wtsapi32.dll'
+            - '\dwmapi.dll'
+            - '\uxtheme.dll'
+            - '\propsys.dll'
+            - '\ntmarta.dll'
+            - '\secur32.dll'
+            - '\userenv.dll'
+            - '\profapi.dll'
+    filter_legitimate:
+        ImageLoaded|startswith:
+            - 'C:\Windows\System32\'
+            - 'C:\Windows\SysWOW64\'
+            - 'C:\Program Files\'
+            - 'C:\Program Files (x86)\'
+    condition: selection_suspicious_paths and selection_common_hijacked_dlls and not filter_legitimate
+falsepositives:
+    - Portable applications loading their own DLLs
+    - Development environments
+    - Some legitimate installers
+level: high

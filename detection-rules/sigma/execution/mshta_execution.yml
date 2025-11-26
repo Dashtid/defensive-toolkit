@@ -1,0 +1,48 @@
+title: Suspicious MSHTA Execution
+id: a1b2c3d4-1111-4444-aaaa-111111111111
+status: stable
+description: |
+    Detects MSHTA.exe executing scripts or accessing remote content.
+    MSHTA is commonly abused by attackers to execute malicious HTA files
+    or inline VBScript/JScript, bypassing application whitelisting.
+references:
+    - https://attack.mitre.org/techniques/T1218/005/
+    - https://lolbas-project.github.io/lolbas/Binaries/Mshta/
+    - https://redcanary.com/threat-detection-report/techniques/mshta/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.execution
+    - attack.defense_evasion
+    - attack.t1218.005
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_mshta:
+        - Image|endswith: '\mshta.exe'
+        - OriginalFileName: 'MSHTA.EXE'
+    selection_suspicious_args:
+        CommandLine|contains:
+            - 'javascript:'
+            - 'vbscript:'
+            - 'http://'
+            - 'https://'
+            - 'file://'
+            - '.hta'
+            - 'about:'
+            - 'ActiveXObject'
+            - 'GetObject'
+            - 'WScript.Shell'
+    filter_legitimate:
+        CommandLine|contains:
+            - 'C:\Windows\System32\mshta.exe" "C:\Windows\'
+            - 'Microsoft\Windows\CurrentVersion\Component Based Servicing'
+    condition: all of selection_* and not filter_legitimate
+falsepositives:
+    - Legitimate administrative HTA applications
+    - Software installation packages using HTA
+    - Legacy enterprise applications
+level: high

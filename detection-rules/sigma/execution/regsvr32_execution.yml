@@ -1,0 +1,45 @@
+title: Suspicious Regsvr32 Execution - Squiblydoo Attack
+id: a1b2c3d4-2222-4444-aaaa-222222222222
+status: stable
+description: |
+    Detects Regsvr32.exe used to execute COM scriptlets from remote or local sources.
+    This technique, known as "Squiblydoo," allows attackers to bypass application
+    whitelisting and execute arbitrary code via scrobj.dll.
+references:
+    - https://attack.mitre.org/techniques/T1218/010/
+    - https://lolbas-project.github.io/lolbas/Binaries/Regsvr32/
+    - https://www.carbonblack.com/blog/threat-advisory-squiblydoo-continues-trend-of-attackers-using-native-os-tools-to-live-off-the-land/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.execution
+    - attack.defense_evasion
+    - attack.t1218.010
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_regsvr32:
+        - Image|endswith: '\regsvr32.exe'
+        - OriginalFileName: 'REGSVR32.EXE'
+    selection_scriptlet:
+        CommandLine|contains:
+            - '/i:http'
+            - '/i:https'
+            - '/i:ftp'
+            - '/i:\\'
+            - 'scrobj.dll'
+            - '/s /n /u /i:'
+            - '/u /s /i:'
+            - '.sct'
+    selection_silent:
+        CommandLine|contains:
+            - '/s'
+            - '/silent'
+    condition: selection_regsvr32 and (selection_scriptlet or (selection_silent and selection_regsvr32))
+falsepositives:
+    - Legitimate software installation using regsvr32
+    - System administrators registering COM objects
+level: high

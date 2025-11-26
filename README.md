@@ -7,7 +7,7 @@ n## Implementation Status
 
 | Category | Status | Contents |
 |----------|--------|----------|
-| **Detection Rules** | [OK] Implemented | 6 Sigma rules, 3 YARA rulesets, organized by MITRE ATT&CK |
+| **Detection Rules** | [OK] Implemented | 39 Sigma rules, 22 YARA rules, 79% ATT&CK coverage, 2025 threats |
 | **Incident Response** | [OK] Implemented | 2 playbooks (ransomware, malware), 2 triage scripts |
 | **Threat Hunting** | [OK] Implemented | KQL, SPL, and EQL queries for major SIEM platforms |
 | **Hardening** | [OK] Implemented | Windows & Linux security hardening (CIS Benchmark L1/L2/L3 + audit/backup) |
@@ -41,12 +41,27 @@ defensive-toolkit/
 
 ## Tools Categories
 
-### Detection Rules
-- Sigma rules (SIEM-agnostic)
-- Yara rules (malware detection)
-- Snort/Suricata IDS rules
-- EDR detection logic
-- Custom detection scripts
+### Detection Rules (Enhanced 2025)
+
+**39 Sigma Rules** covering 11 MITRE ATT&CK tactics:
+
+- Execution, Persistence, Privilege Escalation, Defense Evasion
+- Credential Access, Discovery, Lateral Movement, Collection
+- Exfiltration, Command & Control, Impact
+
+**22 YARA Rules** detecting 2025 threat landscape:
+
+- Infostealers: LummaC2, Vidar, RedLine, StrelaStealer
+- Ransomware: LockBit 4.0, BlackCat, Qilin, RansomHub
+- Loaders: HijackLoader, SocGholish, BatLoader, GootLoader
+- C2 Frameworks: Cobalt Strike, Sliver, Brute Ratel
+
+**Key Features**:
+
+- 79% MITRE ATT&CK technique coverage
+- Paste-and-Run attack detection (emerging 2025 threat)
+- Identity attack detection (4x increase in 2025)
+- Validation scripts and unit tests included
 
 ### Security Hardening
 - CIS Benchmark scripts
@@ -147,23 +162,26 @@ cd incident-response/forensics
 
 ## Detection Rule Categories
 
-### Endpoint Detection
-- Process monitoring
-- Registry monitoring
-- File integrity monitoring
-- User behavior analytics
+### Endpoint Detection (Sigma Rules)
 
-### Network Detection
-- Anomalous network traffic
-- C2 communication patterns
-- Data exfiltration
-- Port scanning detection
+- Process execution monitoring (MSHTA, Regsvr32, LOLBAS)
+- Credential access (DCSync, Kerberoasting, LSASS dumping)
+- Defense evasion (AMSI bypass, ETW tampering, process hollowing)
+- Persistence mechanisms (WMI subscriptions, DLL hijacking, startup folders)
 
-### Application Detection
-- Web application attacks
-- SQL injection attempts
-- XSS detection
-- API abuse
+### Network Detection (Sigma + YARA)
+
+- C2 framework detection (Cobalt Strike, Sliver, Brute Ratel)
+- DNS tunneling and beaconing patterns
+- Cloud exfiltration to storage services
+- Lateral movement (PsExec, WinRM, RDP hijacking)
+
+### Malware Detection (YARA Rules)
+
+- 2025 infostealers (+84% increase): LummaC2, Vidar, RedLine
+- RaaS operations (+46% increase): LockBit 4.0, BlackCat, Qilin
+- Malware loaders: HijackLoader, SocGholish, BatLoader
+- Webshells and suspicious scripts
 
 ## Compliance & Log Analysis
 
@@ -279,10 +297,11 @@ For questions or issues:
 
 ## Project Status
 
-**Version**: 1.2.0
-**Status**: ✅ Production-Ready
+**Version**: 1.3.0
+**Status**: [OK] Production-Ready
 **Test Coverage**: 80%+ (565+ tests)
 **Categories**: 10/10 Complete
+**Detection Rules**: 39 Sigma + 22 YARA (79% ATT&CK coverage)
 **Hardening**: Windows + Linux (CIS Benchmark L1/L2/L3)
 
 See [CHANGELOG.md](docs/CHANGELOG.md) for version history.

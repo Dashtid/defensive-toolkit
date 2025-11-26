@@ -1,0 +1,50 @@
+title: AMSI Bypass Attempt Detection
+id: d1b2c3d4-1111-7777-dddd-111111111111
+status: stable
+description: |
+    Detects attempts to bypass the Antimalware Scan Interface (AMSI).
+    AMSI provides visibility into scripting engines (PowerShell, VBScript, JScript).
+    Attackers bypass AMSI to execute malicious scripts undetected. This is a
+    critical defense evasion technique observed in 2025 threat campaigns.
+references:
+    - https://attack.mitre.org/techniques/T1562/001/
+    - https://www.mdsec.co.uk/2018/06/exploring-powershell-amsi-and-logging-evasion/
+    - https://amsi.fail/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.defense_evasion
+    - attack.t1562.001
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_amsi_strings:
+        CommandLine|contains:
+            - 'AmsiInitFailed'
+            - 'AmsiScanBuffer'
+            - 'AmsiScanString'
+            - 'amsiContext'
+            - 'amsiSession'
+            - 'AmsiUtils'
+            - 'amsi.dll'
+            - 'SetValue(("Bypass" + "AMSI"'
+    selection_memory_patching:
+        CommandLine|contains:
+            - '[Runtime.InteropServices.Marshal]::Copy'
+            - 'VirtualProtect'
+            - 'WriteProcessMemory'
+            - 'NtWriteVirtualMemory'
+    selection_common_bypasses:
+        CommandLine|contains:
+            - "[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils')"
+            - "GetField('amsiInitFailed','NonPublic,Static')"
+            - 'sET-ItEM ( "V"+"aR" +  "IA"'
+            - "Add-Type -MemberDefinition '[DllImport"
+    condition: 1 of selection_*
+falsepositives:
+    - Security research and testing
+    - Legitimate security tools analyzing AMSI
+level: critical

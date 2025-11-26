@@ -1,0 +1,104 @@
+title: Cobalt Strike Beacon Detection
+id: 44445555-1111-dddd-1111-111111111111
+status: stable
+description: |
+    Detects Cobalt Strike beacon activity including process injection patterns,
+    named pipe usage, and characteristic command-line behaviors. Cobalt Strike
+    remains one of the most prevalent C2 frameworks used by both APT groups
+    and ransomware operators in 2025.
+references:
+    - https://attack.mitre.org/software/S0154/
+    - https://www.cobaltstrike.com/
+    - https://thedfirreport.com/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.command_and_control
+    - attack.t1071.001
+    - attack.t1095
+    - threat.cobalt_strike
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_spawn_pattern:
+        ParentImage|endswith:
+            - '\rundll32.exe'
+            - '\regsvr32.exe'
+            - '\dllhost.exe'
+        Image|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+        CommandLine|contains:
+            - 'whoami'
+            - 'net user'
+            - 'net group'
+            - 'ipconfig'
+            - 'systeminfo'
+    selection_beacon_commands:
+        CommandLine|contains:
+            - 'powershell -nop -w hidden'
+            - 'IEX (New-Object Net.Webclient).downloadstring'
+            - 'FromBase64String'
+            - 'powershell.exe -nop -exec bypass'
+            - '-enc JAB'
+            - 'powershell -ep bypass'
+    selection_inject_pattern:
+        ParentImage|endswith: '\svchost.exe'
+        Image|endswith:
+            - '\rundll32.exe'
+            - '\regsvr32.exe'
+        CommandLine: ''
+    selection_named_pipes:
+        CommandLine|contains:
+            - '\\\\.\\pipe\\msagent_'
+            - '\\\\.\\pipe\\MSSE-'
+            - '\\\\.\\pipe\\postex_'
+            - '\\\\.\\pipe\\status_'
+            - '\\\\.\\pipe\\mojo_'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate administrative tools that spawn similar patterns
+    - Security testing with authorized Cobalt Strike usage
+level: critical
+---
+title: Cobalt Strike Named Pipe Patterns
+id: 44445555-1111-dddd-1111-111111111112
+status: stable
+description: |
+    Detects Cobalt Strike default and common named pipe patterns used for
+    inter-process communication during post-exploitation.
+references:
+    - https://attack.mitre.org/techniques/T1570/
+    - https://blog.cobaltstrike.com/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.command_and_control
+    - attack.defense_evasion
+    - threat.cobalt_strike
+logsource:
+    category: pipe_created
+    product: windows
+detection:
+    selection_default_pipes:
+        PipeName|contains:
+            - '\msagent_'
+            - '\MSSE-'
+            - '\postex_'
+            - '\status_'
+            - '\mojo_'
+            - '\wkssvc_'
+            - '\ntsvcs_'
+            - '\scerpc_'
+            - '\mypipe-f'
+            - '\mypipe-h'
+    selection_beacon_pipes:
+        PipeName|re: '\\\\[a-f0-9]{8}'
+    condition: 1 of selection_*
+falsepositives:
+    - Rarely, legitimate applications with similar pipe naming
+level: critical

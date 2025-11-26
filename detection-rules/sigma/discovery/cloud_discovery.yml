@@ -1,0 +1,82 @@
+title: Cloud Service Discovery and Enumeration
+id: f1b2c3d4-3333-9999-ffff-333333333333
+status: stable
+description: |
+    Detects cloud service discovery activities including Azure, AWS, and
+    GCP enumeration. Attackers enumerate cloud resources to understand the
+    environment, identify targets, and plan attacks. Cloud environments
+    are increasingly targeted in 2025 threat campaigns.
+references:
+    - https://attack.mitre.org/techniques/T1526/
+    - https://attack.mitre.org/techniques/T1580/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.discovery
+    - attack.t1526
+    - attack.t1580
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_azure_cli:
+        Image|endswith:
+            - '\az.cmd'
+            - '\az.exe'
+        CommandLine|contains:
+            - 'account list'
+            - 'vm list'
+            - 'storage account list'
+            - 'keyvault list'
+            - 'ad user list'
+            - 'ad group list'
+            - 'role assignment list'
+            - 'network vnet list'
+    selection_azure_powershell:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'Get-AzSubscription'
+            - 'Get-AzVM'
+            - 'Get-AzStorageAccount'
+            - 'Get-AzKeyVault'
+            - 'Get-AzADUser'
+            - 'Get-AzADGroup'
+            - 'Get-AzRoleAssignment'
+            - 'Get-AzResource'
+    selection_aws_cli:
+        Image|endswith: '\aws.exe'
+        CommandLine|contains:
+            - 'sts get-caller-identity'
+            - 's3 ls'
+            - 'ec2 describe-instances'
+            - 'iam list-users'
+            - 'iam list-roles'
+            - 'secretsmanager list-secrets'
+            - 'lambda list-functions'
+    selection_gcp_cli:
+        Image|endswith: '\gcloud.exe'
+        CommandLine|contains:
+            - 'projects list'
+            - 'compute instances list'
+            - 'storage buckets list'
+            - 'iam service-accounts list'
+    selection_cloud_enum_tools:
+        CommandLine|contains:
+            - 'ScoutSuite'
+            - 'Prowler'
+            - 'CloudBrute'
+            - 'cloud_enum'
+            - 'WeirdAAL'
+            - 'Pacu'
+            - 'AzureHound'
+            - 'ROADtools'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate cloud administration
+    - DevOps automation
+    - Cloud security assessments
+level: medium

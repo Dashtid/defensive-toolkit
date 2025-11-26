@@ -1,0 +1,63 @@
+title: Network Scanning and Discovery Detection
+id: f1b2c3d4-2222-9999-ffff-222222222222
+status: stable
+description: |
+    Detects network scanning and discovery activities using common tools
+    and techniques. Attackers scan networks to identify live hosts, open
+    ports, and services for lateral movement planning.
+references:
+    - https://attack.mitre.org/techniques/T1046/
+    - https://attack.mitre.org/techniques/T1018/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.discovery
+    - attack.t1046
+    - attack.t1018
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_nmap:
+        Image|endswith:
+            - '\nmap.exe'
+            - '\zenmap.exe'
+    selection_masscan:
+        Image|endswith: '\masscan.exe'
+    selection_advanced_ip_scanner:
+        Image|endswith:
+            - '\Advanced_IP_Scanner.exe'
+            - '\Advanced IP Scanner.exe'
+    selection_powershell_scan:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'Test-NetConnection'
+            - 'Test-Connection -Count'
+            - 'New-Object System.Net.Sockets.TcpClient'
+            - 'Invoke-Portscan'
+            - '1..254'
+            - '1..65535'
+            - 'foreach'
+    selection_native_tools:
+        CommandLine|contains:
+            - 'arp -a'
+            - 'netstat -ano'
+            - 'net view /all'
+            - 'net view /domain'
+            - 'nltest /dclist'
+            - 'nltest /domain_trusts'
+    selection_ping_sweep:
+        Image|endswith: '\ping.exe'
+        CommandLine|contains:
+            - '-n 1'
+            - '-c 1'
+    condition: selection_nmap or selection_masscan or selection_advanced_ip_scanner or selection_powershell_scan or selection_native_tools
+falsepositives:
+    - Legitimate network administration
+    - Authorized security scanning
+    - Network troubleshooting
+level: medium

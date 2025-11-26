@@ -1,0 +1,53 @@
+title: Keylogging Activity Detection
+id: 22223333-1111-bbbb-1111-111111111111
+status: stable
+description: |
+    Detects keylogging activity including known keylogger tools, API hooking
+    patterns, and suspicious keyboard capture behaviors. Keylogging is used
+    by infostealers and APT groups to capture credentials and sensitive data.
+references:
+    - https://attack.mitre.org/techniques/T1056/001/
+    - https://www.elastic.co/guide/en/security/current/keylogging.html
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.collection
+    - attack.credential_access
+    - attack.t1056.001
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_keylogger_tools:
+        Image|endswith:
+            - '\keylogger.exe'
+            - '\kl.exe'
+            - '\hwid.exe'
+    selection_powershell_keylogger:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'GetAsyncKeyState'
+            - 'GetKeyState'
+            - 'SetWindowsHookEx'
+            - 'GetKeyboardState'
+            - 'MapVirtualKey'
+            - 'user32.dll'
+            - '[DllImport'
+            - 'keybd_event'
+    selection_api_patterns:
+        CommandLine|contains:
+            - 'RegisterRawInputDevices'
+            - 'GetRawInputData'
+            - 'WH_KEYBOARD'
+            - 'WH_KEYBOARD_LL'
+            - 'LowLevelKeyboardProc'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate accessibility software
+    - Input automation tools
+    - Game input handling
+level: high

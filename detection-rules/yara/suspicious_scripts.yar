@@ -33,6 +33,7 @@ rule Suspicious_PowerShell_Script
             ($encoded and ($invoke_expression or $base64)) or
             ($hidden and $bypass) or
             ($download and $invoke_expression) or
+            ($invoke_webrequest and $invoke_expression) or
             (3 of ($hidden, $bypass, $noprofile, $noninteractive, $reflection, $process_start))
         )
 }
@@ -65,7 +66,8 @@ rule Suspicious_VBScript
             ($wscript and ($run or $exec)) or
             ($xmlhttp and $adodb and $write) or
             ($shell_exec and $exec) or
-            ($hidden and $run)
+            ($hidden and $run) or
+            ($download and $write)
         )
 }
 
@@ -95,9 +97,10 @@ rule Suspicious_Batch_Script
     condition:
         filesize < 100KB and
         (
-            ($powershell_invoke and ($download or $bitsadmin)) or
-            ($vssadmin or $bcdedit) or
-            (3 of ($schtasks, $reg_add, $sc_create, $wmic, $disable_fw))
+            ($echo_off and $powershell_invoke and ($download or $bitsadmin)) or
+            ($echo_off and ($vssadmin or $bcdedit)) or
+            (3 of ($schtasks, $reg_add, $sc_create, $wmic, $disable_fw)) or
+            ($net_use and $echo_off and 1 of ($download, $bitsadmin))
         )
 }
 

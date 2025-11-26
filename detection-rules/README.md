@@ -1,256 +1,208 @@
 # Detection Rules
 
-Comprehensive detection rules for SIEM platforms, endpoint detection, and file analysis.
+Enterprise-grade detection rules covering the complete MITRE ATT&CK framework for threat detection, incident response, and security monitoring.
 
-## Overview
+## Quick Stats
 
-This directory contains detection rules in multiple formats:
-- **Sigma Rules**: SIEM-agnostic detection logic (YAML format)
-- **YARA Rules**: File-based malware and threat detection
-- **Snort/Suricata**: Network intrusion detection rules
-- **EDR Logic**: Endpoint detection and response queries
+| Metric | Count |
+|--------|-------|
+| Sigma Rules | 39 |
+| YARA Rules | 22 |
+| ATT&CK Tactics Covered | 11/14 (79%) |
+| ATT&CK Techniques | 45+ |
+| 2025 Threat Coverage | Infostealers, RaaS, APT, Loaders, C2 |
+
+## 2025 Threat Landscape Coverage
+
+This ruleset is designed to detect the most prevalent threats identified in 2025 threat intelligence reports:
+
+| Threat Category | Detection Method | Examples |
+|-----------------|------------------|----------|
+| **Infostealers** (+84% in 2025) | Sigma + YARA | LummaC2, Vidar, RedLine, StrelaStealer |
+| **RaaS Operations** (+46%) | Sigma + YARA | LockBit 4.0, BlackCat, Qilin, RansomHub |
+| **Identity Attacks** (4x increase) | Sigma | DCSync, Kerberoasting, Credential Theft |
+| **Paste-and-Run** (emerging) | Sigma | Fake CAPTCHA, HijackLoader delivery |
+| **C2 Frameworks** | Sigma + YARA | Cobalt Strike, Sliver, Brute Ratel |
+
+**Sources**: [Red Canary 2025](https://redcanary.com/blog/threat-detection/2025-threat-detection-report/), [IBM X-Force 2025](https://www.ibm.com/thought-leadership/institute-business-value/en-us/report/2025-threat-intelligence-index), [Darktrace 2025](https://www.darktrace.com/blog/2025-cyber-threat-landscape-darktraces-mid-year-review)
 
 ## Directory Structure
 
-```
+```text
 detection-rules/
-├── sigma/                    # Sigma detection rules (MITRE ATT&CK organized)
-│   ├── execution/           # T1059 - Command and Scripting Interpreter
-│   ├── persistence/         # T1547 - Boot or Logon Autostart
-│   ├── privilege-escalation/
-│   ├── defense-evasion/
-│   ├── credential-access/   # T1003 - Credential Dumping
-│   ├── discovery/
-│   ├── lateral-movement/
-│   ├── collection/
-│   ├── exfiltration/
-│   ├── command-and-control/
-│   └── impact/
-├── yara/                    # YARA rules for file analysis
-│   ├── webshells.yar       # Web application backdoors
-│   ├── ransomware.yar      # Ransomware detection
-│   ├── suspicious_scripts.yar
-│   └── malware_families.yar
-├── snort/                   # Network IDS rules
-└── edr/                     # EDR-specific queries
+├── sigma/                        # 39 Sigma rules (MITRE ATT&CK organized)
+│   ├── execution/               # MSHTA, Regsvr32, LOLBAS, Paste-and-Run
+│   ├── persistence/             # WMI subscriptions, DLL hijacking, Startup
+│   ├── privilege-escalation/    # Token manipulation, PrintNightmare
+│   ├── defense-evasion/         # AMSI bypass, Process hollowing, ETW
+│   ├── credential-access/       # DCSync, Kerberoasting, Browser theft
+│   ├── discovery/               # AD enumeration, Network scan, Cloud
+│   ├── lateral-movement/        # PsExec, WinRM, RDP hijacking
+│   ├── collection/              # Keylogging, Screen capture
+│   ├── exfiltration/            # DNS tunneling, Cloud exfil
+│   ├── command-and-control/     # Cobalt Strike, Sliver, DNS C2
+│   └── impact/                  # Shadow copy deletion, Service stop
+├── yara/                        # 22 YARA rules
+│   ├── infostealers.yar        # LummaC2, Vidar, RedLine, StrelaStealer
+│   ├── ransomware.yar          # Generic ransomware patterns
+│   ├── ransomware_2025.yar     # LockBit 4.0, BlackCat, Qilin, RansomHub
+│   ├── loaders.yar             # HijackLoader, SocGholish, BatLoader
+│   ├── c2_frameworks.yar       # Cobalt Strike, Sliver, Brute Ratel
+│   ├── webshells.yar           # PHP, ASPX, JSP webshells
+│   └── suspicious_scripts.yar  # Obfuscated PowerShell, VBS, JS
+├── COVERAGE_MATRIX.md          # Full MITRE ATT&CK coverage map
+└── README.md                   # This file
 ```
 
-## Sigma Rules
+## MITRE ATT&CK Coverage
 
-### What are Sigma Rules?
-
-Sigma is an open-source, generic signature format for SIEM systems. Rules are written once in YAML and can be converted to any SIEM query language.
-
-**Supported SIEM Platforms:**
-- Splunk (SPL)
-- Elastic (EQL/KQL)
-- Azure Sentinel (KQL)
-- QRadar (AQL)
-- ArcSight
-- LogRhythm
-- Sumo Logic
-
-### Using Sigma Rules
-
-#### 1. Install Sigma CLI
-
-```bash
-pip install sigma-cli
+```text
+Tactic                  | Rules | Key Techniques
+------------------------|-------|------------------------------------
+Execution               |   6   | T1059, T1218, T1204
+Persistence             |   5   | T1547, T1053, T1546, T1574
+Privilege Escalation    |   4   | T1134, T1068
+Defense Evasion         |   5   | T1562, T1055, T1070
+Credential Access       |   5   | T1003, T1558, T1555
+Discovery               |   3   | T1087, T1046, T1526
+Lateral Movement        |   4   | T1021, T1569, T1563
+Collection              |   2   | T1056, T1113
+Exfiltration            |   2   | T1048, T1567
+Command & Control       |   4   | T1071, T1095, T1568
+Impact                  |   2   | T1490, T1489
 ```
 
-#### 2. Convert Rules to Your SIEM
+See [COVERAGE_MATRIX.md](COVERAGE_MATRIX.md) for detailed technique-level coverage.
+
+## Quick Start
+
+### Sigma Rules
 
 ```bash
-# Convert to Splunk SPL
+# Install Sigma CLI
+pip install sigma-cli pyyaml
+
+# Convert to Splunk
 sigma convert -t splunk detection-rules/sigma/execution/*.yml
 
-# Convert to Elastic EQL
-sigma convert -t elasticsearch detection-rules/sigma/persistence/*.yml
+# Convert to Elastic
+sigma convert -t elasticsearch detection-rules/sigma/**/*.yml
 
-# Convert to Azure Sentinel KQL
-sigma convert -t sentinel detection-rules/sigma/credential-access/*.yml
-```
+# Convert to Azure Sentinel
+sigma convert -t sentinel detection-rules/sigma/**/*.yml
 
-#### 3. Deploy to SIEM
-
-```bash
-# Example: Deploy all execution rules to Splunk
-for file in detection-rules/sigma/execution/*.yml; do
-    sigma convert -t splunk "$file" >> splunk_alerts.txt
+# Batch convert all rules
+for tactic in execution persistence privilege-escalation defense-evasion credential-access discovery lateral-movement collection exfiltration command-and-control impact; do
+    sigma convert -t splunk detection-rules/sigma/$tactic/*.yml >> splunk_rules.spl
 done
 ```
 
-### Sigma Rule Structure
-
-```yaml
-title: Rule Name
-id: unique-uuid
-status: stable|testing|experimental
-description: What this rule detects
-references:
-    - https://attack.mitre.org/techniques/T1234/
-author: Your Name
-date: YYYY-MM-DD
-tags:
-    - attack.tactic
-    - attack.technique_id
-logsource:
-    category: process_creation|registry_set|network_connection
-    product: windows|linux|macos
-detection:
-    selection:
-        FieldName: value
-    condition: selection
-falsepositives:
-    - Known benign scenarios
-level: low|medium|high|critical
-```
-
-### Tuning Sigma Rules
-
-1. **Reduce False Positives**: Add filters for known legitimate processes
-2. **Adjust Sensitivity**: Modify `level` field based on environment
-3. **Add Context**: Include additional log fields for investigation
-4. **Test Thoroughly**: Deploy in monitoring mode before alerting
-
-## YARA Rules
-
-### What are YARA Rules?
-
-YARA is a pattern-matching tool for identifying and classifying malware samples and suspicious files.
-
-### Using YARA Rules
-
-#### 1. Install YARA
+### YARA Rules
 
 ```bash
-# Ubuntu/Debian
-sudo apt-get install yara
+# Install YARA
+# Linux: sudo apt-get install yara
+# macOS: brew install yara
+# Windows: choco install yara
 
-# Windows (via Chocolatey)
-choco install yara
+# Scan for infostealers
+yara detection-rules/yara/infostealers.yar /path/to/scan/
 
-# macOS
-brew install yara
-```
+# Scan for 2025 ransomware families
+yara detection-rules/yara/ransomware_2025.yar /path/to/suspicious/
 
-#### 2. Scan Files
+# Scan for C2 implants
+yara detection-rules/yara/c2_frameworks.yar /path/to/scan/
 
-```bash
-# Scan a single file
-yara detection-rules/yara/webshells.yar /path/to/suspicious/file.php
-
-# Scan a directory recursively
-yara -r detection-rules/yara/ransomware.yar /path/to/scan/
-
-# Scan with all rules
+# Full threat scan with all rules
 yara -r detection-rules/yara/*.yar /path/to/scan/
 ```
 
-#### 3. Integration with EDR
+### Validation
 
 ```bash
-# Generate alerts on matches
-yara -r -w detection-rules/yara/*.yar /path/to/monitor/ | tee -a yara_alerts.log
+# Validate all detection rules
+python scripts/validate_detection_rules.py
+
+# Run unit tests
+pytest tests/unit/test_detection_rules/ -v
+
+# Export validation report
+python scripts/validate_detection_rules.py --json validation_report.json
 ```
 
-### YARA Rule Structure
+## Rule Highlights
+
+### Sigma: Paste-and-Run Attack Detection
+
+```yaml
+title: Paste and Run Attack - Fake CAPTCHA Technique
+description: |
+    Detects the "Paste and Run" attack technique where users are tricked
+    by fake CAPTCHA pages to execute malicious commands. Delivers LummaC2,
+    HijackLoader, and other malware. Top threat in 2025 reports.
+tags:
+    - attack.execution
+    - attack.t1204.002
+    - threat.lummac2
+    - threat.hijackloader
+```
+
+### YARA: LummaC2 Infostealer
 
 ```yara
-rule RuleName
+rule LummaC2_Stealer
 {
     meta:
-        description = "What this detects"
-        author = "Your Name"
-        date = "YYYY-MM-DD"
-        severity = "low|medium|high|critical"
+        description = "Detects LummaC2 infostealer - top threat in 2025"
+        severity = "critical"
+        mitre_attack = "T1555, T1539, T1552"
 
     strings:
-        $str1 = "suspicious string"
-        $str2 = /regex pattern/
-        $hex = { 4D 5A 90 00 }
+        $browser1 = "\\Google\\Chrome\\User Data\\Default\\Login Data"
+        $wallet1 = "\\Exodus\\exodus.wallet"
+        // ... additional patterns
 
     condition:
-        uint16(0) == 0x5A4D and
-        filesize < 1MB and
-        2 of ($str*)
+        uint16(0) == 0x5A4D and filesize < 5MB and
+        (2 of ($browser*) and 2 of ($wallet*))
 }
 ```
 
-## Detection Rule Best Practices
+### Sigma: DCSync Attack Detection
 
-### Development
-
-1. **Map to MITRE ATT&CK**: Tag rules with appropriate tactics/techniques
-2. **Include Context**: Add references and descriptions
-3. **Version Control**: Use Git to track rule changes
-4. **Peer Review**: Have rules reviewed before production deployment
-
-### Testing
-
-1. **Lab Testing**: Test in isolated environment first
-2. **Baseline Environment**: Understand normal behavior
-3. **False Positive Testing**: Run against known-good files/events
-4. **Performance Testing**: Ensure rules don't impact SIEM performance
-
-### Deployment
-
-1. **Staged Rollout**: Deploy to test group first
-2. **Monitoring Mode**: Run in alert-only mode initially
-3. **Tune Iteratively**: Adjust based on real-world feedback
-4. **Document Changes**: Log all modifications and reasoning
-
-### Maintenance
-
-1. **Regular Updates**: Review rules quarterly
-2. **Threat Intelligence**: Update based on new IOCs
-3. **Remove Obsolete Rules**: Clean up outdated detections
-4. **Performance Monitoring**: Track rule execution time
-
-## Detection Engineering Workflow
-
-```
-1. Threat Research
-   ↓
-2. Write Detection Logic
-   ↓
-3. Test in Lab
-   ↓
-4. Peer Review
-   ↓
-5. Deploy to Monitoring
-   ↓
-6. Tune for False Positives
-   ↓
-7. Enable Alerting
-   ↓
-8. Document and Maintain
+```yaml
+title: DCSync Attack Detection
+description: |
+    Detects DCSync attacks where attackers use replication privileges
+    to request password hashes from Active Directory. Used by APT groups
+    and ransomware operators.
+tags:
+    - attack.credential_access
+    - attack.t1003.006
+level: critical
 ```
 
-## Integration with SIEM
+## Integration Examples
 
 ### Splunk
 
 ```spl
-# Import Sigma rule as Splunk alert
-index=windows EventCode=4688
-| eval CommandLine=lower(CommandLine)
-| search CommandLine="*-encodedcommand*" OR CommandLine="*-enc*"
-| search (Image="*\\powershell.exe" OR Image="*\\pwsh.exe")
+# Import converted Sigma rule
+index=windows sourcetype=WinEventLog:Security EventCode=4662
+| search Properties IN ("1131f6aa-9c07-11d1-f79f-00c04fc2dcd2",
+                        "1131f6ad-9c07-11d1-f79f-00c04fc2dcd2")
+| where NOT match(SubjectUserName, ".*\$$")
+| table _time, SubjectUserName, ObjectName
 ```
 
-### Elastic
+### Elastic SIEM
 
 ```json
 {
-  "query": {
-    "bool": {
-      "must": [
-        {"match": {"event.category": "process"}},
-        {"match": {"process.name": "powershell.exe"}},
-        {"wildcard": {"process.command_line": "*-enc*"}}
-      ]
-    }
+  "rule": {
+    "name": "Potential DCSync Attack",
+    "query": "event.code:4662 AND winlog.event_data.Properties:*1131f6aa*"
   }
 }
 ```
@@ -259,43 +211,91 @@ index=windows EventCode=4688
 
 ```kql
 SecurityEvent
-| where EventID == 4688
-| where NewProcessName has_any ("powershell.exe", "pwsh.exe")
-| where CommandLine has_any ("-enc", "-encodedcommand")
-| project TimeGenerated, Computer, Account, CommandLine
+| where EventID == 4662
+| where Properties has_any ("1131f6aa-9c07-11d1-f79f-00c04fc2dcd2")
+| where SubjectUserName !endswith "$"
+| project TimeGenerated, Computer, SubjectUserName, ObjectName
 ```
 
-## Contributing Detection Rules
+## Rule Quality
 
-When contributing new rules:
+All rules are validated for:
 
-1. **Use Templates**: Follow existing rule structure
-2. **Test Thoroughly**: Include test cases
-3. **Document FPs**: List known false positives
-4. **Provide Context**: Explain detection logic
-5. **Add Examples**: Include sample logs/files that trigger
+- [x] Valid YAML/YARA syntax
+- [x] Required metadata (title, ID, description, author, date)
+- [x] MITRE ATT&CK technique mapping
+- [x] Severity classification
+- [x] False positive documentation
+- [x] References to threat intelligence
+
+Run validation:
+
+```bash
+pytest tests/unit/test_detection_rules/ -v --tb=short
+```
+
+## Detection Engineering Workflow
+
+```text
+1. Threat Intelligence
+   - Monitor 2025 threat reports
+   - Track CISA KEV catalog
+   - Follow vendor advisories
+         |
+         v
+2. Rule Development
+   - Map to ATT&CK technique
+   - Write Sigma/YARA rule
+   - Add comprehensive metadata
+         |
+         v
+3. Testing & Validation
+   - Syntax validation
+   - Lab testing with Atomic Red Team
+   - False positive assessment
+         |
+         v
+4. Deployment
+   - Convert to SIEM format
+   - Deploy in monitoring mode
+   - Tune based on environment
+         |
+         v
+5. Maintenance
+   - Quarterly rule review
+   - Update for new variants
+   - Track detection metrics
+```
 
 ## Resources
 
-### Sigma Resources
-- [SigmaHQ Repository](https://github.com/SigmaHQ/sigma) - 3000+ community rules
+### Official Documentation
+
 - [Sigma Specification](https://sigmahq.io/docs/guide/about)
-- [Sigma Converter](https://uncoder.io/) - Web-based rule converter
-
-### YARA Resources
 - [YARA Documentation](https://yara.readthedocs.io/)
-- [YARA Rules Repository](https://github.com/Yara-Rules/rules)
-- [YARA Best Practices](https://yara.readthedocs.io/en/stable/writingrules.html)
+- [MITRE ATT&CK](https://attack.mitre.org/)
 
-### MITRE ATT&CK
-- [ATT&CK Framework](https://attack.mitre.org/)
-- [ATT&CK Navigator](https://mitre-attack.github.io/attack-navigator/)
+### Community Rules
 
-### Detection Engineering
-- [Florian Roth's Detection Rules](https://github.com/Neo23x0/signature-base)
+- [SigmaHQ](https://github.com/SigmaHQ/sigma) - 3000+ community Sigma rules
+- [Yara-Rules](https://github.com/Yara-Rules/rules) - Community YARA rules
 - [Elastic Detection Rules](https://github.com/elastic/detection-rules)
-- [Splunk Security Content](https://github.com/splunk/security_content)
+
+### Threat Intelligence
+
+- [CISA KEV Catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+- [Red Canary Threat Detection Report](https://redcanary.com/threat-detection-report/)
+- [MITRE ATT&CK Updates](https://attack.mitre.org/resources/updates/)
+
+## Contributing
+
+1. Create rule following existing templates
+2. Map to MITRE ATT&CK technique
+3. Include threat intelligence references
+4. Document false positives
+5. Run validation tests
+6. Submit pull request
 
 ---
 
-**Detect Early. Detect Often. Detect Everything.**
+**Version**: 2.0.0 | **Last Updated**: 2025-11-26 | **Maintainer**: Defensive Toolkit

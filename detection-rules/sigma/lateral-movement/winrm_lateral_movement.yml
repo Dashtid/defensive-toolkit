@@ -1,0 +1,85 @@
+title: WinRM Lateral Movement Detection
+id: 11112222-2222-aaaa-2222-222222222222
+status: stable
+description: |
+    Detects Windows Remote Management (WinRM) usage for lateral movement.
+    WinRM is commonly used by attackers for remote PowerShell execution,
+    Enter-PSSession, and Invoke-Command across systems.
+references:
+    - https://attack.mitre.org/techniques/T1021/006/
+    - https://www.elastic.co/guide/en/security/current/winrm-lateral-movement.html
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.lateral_movement
+    - attack.t1021.006
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_winrs:
+        Image|endswith: '\winrs.exe'
+        CommandLine|contains:
+            - '-r:'
+            - '/r:'
+    selection_powershell_remoting:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'Enter-PSSession'
+            - 'New-PSSession'
+            - 'Invoke-Command'
+            - '-ComputerName'
+            - '-Session'
+            - 'Enable-PSRemoting'
+    selection_wsmprovhost:
+        ParentImage|endswith: '\svchost.exe'
+        Image|endswith: '\wsmprovhost.exe'
+    selection_evil_winrm:
+        CommandLine|contains:
+            - 'evil-winrm'
+            - 'Evil-WinRM'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate remote administration
+    - PowerShell remoting by IT staff
+    - Configuration management tools
+level: medium
+---
+title: WinRM Service Suspicious Activity
+id: 11112222-2222-aaaa-2222-222222222223
+status: stable
+description: |
+    Detects suspicious processes spawned by WinRM service indicating
+    potential lateral movement or remote code execution.
+references:
+    - https://attack.mitre.org/techniques/T1021/006/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.lateral_movement
+    - attack.t1021.006
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_parent:
+        ParentImage|endswith: '\wsmprovhost.exe'
+    selection_suspicious_child:
+        Image|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+            - '\pwsh.exe'
+            - '\mshta.exe'
+            - '\rundll32.exe'
+            - '\regsvr32.exe'
+            - '\certutil.exe'
+    condition: selection_parent and selection_suspicious_child
+falsepositives:
+    - Remote administration scripts
+    - Legitimate automation
+level: medium
