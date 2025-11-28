@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.1] - 2025-11-28
+
+### Email Alerting for Security Health Checks
+
+Added email alerting capability to the security tools health check script.
+
+### Added
+
+- **Email Alerting** in `monitoring/health/check-security-tools.ps1`:
+  - HTML-formatted email alerts with professional styling
+  - SMTP configuration parameters (server, port, TLS/SSL, credentials)
+  - Email validation for recipient and sender addresses
+  - Optional alerts on warnings (not just failures) via `-AlertOnWarning`
+  - Graceful error handling for SMTP failures
+  - Support for authenticated SMTP (Office 365, Gmail with app passwords, etc.)
+
+### Changed
+
+- Updated script version to 1.1.0
+- Enhanced help documentation with 6 usage examples
+- Added deprecation notice for `Send-MailMessage` with alternatives (MailKit, Microsoft Graph)
+
+### Usage Examples
+
+```powershell
+# Basic alert (no TLS)
+.\check-security-tools.ps1 -SendAlert -AlertEmail "admin@company.com" -FromEmail "monitor@company.com" -SmtpServer "mail.company.com"
+
+# Office 365 with TLS and authentication
+$cred = Get-Credential
+.\check-security-tools.ps1 -SendAlert -AlertEmail "security@company.com" -FromEmail "monitor@company.com" -SmtpServer "smtp.office365.com" -SmtpPort 587 -UseSSL -SmtpCredential $cred
+```
+
+---
+
 ## [1.6.0] - 2025-11-26
 
 ### Enhanced Detection Rules (2025 Threat Landscape)
@@ -679,6 +714,7 @@ See `docs/OPEN_SOURCE_STACK.md` for complete migration guides.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.6.1 | 2025-11-28 | Email alerting for security health checks |
 | 1.6.0 | 2025-11-26 | Enhanced detection rules with 2025 threat coverage |
 | 1.5.0 | 2025-10-22 | Comprehensive test suite (700+ tests, 80%+ coverage) |
 | 1.4.1 | 2025-10-22 | Postman collection and developer experience |
