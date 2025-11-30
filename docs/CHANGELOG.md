@@ -7,6 +7,118 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.2] - 2025-11-30
+
+### Webhook/Event-Driven Runbook Triggers
+
+Major enhancement: Enable SIEM alerts to automatically trigger incident response runbooks via webhook endpoints.
+
+### Added
+
+- **Webhook API Router** (`api/routers/webhooks.py`):
+  - `GET /webhooks` - List configured webhook endpoints
+  - `GET /webhooks/{webhook_id}` - Get webhook configuration details
+  - `POST /webhooks` - Create new webhook endpoint
+  - `PUT /webhooks/{webhook_id}` - Update webhook configuration
+  - `DELETE /webhooks/{webhook_id}` - Delete webhook endpoint
+  - `POST /webhooks/{webhook_id}/trigger` - Receive SIEM alert (signature-verified)
+  - `POST /webhooks/{webhook_id}/test` - Test webhook with sample payload
+  - `GET /webhooks/{webhook_id}/stats` - Get webhook statistics
+  - `POST /webhooks/{webhook_id}/rules` - Add trigger rule
+  - `DELETE /webhooks/{webhook_id}/rules/{rule_id}` - Remove trigger rule
+  - `GET /webhooks/presets/{source}` - Get preset config for SIEM platform
+
+- **SIEM Platform Support** (Preset Configurations):
+  - Wazuh - Field mappings for rule groups, data fields, timestamps
+  - Elastic SIEM - Kibana alert structure parsing
+  - OpenSearch Security Analytics - Alert format handling
+  - Graylog - Event notification format support
+  - Generic/Custom - Configurable field mappings
+
+- **Webhook Security**:
+  - HMAC signature verification (SHA-256, SHA-1)
+  - Multiple signature header formats (X-Signature, X-Hub-Signature-256, X-Wazuh-Signature)
+  - IP whitelist/allowlist support (single IPs and CIDR notation)
+  - Constant-time signature comparison (timing attack prevention)
+
+- **Alert-to-Runbook Mapping**:
+  - Flexible trigger rules with regex, exact, or contains matching
+  - JSON path dot notation for nested field extraction
+  - Variable mapping from alert fields to runbook variables
+  - Severity-based execution mode selection
+  - Auto-approve level configuration per rule
+
+- **Rate Limiting**:
+  - Per-rule cooldown periods (prevent duplicate triggers)
+  - Hourly trigger limits per rule
+  - Rate limit tracking with automatic cleanup
+
+- **Statistics & Monitoring**:
+  - Total received/processed/triggered/skipped/error counts
+  - Last received and triggered timestamps
+  - Triggers per hour and 24-hour metrics
+  - Top triggered rules ranking
+
+- **New Pydantic Models** (`api/models.py`):
+  - `WebhookSourceEnum` - Supported SIEM platforms
+  - `WebhookStatusEnum` - Active/disabled/paused states
+  - `WebhookConfig` - Webhook endpoint configuration
+  - `WebhookTriggerRule` - Alert-to-runbook mapping rule
+  - `IncomingAlert` - Parsed alert from webhook
+  - `WebhookTriggerResult` - Trigger response with execution details
+  - `WebhookTestRequest` / `WebhookTestResult` - Test endpoint models
+  - `WebhookStats` - Statistics response model
+  - `WebhookConfigList` - Paginated webhook list
+
+### Technical Details
+
+- Asynchronous alert processing with FastAPI BackgroundTasks
+- Lazy import pattern to avoid circular dependencies with incident_response router
+- In-memory storage for webhook configs and stats (production: use database)
+- Integration with existing RunbookEngine and runbook execution API
+- Trigger history maintained for rate limiting (24-hour window)
+
+### API Examples
+
+```bash
+# Create webhook for Wazuh alerts
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Wazuh Production",
+    "source": "wazuh",
+    "secret_key": "your-hmac-secret",
+    "trigger_rules": [{
+      "name": "Credential Access",
+      "match_field": "rule.groups",
+      "match_pattern": "authentication_failed",
+      "match_type": "contains",
+      "runbook_id": "credential_compromise",
+      "execution_mode": "dry_run"
+    }]
+  }' \
+  https://localhost/api/v1/webhooks
+
+# Trigger webhook (from SIEM)
+curl -X POST \
+  -H "X-Signature: sha256=<hmac-hex>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "12345", "rule": {"level": 10, "groups": ["authentication_failed"]}}' \
+  https://localhost/api/v1/webhooks/WH-20251130-ABC123/trigger
+
+# Get preset configuration
+curl -H "Authorization: Bearer $TOKEN" \
+  https://localhost/api/v1/webhooks/presets/elastic
+
+# Test webhook with sample payload
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"test_payload": {"id": "test-123", "severity": "high"}}' \
+  https://localhost/api/v1/webhooks/WH-20251130-ABC123/test
+```
+
+---
+
 ## [1.7.1] - 2025-11-30
 
 ### REST API for Incident Response Runbooks
@@ -860,6 +972,7 @@ See `docs/OPEN_SOURCE_STACK.md` for complete migration guides.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.7.2 | 2025-11-30 | Webhook/event-driven runbook triggers |
 | 1.7.1 | 2025-11-30 | REST API for incident response runbooks |
 | 1.7.0 | 2025-11-30 | Automated incident response runbooks |
 | 1.6.1 | 2025-11-28 | Email alerting for security health checks |

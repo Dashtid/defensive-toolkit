@@ -631,3 +631,170 @@ class RollbackRequest(BaseModel):
     """Request to rollback executed actions"""
     execution_id: str
     confirm: bool = Field(..., description="Must be true to confirm rollback")
+
+
+# ============================================================================
+# Webhook Models (v1.7.2)
+# ============================================================================
+
+class WebhookSourceEnum(str, Enum):
+    """Supported webhook sources"""
+    WAZUH = "wazuh"
+    ELASTIC = "elastic"
+    OPENSEARCH = "opensearch"
+    GRAYLOG = "graylog"
+    GENERIC = "generic"
+    CUSTOM = "custom"
+
+
+class WebhookStatusEnum(str, Enum):
+    """Webhook configuration status"""
+    ACTIVE = "active"
+    DISABLED = "disabled"
+    TESTING = "testing"
+
+
+class AlertSeverityMapping(BaseModel):
+    """Maps alert severity to runbook execution mode"""
+    alert_severity: str = Field(..., description="Source alert severity (e.g., 'critical', 'high', '15')")
+    runbook_mode: RunbookExecutionModeEnum = Field(
+        default=RunbookExecutionModeEnum.DRY_RUN,
+        description="Execution mode for this severity"
+    )
+    auto_approve_level: Optional[str] = Field(
+        None,
+        pattern="^(low|medium|high)$",
+        description="Auto-approve level when mode is 'auto'"
+    )
+
+
+class WebhookTriggerRule(BaseModel):
+    """Rule for mapping alerts to runbooks"""
+    rule_id: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    enabled: bool = True
+
+    # Matching conditions (all must match)
+    match_field: str = Field(..., description="Alert field to match (e.g., 'rule.id', 'alert.signature')")
+    match_pattern: str = Field(..., description="Regex pattern or exact value to match")
+    match_type: str = Field("regex", pattern="^(regex|exact|contains)$")
+
+    # Optional additional conditions
+    severity_min: Optional[str] = Field(None, description="Minimum severity to trigger")
+    severity_max: Optional[str] = Field(None, description="Maximum severity to trigger")
+
+    # Action
+    runbook_id: str = Field(..., description="Runbook to execute when matched")
+    execution_mode: RunbookExecutionModeEnum = RunbookExecutionModeEnum.DRY_RUN
+    auto_approve_level: Optional[str] = Field(None, pattern="^(low|medium|high)$")
+
+    # Variable mapping from alert to runbook
+    variable_mappings: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Map alert fields to runbook variables (e.g., {'compromised_user': 'data.user'})"
+    )
+
+    # Rate limiting
+    cooldown_seconds: int = Field(300, ge=0, description="Minimum seconds between triggers for same rule")
+    max_triggers_per_hour: int = Field(10, ge=1, le=100, description="Maximum triggers per hour")
+
+
+class WebhookConfig(BaseModel):
+    """Webhook endpoint configuration"""
+    webhook_id: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    source: WebhookSourceEnum
+    status: WebhookStatusEnum = WebhookStatusEnum.ACTIVE
+
+    # Security
+    secret_key: Optional[str] = Field(None, description="HMAC secret for signature verification")
+    allowed_ips: List[str] = Field(default_factory=list, description="Allowed source IPs (empty = all)")
+
+    # Alert parsing
+    alert_id_field: str = Field("id", description="JSON path to alert ID")
+    alert_severity_field: str = Field("severity", description="JSON path to severity")
+    alert_title_field: str = Field("title", description="JSON path to alert title")
+    alert_description_field: str = Field("description", description="JSON path to description")
+    alert_timestamp_field: str = Field("timestamp", description="JSON path to timestamp")
+
+    # Trigger rules
+    trigger_rules: List[WebhookTriggerRule] = Field(default_factory=list)
+
+    # Default behavior when no rules match
+    default_runbook_id: Optional[str] = Field(None, description="Default runbook if no rules match")
+    default_execution_mode: RunbookExecutionModeEnum = RunbookExecutionModeEnum.DRY_RUN
+
+    # Metadata
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+
+
+class WebhookConfigList(BaseModel):
+    """List of webhook configurations"""
+    webhooks: List[WebhookConfig]
+    total: int
+
+
+class IncomingAlert(BaseModel):
+    """Parsed incoming alert from webhook"""
+    alert_id: str
+    source: WebhookSourceEnum
+    severity: str
+    title: str
+    description: Optional[str] = None
+    timestamp: datetime
+    raw_payload: Dict[str, Any]
+    matched_rule: Optional[str] = None
+    source_ip: Optional[str] = None
+
+
+class WebhookTriggerResult(BaseModel):
+    """Result of webhook trigger processing"""
+    webhook_id: str
+    alert_id: str
+    received_at: datetime
+    processed: bool
+    matched_rule: Optional[str] = None
+    execution_id: Optional[str] = None
+    incident_id: Optional[str] = None
+    runbook_triggered: Optional[str] = None
+    execution_mode: Optional[str] = None
+    message: str
+    skipped_reason: Optional[str] = None
+
+
+class WebhookTestRequest(BaseModel):
+    """Request to test webhook configuration"""
+    webhook_id: str
+    test_payload: Dict[str, Any] = Field(..., description="Sample alert payload to test")
+
+
+class WebhookTestResult(BaseModel):
+    """Result of webhook configuration test"""
+    webhook_id: str
+    test_passed: bool
+    parsed_alert: Optional[IncomingAlert] = None
+    matched_rules: List[str] = []
+    would_trigger_runbook: Optional[str] = None
+    would_use_mode: Optional[str] = None
+    errors: List[str] = []
+    warnings: List[str] = []
+
+
+class WebhookStats(BaseModel):
+    """Statistics for a webhook endpoint"""
+    webhook_id: str
+    webhook_name: str
+    total_received: int
+    total_processed: int
+    total_triggered: int
+    total_skipped: int
+    total_errors: int
+    last_received_at: Optional[datetime] = None
+    last_triggered_at: Optional[datetime] = None
+    triggers_last_hour: int
+    triggers_last_24h: int
+    top_triggered_rules: List[Dict[str, Any]] = []
