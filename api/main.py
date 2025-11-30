@@ -30,7 +30,7 @@ from api.middleware import (
 from api.routers import (
     detection, incident_response, threat_hunting, hardening,
     monitoring, forensics, vulnerability, automation,
-    compliance, log_analysis, webhooks, threat_intel, websocket
+    compliance, log_analysis, webhooks, threat_intel, websocket, siem
 )
 
 settings = get_settings()
@@ -225,6 +225,7 @@ app.include_router(log_analysis.router, prefix=settings.api_prefix)
 app.include_router(webhooks.router, prefix=settings.api_prefix)
 app.include_router(threat_intel.router, prefix=settings.api_prefix)
 app.include_router(websocket.router, prefix=settings.api_prefix)
+app.include_router(siem.router, prefix=settings.api_prefix)
 
 logger.info("All routers registered successfully")
 

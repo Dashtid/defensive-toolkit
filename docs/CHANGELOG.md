@@ -7,6 +7,168 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.5] - 2025-11-30
+
+### SIEM Integration Layer
+
+Major enhancement: Unified SIEM integration API with support for Wazuh, Elastic/OpenSearch, and Graylog. Query alerts, manage agents/rules, and get dashboard statistics across multiple SIEM platforms through a single interface.
+
+### Added
+
+- **SIEM API Router** (`api/routers/siem.py`):
+  - `GET /siem/connections` - List all configured SIEM connections
+  - `GET /siem/connections/{id}` - Get specific connection details
+  - `POST /siem/connections` - Create new SIEM connection
+  - `PUT /siem/connections/{id}` - Update SIEM connection
+  - `DELETE /siem/connections/{id}` - Delete SIEM connection
+  - `POST /siem/connections/{id}/test` - Test connection health
+  - `POST /siem/connections/{id}/query` - Query alerts with filters
+  - `GET /siem/connections/{id}/agents` - List SIEM agents (Wazuh/Elastic)
+  - `GET /siem/connections/{id}/rules` - List detection rules
+  - `GET /siem/connections/{id}/indices` - List indices/data streams
+  - `GET /siem/connections/{id}/dashboard` - Get dashboard statistics
+
+- **Supported SIEM Platforms**:
+  - **Wazuh** - Full integration with JWT authentication, agent management, rule browsing
+  - **Elastic SIEM** - Elastic Security with detection rules and agents
+  - **OpenSearch** - OpenSearch Security Analytics (uses Elastic client)
+  - **Graylog** - Placeholder for future implementation
+
+- **Abstract SIEM Client Architecture**:
+  - `BaseSIEMClient` - Abstract base class defining common SIEM operations
+  - `WazuhClient` - Complete Wazuh Manager API integration
+  - `ElasticClient` - Elasticsearch/OpenSearch integration
+  - Client factory pattern for runtime instantiation
+
+- **Wazuh Integration Features**:
+  - JWT token authentication with automatic refresh
+  - Agent status and inventory queries
+  - Rule listing with level filtering
+  - Alert querying with time range and severity filters
+  - Dashboard statistics (alerts per day, agents, rules, top agents)
+  - Index management
+
+- **Elastic/OpenSearch Integration Features**:
+  - API key or basic authentication
+  - DSL query building for alert searches
+  - Detection rules from .siem-signals index
+  - Agent inventory from Fleet integration
+  - Index pattern discovery
+  - Alert aggregations and statistics
+
+- **Query Capabilities**:
+  - Time range filtering (ISO 8601 format)
+  - Severity/level filtering (configurable thresholds)
+  - Index selection for targeted queries
+  - Pagination (limit/offset) for large result sets
+  - Custom queries (pass-through for platform-specific syntax)
+
+- **Dashboard Statistics**:
+  - Alert counts (total, critical, high, medium, low)
+  - Time-series data (alerts per hour over configurable window)
+  - Active agents count
+  - Enabled rules count
+  - Top alerting agents ranking
+
+- **New Pydantic Models** (`api/models.py`):
+  - `SIEMPlatformTypeEnum` - Wazuh, Elastic, OpenSearch, Graylog
+  - `SIEMConnectionConfig` - Connection configuration model
+  - `SIEMConnectionStatus` - Health check response
+  - `SIEMConnectionCreateRequest` / `SIEMConnectionResponse` - CRUD models
+  - `SIEMQueryRequest` / `SIEMQueryResponse` - Query interface
+  - `SIEMAlert` - Normalized alert model across all platforms
+  - `SIEMAgentInfo` / `SIEMAgentListResponse` - Agent inventory models
+  - `SIEMRuleInfo` / `SIEMRuleListResponse` - Detection rule models
+  - `SIEMIndexInfo` / `SIEMIndexListResponse` - Index management models
+  - `SIEMDashboardStats` - Dashboard statistics model
+  - `SIEMTimeSeriesDataPoint` - Time-series chart data
+
+### Technical Details
+
+- Async HTTP client (httpx) for non-blocking SIEM API calls
+- Platform-specific authentication handling (Wazuh JWT, Elastic API keys)
+- Alert normalization layer for unified response format
+- Connection health monitoring with detailed status
+- In-memory connection storage (production: replace with database)
+- SSL/TLS verification configurable per connection
+- Configurable timeouts and retry logic
+
+### API Examples
+
+```bash
+# Create Wazuh connection
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production Wazuh",
+    "platform": "wazuh",
+    "host": "wazuh.company.com",
+    "port": 55000,
+    "use_ssl": true,
+    "username": "wazuh-api-user",
+    "password": "secure-password"
+  }' \
+  https://localhost/api/v1/siem/connections
+
+# Create Elastic connection
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production Elastic",
+    "platform": "elastic",
+    "host": "elastic.company.com",
+    "port": 9200,
+    "use_ssl": true,
+    "api_key": "base64-encoded-api-key"
+  }' \
+  https://localhost/api/v1/siem/connections
+
+# Test connection health
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  https://localhost/api/v1/siem/connections/SIEM-001/test
+
+# Query alerts
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "time_range_start": "2025-11-29T00:00:00Z",
+    "time_range_end": "2025-11-30T00:00:00Z",
+    "severity_min": 10,
+    "limit": 50
+  }' \
+  https://localhost/api/v1/siem/connections/SIEM-001/query
+
+# Get agents
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://localhost/api/v1/siem/connections/SIEM-001/agents?limit=100"
+
+# Get detection rules
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://localhost/api/v1/siem/connections/SIEM-001/rules"
+
+# Get dashboard statistics
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://localhost/api/v1/siem/connections/SIEM-001/dashboard?hours=24"
+```
+
+### Environment Variables
+
+```bash
+# No environment variables required - connections stored in database/memory
+# Optional: Default timeout for SIEM API calls
+SIEM_REQUEST_TIMEOUT=30
+```
+
+### Security
+
+- Credentials stored securely (production: encrypt at rest)
+- SSL/TLS verification enabled by default
+- Audit logging for all SIEM operations
+- Rate limiting applied at API gateway level
+- JWT authentication required for all endpoints
+
+---
+
 ## [1.7.4] - 2025-11-30
 
 ### WebSocket Real-Time Updates
@@ -1253,6 +1415,8 @@ See `docs/OPEN_SOURCE_STACK.md` for complete migration guides.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.7.5 | 2025-11-30 | SIEM integration layer (Wazuh, Elastic, OpenSearch) |
+| 1.7.4 | 2025-11-30 | WebSocket real-time updates |
 | 1.7.3 | 2025-11-30 | Threat intelligence IOC enrichment |
 | 1.7.2 | 2025-11-30 | Webhook/event-driven runbook triggers |
 | 1.7.1 | 2025-11-30 | REST API for incident response runbooks |

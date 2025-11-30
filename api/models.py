@@ -1341,3 +1341,386 @@ class SystemAlertEvent(BaseModel):
     description: str
     affected_component: Optional[str] = None
     metadata: Dict[str, Any] = {}
+
+
+# ============================================================================
+# SIEM Integration Models (v1.7.5)
+# ============================================================================
+
+class SIEMPlatformTypeEnum(str, Enum):
+    """Supported SIEM platform types"""
+    WAZUH = "wazuh"
+    ELASTIC = "elastic"
+    OPENSEARCH = "opensearch"
+    GRAYLOG = "graylog"
+    SPLUNK = "splunk"
+
+
+class SIEMConnectionStatusEnum(str, Enum):
+    """SIEM connection status"""
+    CONNECTED = "connected"
+    DISCONNECTED = "disconnected"
+    CONNECTING = "connecting"
+    ERROR = "error"
+    UNAUTHORIZED = "unauthorized"
+
+
+class SIEMAuthTypeEnum(str, Enum):
+    """SIEM authentication types"""
+    BASIC = "basic"
+    API_KEY = "api_key"
+    TOKEN = "token"
+    CERTIFICATE = "certificate"
+
+
+class SIEMConnectionConfig(BaseModel):
+    """Configuration for connecting to a SIEM platform"""
+    connection_id: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    platform: SIEMPlatformTypeEnum
+    enabled: bool = True
+
+    # Connection settings
+    host: str = Field(..., description="SIEM host URL (e.g., https://wazuh.example.com)")
+    port: int = Field(443, ge=1, le=65535)
+    use_ssl: bool = True
+    verify_ssl: bool = True
+
+    # Authentication
+    auth_type: SIEMAuthTypeEnum = SIEMAuthTypeEnum.BASIC
+    username: Optional[str] = None
+    password: Optional[str] = None  # Will be stored encrypted in production
+    api_key: Optional[str] = None
+    token: Optional[str] = None
+    certificate_path: Optional[str] = None
+
+    # Platform-specific settings
+    index_pattern: str = Field("wazuh-alerts-*", description="Index pattern for alerts")
+    api_version: Optional[str] = None
+
+    # Connection pool settings
+    timeout_seconds: int = Field(30, ge=5, le=300)
+    max_retries: int = Field(3, ge=0, le=10)
+    pool_connections: int = Field(10, ge=1, le=100)
+
+    # Metadata
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    last_connected_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+
+
+class SIEMConnectionConfigList(BaseModel):
+    """List of SIEM connections"""
+    connections: List[SIEMConnectionConfig]
+    total: int
+
+
+class SIEMConnectionStatus(BaseModel):
+    """Current status of a SIEM connection"""
+    connection_id: str
+    name: str
+    platform: SIEMPlatformTypeEnum
+    status: SIEMConnectionStatusEnum
+    last_check: datetime
+    latency_ms: Optional[int] = None
+    version: Optional[str] = None
+    cluster_name: Optional[str] = None
+    node_count: Optional[int] = None
+    index_count: Optional[int] = None
+    document_count: Optional[int] = None
+    error_message: Optional[str] = None
+
+
+class SIEMQueryRequest(BaseModel):
+    """Request to query SIEM for alerts/events"""
+    connection_id: str = Field(..., description="SIEM connection to query")
+    query: Optional[str] = Field(None, description="Query string (Lucene/KQL syntax)")
+    query_dsl: Optional[Dict[str, Any]] = Field(None, description="Full DSL query object")
+
+    # Time range
+    time_from: datetime = Field(..., description="Start time for query")
+    time_to: Optional[datetime] = Field(None, description="End time (defaults to now)")
+    time_field: str = Field("timestamp", description="Field name for time filtering")
+
+    # Filters
+    severity_min: Optional[str] = None
+    rule_ids: List[str] = Field(default_factory=list)
+    agent_ids: List[str] = Field(default_factory=list)
+    source_ips: List[str] = Field(default_factory=list)
+    mitre_tactics: List[str] = Field(default_factory=list)
+    mitre_techniques: List[str] = Field(default_factory=list)
+
+    # Pagination
+    size: int = Field(100, ge=1, le=10000)
+    from_offset: int = Field(0, ge=0)
+
+    # Sorting
+    sort_field: str = Field("timestamp", description="Field to sort by")
+    sort_order: str = Field("desc", pattern="^(asc|desc)$")
+
+    # Response options
+    include_raw: bool = Field(False, description="Include raw SIEM response")
+    fields: List[str] = Field(default_factory=list, description="Specific fields to return")
+
+
+class SIEMAlert(BaseModel):
+    """Normalized alert from SIEM"""
+    alert_id: str
+    timestamp: datetime
+    platform: SIEMPlatformTypeEnum
+
+    # Alert details
+    rule_id: Optional[str] = None
+    rule_name: Optional[str] = None
+    rule_description: Optional[str] = None
+    rule_level: Optional[int] = None
+    rule_groups: List[str] = []
+
+    # Severity mapping
+    severity: str  # low, medium, high, critical
+    severity_score: Optional[float] = None
+
+    # Source information
+    agent_id: Optional[str] = None
+    agent_name: Optional[str] = None
+    agent_ip: Optional[str] = None
+    manager_name: Optional[str] = None
+
+    # Event details
+    source_ip: Optional[str] = None
+    destination_ip: Optional[str] = None
+    source_port: Optional[int] = None
+    destination_port: Optional[int] = None
+    protocol: Optional[str] = None
+    action: Optional[str] = None
+
+    # User context
+    user: Optional[str] = None
+    src_user: Optional[str] = None
+    dst_user: Optional[str] = None
+
+    # File/process context
+    file_path: Optional[str] = None
+    file_hash: Optional[str] = None
+    process_name: Optional[str] = None
+    process_id: Optional[int] = None
+    parent_process: Optional[str] = None
+    command_line: Optional[str] = None
+
+    # MITRE ATT&CK
+    mitre_tactics: List[str] = []
+    mitre_techniques: List[str] = []
+    mitre_ids: List[str] = []
+
+    # Additional data
+    full_log: Optional[str] = None
+    decoder_name: Optional[str] = None
+    location: Optional[str] = None
+    data: Dict[str, Any] = {}
+
+    # Raw response
+    raw: Optional[Dict[str, Any]] = None
+
+
+class SIEMQueryResponse(BaseModel):
+    """Response from SIEM query"""
+    connection_id: str
+    platform: SIEMPlatformTypeEnum
+    query_time_ms: int
+    total_hits: int
+    returned_count: int
+    alerts: List[SIEMAlert]
+    aggregations: Optional[Dict[str, Any]] = None
+    raw_response: Optional[Dict[str, Any]] = None
+
+
+class SIEMAggregationRequest(BaseModel):
+    """Request for SIEM aggregation query"""
+    connection_id: str
+    time_from: datetime
+    time_to: Optional[datetime] = None
+    time_field: str = "timestamp"
+
+    # Aggregation type
+    aggregation_type: str = Field(
+        ...,
+        pattern="^(terms|date_histogram|histogram|stats|cardinality|top_hits)$"
+    )
+    field: str = Field(..., description="Field to aggregate on")
+
+    # Options
+    size: int = Field(10, ge=1, le=1000, description="Number of buckets")
+    interval: Optional[str] = Field(None, description="Interval for date_histogram (1h, 1d, etc.)")
+    min_doc_count: int = Field(1, ge=0)
+
+    # Filters
+    query: Optional[str] = None
+    filters: Dict[str, Any] = {}
+
+
+class SIEMAggregationBucket(BaseModel):
+    """Single aggregation bucket"""
+    key: Any
+    key_as_string: Optional[str] = None
+    doc_count: int
+    sub_aggregations: Optional[Dict[str, Any]] = None
+
+
+class SIEMAggregationResponse(BaseModel):
+    """Response from SIEM aggregation"""
+    connection_id: str
+    platform: SIEMPlatformTypeEnum
+    query_time_ms: int
+    aggregation_type: str
+    field: str
+    total_docs: int
+    buckets: List[SIEMAggregationBucket]
+
+
+class SIEMAgentInfo(BaseModel):
+    """Information about a SIEM agent"""
+    agent_id: str
+    name: str
+    ip: Optional[str] = None
+    os_name: Optional[str] = None
+    os_version: Optional[str] = None
+    os_platform: Optional[str] = None
+    version: Optional[str] = None
+    status: str  # active, disconnected, never_connected, pending
+    last_keep_alive: Optional[datetime] = None
+    date_add: Optional[datetime] = None
+    group: List[str] = []
+    manager: Optional[str] = None
+    node_name: Optional[str] = None
+
+
+class SIEMAgentListResponse(BaseModel):
+    """List of SIEM agents"""
+    connection_id: str
+    platform: SIEMPlatformTypeEnum
+    total_agents: int
+    agents: List[SIEMAgentInfo]
+    affected_items: int
+    failed_items: int
+
+
+class SIEMRuleInfo(BaseModel):
+    """Information about a SIEM detection rule"""
+    rule_id: str
+    level: int
+    description: str
+    groups: List[str] = []
+    pci_dss: List[str] = []
+    gpg13: List[str] = []
+    gdpr: List[str] = []
+    hipaa: List[str] = []
+    nist_800_53: List[str] = []
+    tsc: List[str] = []
+    mitre: Dict[str, List[str]] = {}
+    file: Optional[str] = None
+    path: Optional[str] = None
+    relative_dirname: Optional[str] = None
+    status: str = "enabled"
+
+
+class SIEMRuleListResponse(BaseModel):
+    """List of SIEM rules"""
+    connection_id: str
+    platform: SIEMPlatformTypeEnum
+    total_rules: int
+    rules: List[SIEMRuleInfo]
+
+
+class SIEMIndexInfo(BaseModel):
+    """Information about a SIEM index"""
+    index_name: str
+    status: str  # open, closed
+    health: str  # green, yellow, red
+    doc_count: int
+    store_size_bytes: int
+    store_size_human: str
+    primary_shards: int
+    replica_shards: int
+    creation_date: Optional[datetime] = None
+
+
+class SIEMIndexListResponse(BaseModel):
+    """List of SIEM indices"""
+    connection_id: str
+    platform: SIEMPlatformTypeEnum
+    total_indices: int
+    indices: List[SIEMIndexInfo]
+    total_docs: int
+    total_size_bytes: int
+    total_size_human: str
+
+
+class SIEMDashboardStats(BaseModel):
+    """Dashboard statistics from SIEM"""
+    connection_id: str
+    platform: SIEMPlatformTypeEnum
+    time_range_hours: int
+    generated_at: datetime
+
+    # Alert statistics
+    total_alerts: int
+    alerts_by_severity: Dict[str, int]
+    alerts_by_hour: List[Dict[str, Any]]
+
+    # Top items
+    top_rules: List[Dict[str, Any]]
+    top_agents: List[Dict[str, Any]]
+    top_source_ips: List[Dict[str, Any]]
+    top_mitre_tactics: List[Dict[str, Any]]
+    top_mitre_techniques: List[Dict[str, Any]]
+
+    # Agent statistics
+    total_agents: int
+    active_agents: int
+    disconnected_agents: int
+
+    # System health
+    cluster_status: Optional[str] = None
+    index_health: Optional[str] = None
+
+
+class SIEMHealthCheck(BaseModel):
+    """SIEM platform health check result"""
+    connection_id: str
+    name: str
+    platform: SIEMPlatformTypeEnum
+    healthy: bool
+    checks: Dict[str, bool] = {}  # connectivity, authentication, indices, etc.
+    latency_ms: int
+    version: Optional[str] = None
+    cluster_health: Optional[str] = None
+    error_message: Optional[str] = None
+    checked_at: datetime
+
+
+class SIEMBulkHealthCheck(BaseModel):
+    """Bulk health check for all SIEM connections"""
+    total_connections: int
+    healthy_count: int
+    unhealthy_count: int
+    results: List[SIEMHealthCheck]
+    checked_at: datetime
+
+
+class SIEMAlertAcknowledge(BaseModel):
+    """Request to acknowledge alerts in SIEM"""
+    connection_id: str
+    alert_ids: List[str] = Field(..., min_items=1, max_items=100)
+    acknowledged_by: str
+    comment: Optional[str] = None
+
+
+class SIEMAlertAcknowledgeResponse(BaseModel):
+    """Response from alert acknowledgment"""
+    connection_id: str
+    acknowledged_count: int
+    failed_count: int
+    failed_ids: List[str] = []
+    error_message: Optional[str] = None
