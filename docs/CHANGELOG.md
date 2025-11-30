@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2025-11-30
+
+### Automated Incident Response Runbooks
+
+Major feature addition: YAML-based incident response automation with approval gates, evidence preservation, and graduated response.
+
+### Added
+
+- **Runbook Execution Engine** (`incident-response/runbooks/runbook_engine.py`):
+  - YAML-based runbook definition and execution
+  - Severity-based approval gates (low/medium/high/critical)
+  - Auto-approve mode for lower severity actions
+  - Evidence chain of custody tracking with SHA-256 hashing
+  - Dry-run mode for validation
+  - Rollback capability tracking
+  - Detailed execution logging
+
+- **Containment Actions** (`incident-response/runbooks/actions/containment.py`):
+  - `isolate_host` - Network isolation via firewall rules (Windows/Linux)
+  - `block_ip` - Block malicious IP addresses
+  - `disable_account` - Disable local/AD user accounts
+  - `quarantine_file` - Move files to quarantine with metadata
+  - `kill_process` - Terminate malicious processes
+
+- **Preservation Actions** (`incident-response/runbooks/actions/preservation.py`):
+  - `collect_evidence` - Collect logs, processes, network, registry, etc.
+  - `create_forensic_package` - Package evidence with chain of custody
+  - `capture_memory` - Memory dump (WinPmem/AVML integration)
+  - `snapshot_disk` - VSS snapshots on Windows
+
+- **Escalation Actions** (`incident-response/runbooks/actions/escalation.py`):
+  - `send_alert` - Email, Slack, Teams, PagerDuty notifications
+  - `create_ticket` - Jira and ServiceNow integration
+  - `update_severity` - Update incident severity with notification
+  - `notify_oncall` - Page on-call personnel
+
+- **Runbook Templates**:
+  - `ransomware.yaml` - Ransomware incident response
+  - `malware.yaml` - General malware infection response
+  - `credential_compromise.yaml` - Compromised credential response
+
+### Usage Examples
+
+```bash
+# Validate runbook (dry run)
+python runbook_engine.py --runbook templates/ransomware.yaml --dry-run
+
+# Execute with approval prompts
+python runbook_engine.py --runbook templates/malware.yaml
+
+# Auto-approve low severity actions
+python runbook_engine.py --runbook templates/credential_compromise.yaml --auto-approve low
+```
+
+### Technical Details
+
+- Follows NIST SP 800-61 and SANS IR frameworks
+- MITRE ATT&CK mapped runbook templates
+- Cross-platform support (Windows and Linux)
+- Integration ready (SMTP, Slack, Teams, PagerDuty, Jira, ServiceNow)
+
+---
+
 ## [1.6.1] - 2025-11-28
 
 ### Email Alerting for Security Health Checks
@@ -714,6 +777,7 @@ See `docs/OPEN_SOURCE_STACK.md` for complete migration guides.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.7.0 | 2025-11-30 | Automated incident response runbooks |
 | 1.6.1 | 2025-11-28 | Email alerting for security health checks |
 | 1.6.0 | 2025-11-26 | Enhanced detection rules with 2025 threat coverage |
 | 1.5.0 | 2025-10-22 | Comprehensive test suite (700+ tests, 80%+ coverage) |
