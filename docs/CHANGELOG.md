@@ -7,6 +7,138 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.7] - 2025-11-30
+
+### Notification Hub
+
+Major enhancement: Unified notification management supporting multiple channels with message templates, routing rules, escalation policies, rate limiting, and delivery tracking.
+
+### Added
+
+- **Notifications API Router** (`api/routers/notifications.py`):
+  - **Channel Management**:
+    - `GET /notifications/channels` - List all notification channels
+    - `GET /notifications/channels/{id}` - Get channel details
+    - `POST /notifications/channels` - Create notification channel
+    - `PUT /notifications/channels/{id}` - Update channel configuration
+    - `DELETE /notifications/channels/{id}` - Delete channel
+    - `POST /notifications/channels/{id}/test` - Test channel with message
+  - **Template Management**:
+    - `GET /notifications/templates` - List all templates
+    - `GET /notifications/templates/{id}` - Get template details
+    - `POST /notifications/templates` - Create template
+    - `PUT /notifications/templates/{id}` - Update template
+    - `DELETE /notifications/templates/{id}` - Delete template
+    - `POST /notifications/templates/render` - Render template preview
+  - **Routing Rules**:
+    - `GET /notifications/routing-rules` - List routing rules by priority
+    - `GET /notifications/routing-rules/{id}` - Get rule details
+    - `POST /notifications/routing-rules` - Create routing rule
+    - `PUT /notifications/routing-rules/{id}` - Update rule
+    - `DELETE /notifications/routing-rules/{id}` - Delete rule
+  - **Notifications**:
+    - `GET /notifications/` - List notifications with filtering
+    - `GET /notifications/{id}` - Get notification details
+    - `POST /notifications/` - Send notification
+    - `POST /notifications/{id}/retry` - Retry failed notification
+    - `POST /notifications/bulk` - Send bulk notifications
+  - **Escalation Policies**:
+    - `GET /notifications/escalation-policies` - List policies
+    - `GET /notifications/escalation-policies/{id}` - Get policy details
+    - `POST /notifications/escalation-policies` - Create policy
+    - `PUT /notifications/escalation-policies/{id}` - Update policy
+    - `DELETE /notifications/escalation-policies/{id}` - Delete policy
+  - **Active Escalations**:
+    - `GET /notifications/escalations/active` - List active escalations
+    - `POST /notifications/escalations/acknowledge` - Acknowledge escalation
+    - `POST /notifications/escalations/resolve` - Resolve escalation
+  - **Subscriptions**:
+    - `GET /notifications/subscriptions` - List subscriptions
+    - `POST /notifications/subscriptions` - Create subscription
+    - `PUT /notifications/subscriptions/{id}` - Update subscription
+    - `DELETE /notifications/subscriptions/{id}` - Delete subscription
+  - **Statistics & Health**:
+    - `GET /notifications/stats` - Get notification statistics
+    - `GET /notifications/health` - Notification system health check
+
+- **10 Notification Channel Types**:
+  - `email` - SMTP email with TLS/SSL support
+  - `slack` - Slack via webhook or bot token
+  - `teams` - Microsoft Teams via incoming webhook
+  - `pagerduty` - PagerDuty Events API v2
+  - `webhook` - Generic HTTP webhook with authentication
+  - `sms` - SMS via Twilio, Nexmo, or AWS SNS
+  - `discord` - Discord via webhook
+  - `opsgenie` - OpsGenie Alerts API
+  - `victorops` - VictorOps/Splunk On-Call
+  - `custom` - Custom channel implementation
+
+- **Notification Categories** (10 types):
+  - security_alert, incident, vulnerability, compliance
+  - system_health, job_status, threat_intel
+  - audit, maintenance, custom
+
+- **Priority Levels**: low, normal, high, urgent, critical
+
+- **Routing Rules**:
+  - Condition fields: category, priority, source, tag, custom
+  - Operators: equals, not_equals, contains, regex, in, not_in, gt, lt, gte, lte
+  - Logic: AND (all) or OR (any) conditions
+  - Actions: route, suppress, delay, transform, escalate
+  - Time-based schedule activation
+
+- **Escalation Policies**:
+  - Multi-step escalation with delays
+  - Acknowledgment timeout configuration
+  - Repeat notifications per step
+  - Total timeout with auto-resolution
+
+- **Message Templates**:
+  - Subject and body templates
+  - HTML template support for email
+  - Variable substitution with defaults
+  - Channel-specific overrides
+  - Usage tracking
+
+- **Delivery Features**:
+  - Rate limiting per minute/hour per channel
+  - Deduplication with configurable window
+  - Deferred delivery (schedule for later)
+  - Expiration support
+  - Automatic retry with configurable attempts
+  - Partial delivery tracking per channel
+
+- **New Pydantic Models** (`api/models.py`):
+  - **Enums**: NotificationChannelTypeEnum, NotificationPriorityEnum, NotificationStatusEnum, NotificationCategoryEnum, ChannelStatusEnum
+  - **Channel Configs**: EmailChannelConfig, SlackChannelConfig, TeamsChannelConfig, PagerDutyChannelConfig, WebhookChannelConfig, SMSChannelConfig, DiscordChannelConfig, OpsGenieChannelConfig, VictorOpsChannelConfig
+  - **Channel Models**: NotificationChannelBase, NotificationChannelCreate, NotificationChannelUpdate, NotificationChannel, NotificationChannelResponse, NotificationChannelListResponse
+  - **Template Models**: TemplateVariableInfo, NotificationTemplateBase, NotificationTemplateCreate, NotificationTemplateUpdate, NotificationTemplate, NotificationTemplateResponse, NotificationTemplateListResponse, TemplateRenderRequest, TemplateRenderResponse
+  - **Routing Models**: RoutingCondition, RoutingAction, RoutingRuleBase, RoutingRuleCreate, RoutingRuleUpdate, RoutingRule, RoutingRuleResponse, RoutingRuleListResponse
+  - **Notification Models**: NotificationRecipient, NotificationBase, NotificationCreate, Notification, NotificationResponse, NotificationListResponse, NotificationRetryRequest
+  - **Escalation Models**: EscalationStep, EscalationPolicyBase, EscalationPolicyCreate, EscalationPolicyUpdate, EscalationPolicy, EscalationPolicyResponse, EscalationPolicyListResponse, ActiveEscalation, EscalationAcknowledgeRequest, EscalationResolveRequest
+  - **Stats/Health Models**: NotificationStats, NotificationHealthCheck, ChannelTestRequest, ChannelTestResponse
+  - **Bulk/Subscription Models**: BulkNotificationRequest, BulkNotificationResponse, NotificationSubscription, SubscriptionCreateRequest, SubscriptionUpdateRequest, SubscriptionListResponse
+
+### Technical Details
+
+- Background notification processing using FastAPI BackgroundTasks
+- In-memory storage for development (production: database + Redis for queue)
+- Template rendering with simple variable substitution (production: Jinja2 with sandboxing)
+- Rate limiting with sliding window per channel
+- Deduplication cache with automatic cleanup
+- Routing rule evaluation with priority ordering
+- Mock channel delivery for testing (production: actual API integrations)
+
+### Security Considerations
+
+- Channel credentials stored in config (production: secrets manager)
+- Rate limiting prevents notification spam
+- Deduplication prevents duplicate alerts
+- Template rendering designed for sandboxed execution
+- Per-channel authentication support (basic, bearer, API key)
+
+---
+
 ## [1.7.6] - 2025-11-30
 
 ### Scheduled Tasks/Jobs
@@ -1585,6 +1717,7 @@ See `docs/OPEN_SOURCE_STACK.md` for complete migration guides.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.7.7 | 2025-11-30 | Notification hub (multi-channel, templates, routing, escalation) |
 | 1.7.6 | 2025-11-30 | Scheduled tasks/jobs for automated security operations |
 | 1.7.5 | 2025-11-30 | SIEM integration layer (Wazuh, Elastic, OpenSearch) |
 | 1.7.4 | 2025-11-30 | WebSocket real-time updates |

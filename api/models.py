@@ -2168,3 +2168,635 @@ class JobDependencyResponse(BaseModel):
     job_id: str
     dependencies: List[JobDependency]
     dependents: List[str]  # Jobs that depend on this job
+
+
+# ============================================================================
+# Notification Hub Models (v1.7.7)
+# ============================================================================
+
+class NotificationChannelTypeEnum(str, Enum):
+    """Types of notification channels"""
+    EMAIL = "email"
+    SLACK = "slack"
+    TEAMS = "teams"
+    PAGERDUTY = "pagerduty"
+    WEBHOOK = "webhook"
+    SMS = "sms"
+    DISCORD = "discord"
+    OPSGENIE = "opsgenie"
+    VICTOROPS = "victorops"
+    CUSTOM = "custom"
+
+
+class NotificationPriorityEnum(str, Enum):
+    """Priority levels for notifications"""
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"
+    CRITICAL = "critical"
+
+
+class NotificationStatusEnum(str, Enum):
+    """Status of notification delivery"""
+    PENDING = "pending"
+    QUEUED = "queued"
+    SENDING = "sending"
+    DELIVERED = "delivered"
+    FAILED = "failed"
+    PARTIAL = "partial"  # Some channels succeeded, others failed
+    RETRYING = "retrying"
+    EXPIRED = "expired"
+
+
+class NotificationCategoryEnum(str, Enum):
+    """Categories of notifications for routing and filtering"""
+    SECURITY_ALERT = "security_alert"
+    INCIDENT = "incident"
+    VULNERABILITY = "vulnerability"
+    COMPLIANCE = "compliance"
+    SYSTEM_HEALTH = "system_health"
+    JOB_STATUS = "job_status"
+    THREAT_INTEL = "threat_intel"
+    AUDIT = "audit"
+    MAINTENANCE = "maintenance"
+    CUSTOM = "custom"
+
+
+class ChannelStatusEnum(str, Enum):
+    """Status of notification channels"""
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    ERROR = "error"
+    RATE_LIMITED = "rate_limited"
+    MAINTENANCE = "maintenance"
+
+
+# --- Channel Configuration Models ---
+
+class EmailChannelConfig(BaseModel):
+    """Configuration for email notification channel"""
+    smtp_host: str
+    smtp_port: int = Field(587, ge=1, le=65535)
+    smtp_username: str
+    smtp_password: str = Field(..., min_length=1)
+    use_tls: bool = True
+    use_ssl: bool = False
+    from_address: str
+    from_name: Optional[str] = "Defensive Toolkit"
+    reply_to: Optional[str] = None
+    default_recipients: List[str] = []
+
+
+class SlackChannelConfig(BaseModel):
+    """Configuration for Slack notification channel"""
+    webhook_url: Optional[str] = None
+    bot_token: Optional[str] = None
+    app_token: Optional[str] = None
+    default_channel: Optional[str] = None
+    username: str = "Defensive Toolkit"
+    icon_emoji: Optional[str] = ":shield:"
+    icon_url: Optional[str] = None
+
+
+class TeamsChannelConfig(BaseModel):
+    """Configuration for Microsoft Teams notification channel"""
+    webhook_url: str
+    default_title: str = "Defensive Toolkit Notification"
+    theme_color: str = "0076D7"
+
+
+class PagerDutyChannelConfig(BaseModel):
+    """Configuration for PagerDuty notification channel"""
+    api_key: str
+    routing_key: str
+    service_id: Optional[str] = None
+    default_severity: str = Field("warning", pattern="^(critical|error|warning|info)$")
+    include_details: bool = True
+
+
+class WebhookChannelConfig(BaseModel):
+    """Configuration for generic webhook notification channel"""
+    url: str
+    method: str = Field("POST", pattern="^(GET|POST|PUT|PATCH)$")
+    headers: Dict[str, str] = {}
+    auth_type: Optional[str] = Field(None, pattern="^(none|basic|bearer|api_key)$")
+    auth_credentials: Optional[Dict[str, str]] = None
+    timeout_seconds: int = Field(30, ge=5, le=120)
+    retry_count: int = Field(3, ge=0, le=10)
+    verify_ssl: bool = True
+
+
+class SMSChannelConfig(BaseModel):
+    """Configuration for SMS notification channel"""
+    provider: str = Field(..., pattern="^(twilio|nexmo|aws_sns|custom)$")
+    api_key: str
+    api_secret: Optional[str] = None
+    from_number: str
+    default_recipients: List[str] = []
+
+
+class DiscordChannelConfig(BaseModel):
+    """Configuration for Discord notification channel"""
+    webhook_url: str
+    username: str = "Defensive Toolkit"
+    avatar_url: Optional[str] = None
+
+
+class OpsGenieChannelConfig(BaseModel):
+    """Configuration for OpsGenie notification channel"""
+    api_key: str
+    team_id: Optional[str] = None
+    responders: List[Dict[str, str]] = []
+    priority: str = Field("P3", pattern="^(P1|P2|P3|P4|P5)$")
+
+
+class VictorOpsChannelConfig(BaseModel):
+    """Configuration for VictorOps/Splunk On-Call notification channel"""
+    api_key: str
+    routing_key: str
+    entity_id_prefix: str = "defensive-toolkit"
+
+
+# --- Notification Channel Models ---
+
+class NotificationChannelBase(BaseModel):
+    """Base model for notification channels"""
+    name: str = Field(..., min_length=1, max_length=100)
+    channel_type: NotificationChannelTypeEnum
+    description: Optional[str] = None
+    enabled: bool = True
+    categories: List[NotificationCategoryEnum] = []
+    priority_threshold: NotificationPriorityEnum = NotificationPriorityEnum.LOW
+    rate_limit_per_minute: int = Field(60, ge=1, le=1000)
+    rate_limit_per_hour: int = Field(500, ge=1, le=10000)
+    config: Dict[str, Any] = {}
+
+
+class NotificationChannelCreate(NotificationChannelBase):
+    """Request to create a notification channel"""
+    pass
+
+
+class NotificationChannelUpdate(BaseModel):
+    """Request to update a notification channel"""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = None
+    enabled: Optional[bool] = None
+    categories: Optional[List[NotificationCategoryEnum]] = None
+    priority_threshold: Optional[NotificationPriorityEnum] = None
+    rate_limit_per_minute: Optional[int] = Field(None, ge=1, le=1000)
+    rate_limit_per_hour: Optional[int] = Field(None, ge=1, le=10000)
+    config: Optional[Dict[str, Any]] = None
+
+
+class NotificationChannel(NotificationChannelBase):
+    """Full notification channel model"""
+    id: str
+    status: ChannelStatusEnum = ChannelStatusEnum.ACTIVE
+    created_at: datetime
+    updated_at: datetime
+    last_used: Optional[datetime] = None
+    success_count: int = 0
+    failure_count: int = 0
+    last_error: Optional[str] = None
+    last_error_at: Optional[datetime] = None
+
+
+class NotificationChannelResponse(BaseModel):
+    """Response for notification channel operations"""
+    status: StatusEnum
+    message: str
+    channel: Optional[NotificationChannel] = None
+
+
+class NotificationChannelListResponse(BaseModel):
+    """Response for listing notification channels"""
+    channels: List[NotificationChannel]
+    total: int
+    by_type: Dict[str, int]
+    by_status: Dict[str, int]
+
+
+# --- Message Template Models ---
+
+class TemplateVariableInfo(BaseModel):
+    """Information about a template variable"""
+    name: str
+    description: str
+    type: str = "string"
+    required: bool = False
+    default: Optional[Any] = None
+    example: Optional[Any] = None
+
+
+class NotificationTemplateBase(BaseModel):
+    """Base model for notification templates"""
+    name: str = Field(..., min_length=1, max_length=100)
+    category: NotificationCategoryEnum
+    description: Optional[str] = None
+    subject_template: Optional[str] = None  # For email, used as title for others
+    body_template: str = Field(..., min_length=1)
+    html_template: Optional[str] = None  # HTML version for email
+    variables: List[TemplateVariableInfo] = []
+    default_priority: NotificationPriorityEnum = NotificationPriorityEnum.NORMAL
+    channel_overrides: Dict[str, Dict[str, str]] = {}  # Channel-specific templates
+
+
+class NotificationTemplateCreate(NotificationTemplateBase):
+    """Request to create a notification template"""
+    pass
+
+
+class NotificationTemplateUpdate(BaseModel):
+    """Request to update a notification template"""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    category: Optional[NotificationCategoryEnum] = None
+    description: Optional[str] = None
+    subject_template: Optional[str] = None
+    body_template: Optional[str] = None
+    html_template: Optional[str] = None
+    variables: Optional[List[TemplateVariableInfo]] = None
+    default_priority: Optional[NotificationPriorityEnum] = None
+    channel_overrides: Optional[Dict[str, Dict[str, str]]] = None
+
+
+class NotificationTemplate(NotificationTemplateBase):
+    """Full notification template model"""
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    usage_count: int = 0
+    last_used: Optional[datetime] = None
+
+
+class NotificationTemplateResponse(BaseModel):
+    """Response for notification template operations"""
+    status: StatusEnum
+    message: str
+    template: Optional[NotificationTemplate] = None
+
+
+class NotificationTemplateListResponse(BaseModel):
+    """Response for listing notification templates"""
+    templates: List[NotificationTemplate]
+    total: int
+    by_category: Dict[str, int]
+
+
+class TemplateRenderRequest(BaseModel):
+    """Request to render a template preview"""
+    template_id: str
+    variables: Dict[str, Any] = {}
+    target_channel: Optional[NotificationChannelTypeEnum] = None
+
+
+class TemplateRenderResponse(BaseModel):
+    """Response for template rendering"""
+    status: StatusEnum
+    subject: Optional[str] = None
+    body: str
+    html: Optional[str] = None
+    variables_used: List[str]
+    missing_variables: List[str]
+
+
+# --- Routing Rule Models ---
+
+class RoutingCondition(BaseModel):
+    """Condition for notification routing"""
+    field: str = Field(..., pattern="^(category|priority|source|tag|custom)$")
+    operator: str = Field(..., pattern="^(equals|not_equals|contains|regex|in|not_in|gt|lt|gte|lte)$")
+    value: Any
+
+
+class RoutingAction(BaseModel):
+    """Action to take when routing rule matches"""
+    action_type: str = Field(..., pattern="^(route|suppress|delay|transform|escalate)$")
+    channel_ids: List[str] = []
+    delay_seconds: int = Field(0, ge=0)
+    transform_template: Optional[str] = None
+    escalation_policy: Optional[str] = None
+    override_priority: Optional[NotificationPriorityEnum] = None
+
+
+class RoutingRuleBase(BaseModel):
+    """Base model for routing rules"""
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = None
+    enabled: bool = True
+    priority: int = Field(100, ge=1, le=1000)  # Lower = higher priority
+    conditions: List[RoutingCondition] = []
+    condition_logic: str = Field("all", pattern="^(all|any)$")  # all = AND, any = OR
+    actions: List[RoutingAction]
+    schedule: Optional[Dict[str, Any]] = None  # Time-based activation
+
+
+class RoutingRuleCreate(RoutingRuleBase):
+    """Request to create a routing rule"""
+    pass
+
+
+class RoutingRuleUpdate(BaseModel):
+    """Request to update a routing rule"""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = None
+    enabled: Optional[bool] = None
+    priority: Optional[int] = Field(None, ge=1, le=1000)
+    conditions: Optional[List[RoutingCondition]] = None
+    condition_logic: Optional[str] = Field(None, pattern="^(all|any)$")
+    actions: Optional[List[RoutingAction]] = None
+    schedule: Optional[Dict[str, Any]] = None
+
+
+class RoutingRule(RoutingRuleBase):
+    """Full routing rule model"""
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    match_count: int = 0
+    last_matched: Optional[datetime] = None
+
+
+class RoutingRuleResponse(BaseModel):
+    """Response for routing rule operations"""
+    status: StatusEnum
+    message: str
+    rule: Optional[RoutingRule] = None
+
+
+class RoutingRuleListResponse(BaseModel):
+    """Response for listing routing rules"""
+    rules: List[RoutingRule]
+    total: int
+
+
+# --- Notification Models ---
+
+class NotificationRecipient(BaseModel):
+    """Recipient for a notification"""
+    channel_id: str
+    address: Optional[str] = None  # Override default channel address
+    metadata: Dict[str, Any] = {}
+
+
+class NotificationBase(BaseModel):
+    """Base model for notifications"""
+    category: NotificationCategoryEnum
+    priority: NotificationPriorityEnum = NotificationPriorityEnum.NORMAL
+    subject: str = Field(..., min_length=1, max_length=500)
+    body: str = Field(..., min_length=1)
+    html_body: Optional[str] = None
+    source: str = "api"
+    source_id: Optional[str] = None  # ID from source system (incident ID, etc.)
+    tags: List[str] = []
+    metadata: Dict[str, Any] = {}
+    recipients: List[NotificationRecipient] = []
+    template_id: Optional[str] = None
+    template_variables: Dict[str, Any] = {}
+
+
+class NotificationCreate(NotificationBase):
+    """Request to create/send a notification"""
+    defer_until: Optional[datetime] = None
+    expire_at: Optional[datetime] = None
+    dedupe_key: Optional[str] = None  # For deduplication
+    dedupe_window_seconds: int = Field(300, ge=0)
+
+
+class Notification(NotificationBase):
+    """Full notification model"""
+    id: str
+    status: NotificationStatusEnum
+    created_at: datetime
+    updated_at: datetime
+    queued_at: Optional[datetime] = None
+    sent_at: Optional[datetime] = None
+    delivered_at: Optional[datetime] = None
+    failed_at: Optional[datetime] = None
+    retry_count: int = 0
+    max_retries: int = 3
+    next_retry_at: Optional[datetime] = None
+    channel_statuses: Dict[str, Dict[str, Any]] = {}  # Status per channel
+    error_message: Optional[str] = None
+    routing_rules_matched: List[str] = []
+
+
+class NotificationResponse(BaseModel):
+    """Response for notification operations"""
+    status: StatusEnum
+    message: str
+    notification: Optional[Notification] = None
+
+
+class NotificationListResponse(BaseModel):
+    """Response for listing notifications"""
+    notifications: List[Notification]
+    total: int
+    page: int
+    page_size: int
+    by_status: Dict[str, int]
+    by_category: Dict[str, int]
+
+
+class NotificationRetryRequest(BaseModel):
+    """Request to retry a failed notification"""
+    notification_id: str
+    channels: Optional[List[str]] = None  # Specific channels to retry, or all failed
+
+
+# --- Escalation Policy Models ---
+
+class EscalationStep(BaseModel):
+    """Step in an escalation policy"""
+    step_number: int = Field(..., ge=1)
+    delay_minutes: int = Field(0, ge=0)
+    channel_ids: List[str]
+    notify_previous: bool = True  # Also notify channels from previous steps
+    repeat_count: int = Field(1, ge=1, le=10)
+    repeat_interval_minutes: int = Field(5, ge=1)
+
+
+class EscalationPolicyBase(BaseModel):
+    """Base model for escalation policies"""
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = None
+    enabled: bool = True
+    categories: List[NotificationCategoryEnum] = []
+    min_priority: NotificationPriorityEnum = NotificationPriorityEnum.HIGH
+    steps: List[EscalationStep]
+    acknowledgment_timeout_minutes: int = Field(30, ge=5)
+    total_timeout_minutes: int = Field(120, ge=10)
+
+
+class EscalationPolicyCreate(EscalationPolicyBase):
+    """Request to create an escalation policy"""
+    pass
+
+
+class EscalationPolicyUpdate(BaseModel):
+    """Request to update an escalation policy"""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = None
+    enabled: Optional[bool] = None
+    categories: Optional[List[NotificationCategoryEnum]] = None
+    min_priority: Optional[NotificationPriorityEnum] = None
+    steps: Optional[List[EscalationStep]] = None
+    acknowledgment_timeout_minutes: Optional[int] = Field(None, ge=5)
+    total_timeout_minutes: Optional[int] = Field(None, ge=10)
+
+
+class EscalationPolicy(EscalationPolicyBase):
+    """Full escalation policy model"""
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    trigger_count: int = 0
+    last_triggered: Optional[datetime] = None
+
+
+class EscalationPolicyResponse(BaseModel):
+    """Response for escalation policy operations"""
+    status: StatusEnum
+    message: str
+    policy: Optional[EscalationPolicy] = None
+
+
+class EscalationPolicyListResponse(BaseModel):
+    """Response for listing escalation policies"""
+    policies: List[EscalationPolicy]
+    total: int
+
+
+# --- Active Escalation Models ---
+
+class ActiveEscalation(BaseModel):
+    """Active escalation in progress"""
+    id: str
+    policy_id: str
+    notification_id: str
+    current_step: int
+    started_at: datetime
+    acknowledged_at: Optional[datetime] = None
+    acknowledged_by: Optional[str] = None
+    resolved_at: Optional[datetime] = None
+    resolved_by: Optional[str] = None
+    status: str  # active, acknowledged, resolved, timeout
+    step_history: List[Dict[str, Any]] = []
+
+
+class EscalationAcknowledgeRequest(BaseModel):
+    """Request to acknowledge an escalation"""
+    escalation_id: str
+    acknowledged_by: str
+    note: Optional[str] = None
+
+
+class EscalationResolveRequest(BaseModel):
+    """Request to resolve an escalation"""
+    escalation_id: str
+    resolved_by: str
+    resolution_note: Optional[str] = None
+
+
+# --- Statistics and Health Models ---
+
+class NotificationStats(BaseModel):
+    """Notification system statistics"""
+    total_notifications: int
+    notifications_today: int
+    notifications_this_hour: int
+    by_status: Dict[str, int]
+    by_category: Dict[str, int]
+    by_priority: Dict[str, int]
+    by_channel: Dict[str, int]
+    avg_delivery_time_seconds: float
+    success_rate_percent: float
+    active_escalations: int
+    channels_active: int
+    channels_error: int
+    rate_limited_channels: int
+    queue_depth: int
+
+
+class NotificationHealthCheck(BaseModel):
+    """Health check for notification system"""
+    status: str  # healthy, degraded, unhealthy
+    timestamp: datetime
+    channels_status: Dict[str, Dict[str, Any]]
+    queue_status: Dict[str, Any]
+    recent_failures: List[Dict[str, Any]]
+    recommendations: List[str]
+
+
+class ChannelTestRequest(BaseModel):
+    """Request to test a notification channel"""
+    channel_id: str
+    test_message: Optional[str] = "This is a test notification from Defensive Toolkit"
+
+
+class ChannelTestResponse(BaseModel):
+    """Response for channel test"""
+    status: StatusEnum
+    message: str
+    channel_id: str
+    response_time_ms: int
+    details: Dict[str, Any] = {}
+
+
+# --- Bulk Operations ---
+
+class BulkNotificationRequest(BaseModel):
+    """Request to send bulk notifications"""
+    notifications: List[NotificationCreate] = Field(..., min_items=1, max_items=100)
+    fail_on_first_error: bool = False
+
+
+class BulkNotificationResponse(BaseModel):
+    """Response for bulk notification operation"""
+    status: StatusEnum
+    total_requested: int
+    succeeded: int
+    failed: int
+    results: List[Dict[str, Any]]
+
+
+# --- Subscription Models ---
+
+class NotificationSubscription(BaseModel):
+    """Subscription for notification preferences"""
+    id: str
+    subscriber_id: str  # User ID or system identifier
+    subscriber_type: str = Field(..., pattern="^(user|system|team)$")
+    categories: List[NotificationCategoryEnum] = []
+    min_priority: NotificationPriorityEnum = NotificationPriorityEnum.LOW
+    channels: List[str] = []  # Channel IDs
+    schedule: Optional[Dict[str, Any]] = None  # Quiet hours, etc.
+    enabled: bool = True
+    created_at: datetime
+    updated_at: datetime
+
+
+class SubscriptionCreateRequest(BaseModel):
+    """Request to create a notification subscription"""
+    subscriber_id: str
+    subscriber_type: str = Field("user", pattern="^(user|system|team)$")
+    categories: List[NotificationCategoryEnum] = []
+    min_priority: NotificationPriorityEnum = NotificationPriorityEnum.LOW
+    channels: List[str] = []
+    schedule: Optional[Dict[str, Any]] = None
+
+
+class SubscriptionUpdateRequest(BaseModel):
+    """Request to update a notification subscription"""
+    categories: Optional[List[NotificationCategoryEnum]] = None
+    min_priority: Optional[NotificationPriorityEnum] = None
+    channels: Optional[List[str]] = None
+    schedule: Optional[Dict[str, Any]] = None
+    enabled: Optional[bool] = None
+
+
+class SubscriptionListResponse(BaseModel):
+    """Response for listing subscriptions"""
+    subscriptions: List[NotificationSubscription]
+    total: int
