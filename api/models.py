@@ -1724,3 +1724,447 @@ class SIEMAlertAcknowledgeResponse(BaseModel):
     failed_count: int
     failed_ids: List[str] = []
     error_message: Optional[str] = None
+
+
+# ============================================================================
+# Scheduled Tasks/Jobs Models (v1.7.6)
+# ============================================================================
+
+class ScheduledJobTypeEnum(str, Enum):
+    """Types of scheduled jobs"""
+    # Security scans
+    VULNERABILITY_SCAN = "vulnerability_scan"
+    COMPLIANCE_CHECK = "compliance_check"
+    HARDENING_AUDIT = "hardening_audit"
+
+    # SIEM operations
+    SIEM_HEALTH_CHECK = "siem_health_check"
+    SIEM_ALERT_DIGEST = "siem_alert_digest"
+    SIEM_AGENT_STATUS = "siem_agent_status"
+
+    # Threat intelligence
+    IOC_ENRICHMENT = "ioc_enrichment"
+    THREAT_FEED_UPDATE = "threat_feed_update"
+
+    # Reporting
+    SECURITY_REPORT = "security_report"
+    INCIDENT_SUMMARY = "incident_summary"
+    METRICS_EXPORT = "metrics_export"
+
+    # Maintenance
+    LOG_CLEANUP = "log_cleanup"
+    CACHE_CLEANUP = "cache_cleanup"
+    BACKUP = "backup"
+
+    # Runbooks
+    RUNBOOK_EXECUTION = "runbook_execution"
+
+    # Custom
+    WEBHOOK_CALL = "webhook_call"
+    CUSTOM_SCRIPT = "custom_script"
+
+
+class ScheduledJobStatusEnum(str, Enum):
+    """Status of a scheduled job"""
+    ACTIVE = "active"
+    PAUSED = "paused"
+    DISABLED = "disabled"
+    EXPIRED = "expired"
+
+
+class JobExecutionStatusEnum(str, Enum):
+    """Status of a job execution"""
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    TIMEOUT = "timeout"
+    SKIPPED = "skipped"
+
+
+class ScheduleTypeEnum(str, Enum):
+    """Type of schedule"""
+    CRON = "cron"
+    INTERVAL = "interval"
+    ONCE = "once"
+    MANUAL = "manual"
+
+
+class JobPriorityEnum(str, Enum):
+    """Job execution priority"""
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class ScheduledJobConfig(BaseModel):
+    """Configuration for a scheduled job"""
+    job_id: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    job_type: ScheduledJobTypeEnum
+    status: ScheduledJobStatusEnum = ScheduledJobStatusEnum.ACTIVE
+    priority: JobPriorityEnum = JobPriorityEnum.NORMAL
+
+    # Schedule configuration
+    schedule_type: ScheduleTypeEnum = ScheduleTypeEnum.CRON
+    cron_expression: Optional[str] = Field(
+        None,
+        description="Cron expression (e.g., '0 */6 * * *' for every 6 hours)"
+    )
+    interval_seconds: Optional[int] = Field(
+        None,
+        ge=60,
+        description="Interval in seconds (minimum 60)"
+    )
+    run_at: Optional[datetime] = Field(
+        None,
+        description="Specific datetime for one-time execution"
+    )
+    timezone: str = Field("UTC", description="Timezone for schedule")
+
+    # Execution settings
+    timeout_seconds: int = Field(3600, ge=60, le=86400)
+    max_retries: int = Field(3, ge=0, le=10)
+    retry_delay_seconds: int = Field(300, ge=60, le=3600)
+    concurrent_allowed: bool = Field(
+        False,
+        description="Allow concurrent executions of this job"
+    )
+
+    # Job-specific parameters
+    parameters: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Job-type specific parameters"
+    )
+
+    # Notification settings
+    notify_on_success: bool = False
+    notify_on_failure: bool = True
+    notification_channels: List[str] = Field(
+        default_factory=list,
+        description="Notification channels (email, slack, webhook)"
+    )
+    notification_emails: List[str] = Field(default_factory=list)
+
+    # Validity period
+    valid_from: Optional[datetime] = None
+    valid_until: Optional[datetime] = None
+
+    # Metadata
+    tags: List[str] = Field(default_factory=list)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+    last_run_at: Optional[datetime] = None
+    next_run_at: Optional[datetime] = None
+
+
+class ScheduledJobCreateRequest(BaseModel):
+    """Request to create a scheduled job"""
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    job_type: ScheduledJobTypeEnum
+    priority: JobPriorityEnum = JobPriorityEnum.NORMAL
+
+    # Schedule
+    schedule_type: ScheduleTypeEnum = ScheduleTypeEnum.CRON
+    cron_expression: Optional[str] = None
+    interval_seconds: Optional[int] = None
+    run_at: Optional[datetime] = None
+    timezone: str = "UTC"
+
+    # Execution settings
+    timeout_seconds: int = 3600
+    max_retries: int = 3
+    retry_delay_seconds: int = 300
+    concurrent_allowed: bool = False
+
+    # Parameters
+    parameters: Dict[str, Any] = {}
+
+    # Notifications
+    notify_on_success: bool = False
+    notify_on_failure: bool = True
+    notification_channels: List[str] = []
+    notification_emails: List[str] = []
+
+    # Validity
+    valid_from: Optional[datetime] = None
+    valid_until: Optional[datetime] = None
+    tags: List[str] = []
+
+
+class ScheduledJobUpdateRequest(BaseModel):
+    """Request to update a scheduled job"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[ScheduledJobStatusEnum] = None
+    priority: Optional[JobPriorityEnum] = None
+
+    # Schedule updates
+    cron_expression: Optional[str] = None
+    interval_seconds: Optional[int] = None
+    run_at: Optional[datetime] = None
+    timezone: Optional[str] = None
+
+    # Execution settings
+    timeout_seconds: Optional[int] = None
+    max_retries: Optional[int] = None
+    retry_delay_seconds: Optional[int] = None
+    concurrent_allowed: Optional[bool] = None
+
+    # Parameters
+    parameters: Optional[Dict[str, Any]] = None
+
+    # Notifications
+    notify_on_success: Optional[bool] = None
+    notify_on_failure: Optional[bool] = None
+    notification_channels: Optional[List[str]] = None
+    notification_emails: Optional[List[str]] = None
+
+    # Validity
+    valid_from: Optional[datetime] = None
+    valid_until: Optional[datetime] = None
+    tags: Optional[List[str]] = None
+
+
+class ScheduledJobResponse(BaseModel):
+    """Response for a scheduled job"""
+    job_id: str
+    name: str
+    description: Optional[str]
+    job_type: ScheduledJobTypeEnum
+    status: ScheduledJobStatusEnum
+    priority: JobPriorityEnum
+    schedule_type: ScheduleTypeEnum
+    cron_expression: Optional[str]
+    interval_seconds: Optional[int]
+    timezone: str
+    next_run_at: Optional[datetime]
+    last_run_at: Optional[datetime]
+    last_run_status: Optional[JobExecutionStatusEnum]
+    total_runs: int
+    successful_runs: int
+    failed_runs: int
+    created_at: datetime
+    updated_at: Optional[datetime]
+    created_by: Optional[str]
+
+
+class ScheduledJobListResponse(BaseModel):
+    """List of scheduled jobs"""
+    jobs: List[ScheduledJobResponse]
+    total: int
+    active_count: int
+    paused_count: int
+    disabled_count: int
+
+
+class JobExecution(BaseModel):
+    """Record of a job execution"""
+    execution_id: str
+    job_id: str
+    job_name: str
+    job_type: ScheduledJobTypeEnum
+    status: JobExecutionStatusEnum
+    priority: JobPriorityEnum
+
+    # Timing
+    scheduled_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    duration_seconds: Optional[float] = None
+
+    # Execution details
+    attempt_number: int = 1
+    triggered_by: str = "scheduler"  # scheduler, manual, api, webhook
+    parameters: Dict[str, Any] = {}
+
+    # Results
+    result: Optional[Dict[str, Any]] = None
+    output: Optional[str] = None
+    error_message: Optional[str] = None
+    error_traceback: Optional[str] = None
+
+    # Metrics
+    items_processed: Optional[int] = None
+    items_succeeded: Optional[int] = None
+    items_failed: Optional[int] = None
+
+
+class JobExecutionListResponse(BaseModel):
+    """List of job executions"""
+    executions: List[JobExecution]
+    total: int
+    running_count: int
+    pending_count: int
+
+
+class JobExecutionRequest(BaseModel):
+    """Request to manually trigger a job"""
+    job_id: str
+    parameters: Optional[Dict[str, Any]] = None
+    priority: Optional[JobPriorityEnum] = None
+    skip_queue: bool = Field(
+        False,
+        description="Execute immediately, bypassing the queue"
+    )
+
+
+class JobExecutionResponse(BaseModel):
+    """Response from triggering a job"""
+    execution_id: str
+    job_id: str
+    job_name: str
+    status: JobExecutionStatusEnum
+    scheduled_at: datetime
+    message: str
+
+
+class JobCancelRequest(BaseModel):
+    """Request to cancel a running job"""
+    execution_id: str
+    reason: Optional[str] = None
+
+
+class JobCancelResponse(BaseModel):
+    """Response from cancelling a job"""
+    execution_id: str
+    cancelled: bool
+    message: str
+    previous_status: JobExecutionStatusEnum
+
+
+class SchedulerStats(BaseModel):
+    """Scheduler system statistics"""
+    scheduler_status: str  # running, paused, stopped
+    uptime_seconds: int
+    jobs_total: int
+    jobs_active: int
+    jobs_paused: int
+    jobs_disabled: int
+
+    # Execution stats
+    executions_today: int
+    executions_this_hour: int
+    successful_today: int
+    failed_today: int
+    cancelled_today: int
+
+    # Queue stats
+    queue_length: int
+    running_jobs: int
+    pending_jobs: int
+
+    # Performance
+    average_execution_time_seconds: float
+    average_wait_time_seconds: float
+    jobs_per_hour: float
+
+    # By job type
+    executions_by_type: Dict[str, int]
+    failures_by_type: Dict[str, int]
+
+    # Recent activity
+    last_execution_at: Optional[datetime] = None
+    next_scheduled_job: Optional[str] = None
+    next_scheduled_at: Optional[datetime] = None
+
+
+class SchedulerHealthCheck(BaseModel):
+    """Health check for scheduler"""
+    healthy: bool
+    status: str
+    checks: Dict[str, bool]
+    message: Optional[str] = None
+    last_heartbeat: datetime
+    worker_count: int
+    queue_healthy: bool
+    storage_healthy: bool
+
+
+class CronValidationRequest(BaseModel):
+    """Request to validate a cron expression"""
+    cron_expression: str
+    timezone: str = "UTC"
+    count: int = Field(5, ge=1, le=20, description="Number of next runs to show")
+
+
+class CronValidationResponse(BaseModel):
+    """Response from cron validation"""
+    valid: bool
+    expression: str
+    description: str
+    timezone: str
+    next_runs: List[datetime]
+    error: Optional[str] = None
+
+
+class JobTypeInfo(BaseModel):
+    """Information about a job type"""
+    job_type: ScheduledJobTypeEnum
+    name: str
+    description: str
+    category: str
+    required_parameters: List[str]
+    optional_parameters: List[str]
+    parameter_schema: Dict[str, Any]
+    default_timeout_seconds: int
+    supports_concurrent: bool
+    example_parameters: Dict[str, Any]
+
+
+class JobTypeListResponse(BaseModel):
+    """List of available job types"""
+    job_types: List[JobTypeInfo]
+    categories: List[str]
+
+
+class BulkJobActionRequest(BaseModel):
+    """Request for bulk job actions"""
+    job_ids: List[str] = Field(..., min_items=1, max_items=100)
+    action: str = Field(..., pattern="^(pause|resume|disable|delete)$")
+
+
+class BulkJobActionResponse(BaseModel):
+    """Response from bulk job action"""
+    action: str
+    total_requested: int
+    succeeded: int
+    failed: int
+    results: List[Dict[str, Any]]
+
+
+class JobNotificationConfig(BaseModel):
+    """Notification configuration for jobs"""
+    job_id: str
+    notify_on_success: bool = False
+    notify_on_failure: bool = True
+    notify_on_timeout: bool = True
+    notification_channels: List[str] = []
+    email_recipients: List[str] = []
+    slack_channels: List[str] = []
+    webhook_urls: List[str] = []
+    include_output: bool = False
+    include_error_details: bool = True
+
+
+class JobDependency(BaseModel):
+    """Dependency between jobs"""
+    job_id: str
+    depends_on_job_id: str
+    dependency_type: str = Field(
+        "completion",
+        pattern="^(completion|success|failure)$"
+    )
+    wait_timeout_seconds: int = Field(3600, ge=60)
+
+
+class JobDependencyResponse(BaseModel):
+    """Response for job dependencies"""
+    job_id: str
+    dependencies: List[JobDependency]
+    dependents: List[str]  # Jobs that depend on this job

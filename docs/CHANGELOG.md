@@ -7,6 +7,176 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.6] - 2025-11-30
+
+### Scheduled Tasks/Jobs
+
+Major enhancement: Cron-like job scheduling for automated security operations including vulnerability scans, compliance checks, SIEM health monitoring, threat feed updates, and report generation.
+
+### Added
+
+- **Scheduler API Router** (`api/routers/scheduler.py`):
+  - `GET /scheduler/jobs` - List all scheduled jobs with filtering
+  - `GET /scheduler/jobs/{id}` - Get job details
+  - `POST /scheduler/jobs` - Create scheduled job
+  - `PUT /scheduler/jobs/{id}` - Update job configuration
+  - `DELETE /scheduler/jobs/{id}` - Delete job
+  - `POST /scheduler/jobs/{id}/pause` - Pause job scheduling
+  - `POST /scheduler/jobs/{id}/resume` - Resume paused job
+  - `POST /scheduler/jobs/{id}/run` - Manually trigger job execution
+  - `GET /scheduler/executions` - List job executions
+  - `GET /scheduler/executions/{id}` - Get execution details
+  - `POST /scheduler/executions/{id}/cancel` - Cancel running execution
+  - `GET /scheduler/stats` - Get scheduler statistics
+  - `GET /scheduler/health` - Scheduler health check
+  - `POST /scheduler/pause` - Pause entire scheduler
+  - `POST /scheduler/resume` - Resume scheduler
+  - `POST /scheduler/cron/validate` - Validate cron expression
+  - `GET /scheduler/job-types` - List available job types
+  - `POST /scheduler/bulk-action` - Bulk pause/resume/disable/delete
+  - `GET /scheduler/jobs/{id}/dependencies` - Get job dependencies
+  - `POST /scheduler/jobs/{id}/dependencies` - Add job dependency
+  - `DELETE /scheduler/jobs/{id}/dependencies/{dep_id}` - Remove dependency
+
+- **17 Job Types Across 6 Categories**:
+  - **Security Scans**: vulnerability_scan, compliance_check, hardening_audit
+  - **SIEM Operations**: siem_health_check, siem_alert_digest, siem_agent_status
+  - **Threat Intelligence**: ioc_enrichment, threat_feed_update
+  - **Reporting**: security_report, incident_summary, metrics_export
+  - **Maintenance**: log_cleanup, cache_cleanup, backup
+  - **Runbooks**: runbook_execution
+  - **Custom**: webhook_call, custom_script
+
+- **Schedule Types**:
+  - `cron` - Standard cron expressions (e.g., `0 */6 * * *` for every 6 hours)
+  - `interval` - Fixed interval in seconds (minimum 60)
+  - `once` - One-time execution at specified datetime
+  - `manual` - Only triggered via API
+
+- **Execution Features**:
+  - Priority levels: low, normal, high, critical
+  - Configurable timeout (60-86400 seconds)
+  - Retry with configurable delay (max 10 retries)
+  - Concurrent execution control
+  - Background task execution
+  - Execution history with output/error capture
+
+- **Job Dependencies**:
+  - Define job execution order
+  - Dependency types: completion, success, failure
+  - Circular dependency detection
+  - Wait timeout configuration
+
+- **Notifications**:
+  - Notify on success/failure/timeout
+  - Multiple channels: email, Slack, webhook
+  - Configurable recipients per job
+
+- **Scheduler Management**:
+  - Pause/resume entire scheduler
+  - Health checks with component status
+  - Statistics: execution counts, success rates, average times
+  - Queue monitoring
+
+- **New Pydantic Models** (`api/models.py`):
+  - `ScheduledJobTypeEnum` - 17 job types
+  - `ScheduledJobStatusEnum` - active, paused, disabled, expired
+  - `JobExecutionStatusEnum` - pending, running, completed, failed, cancelled, timeout, skipped
+  - `ScheduleTypeEnum` - cron, interval, once, manual
+  - `JobPriorityEnum` - low, normal, high, critical
+  - `ScheduledJobConfig` / `ScheduledJobCreateRequest` / `ScheduledJobUpdateRequest`
+  - `ScheduledJobResponse` / `ScheduledJobListResponse`
+  - `JobExecution` / `JobExecutionListResponse`
+  - `JobExecutionRequest` / `JobExecutionResponse`
+  - `JobCancelRequest` / `JobCancelResponse`
+  - `SchedulerStats` / `SchedulerHealthCheck`
+  - `CronValidationRequest` / `CronValidationResponse`
+  - `JobTypeInfo` / `JobTypeListResponse`
+  - `BulkJobActionRequest` / `BulkJobActionResponse`
+  - `JobNotificationConfig` / `JobDependency` / `JobDependencyResponse`
+
+### Technical Details
+
+- Background task execution using FastAPI BackgroundTasks
+- In-memory storage for jobs and executions (production: use database + Redis)
+- Cron expression parsing and validation
+- Human-readable cron descriptions
+- Next run time calculation
+- Execution queue with priority support
+- Job statistics tracking per job and globally
+- Circular dependency detection for job chains
+
+### API Examples
+
+```bash
+# Create daily vulnerability scan job
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Daily Vulnerability Scan",
+    "job_type": "vulnerability_scan",
+    "schedule_type": "cron",
+    "cron_expression": "0 2 * * *",
+    "timezone": "UTC",
+    "parameters": {
+      "target": "192.168.1.0/24",
+      "scanner": "trivy",
+      "scan_type": "full"
+    },
+    "notify_on_failure": true,
+    "notification_emails": ["security@company.com"]
+  }' \
+  https://localhost/api/v1/scheduler/jobs
+
+# Create hourly SIEM health check
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "SIEM Health Monitor",
+    "job_type": "siem_health_check",
+    "schedule_type": "interval",
+    "interval_seconds": 3600,
+    "parameters": {
+      "include_metrics": true
+    }
+  }' \
+  https://localhost/api/v1/scheduler/jobs
+
+# Manually trigger a job
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  https://localhost/api/v1/scheduler/jobs/JOB-20251130-ABC123/run
+
+# Get scheduler statistics
+curl -H "Authorization: Bearer $TOKEN" \
+  https://localhost/api/v1/scheduler/stats
+
+# Validate cron expression
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"cron_expression": "0 */6 * * *", "count": 5}' \
+  https://localhost/api/v1/scheduler/cron/validate
+
+# List job types
+curl -H "Authorization: Bearer $TOKEN" \
+  https://localhost/api/v1/scheduler/job-types
+
+# Bulk pause jobs
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"job_ids": ["JOB-001", "JOB-002"], "action": "pause"}' \
+  https://localhost/api/v1/scheduler/bulk-action
+```
+
+### Security
+
+- JWT authentication required for all endpoints
+- Job parameter validation against type schema
+- Timeout limits to prevent runaway jobs
+- Audit logging for all job operations
+- Rate limiting at API gateway level
+
+---
+
 ## [1.7.5] - 2025-11-30
 
 ### SIEM Integration Layer
@@ -1415,6 +1585,7 @@ See `docs/OPEN_SOURCE_STACK.md` for complete migration guides.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.7.6 | 2025-11-30 | Scheduled tasks/jobs for automated security operations |
 | 1.7.5 | 2025-11-30 | SIEM integration layer (Wazuh, Elastic, OpenSearch) |
 | 1.7.4 | 2025-11-30 | WebSocket real-time updates |
 | 1.7.3 | 2025-11-30 | Threat intelligence IOC enrichment |
