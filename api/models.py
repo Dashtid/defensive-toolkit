@@ -465,3 +465,169 @@ class AlertConfiguration(BaseModel):
     condition: str = Field(..., pattern="^(gt|lt|eq|gte|lte)$")
     notification_channel: str
     enabled: bool = True
+
+
+# ============================================================================
+# Runbook Models (v1.7.1)
+# ============================================================================
+
+class RunbookExecutionModeEnum(str, Enum):
+    """Runbook execution modes"""
+    NORMAL = "normal"       # Interactive with approval prompts
+    DRY_RUN = "dry_run"     # Simulate without executing
+    AUTO_APPROVE = "auto"   # Auto-approve based on severity level
+
+
+class RunbookStepStatusEnum(str, Enum):
+    """Individual step execution status"""
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+    AWAITING_APPROVAL = "awaiting_approval"
+
+
+class RunbookSummary(BaseModel):
+    """Summary of available runbook"""
+    id: str
+    name: str
+    description: str
+    version: str
+    author: Optional[str] = None
+    severity: str
+    estimated_duration: Optional[str] = None
+    mitre_attack: List[str] = []
+    steps_count: int
+    file_path: str
+    created: Optional[str] = None
+    updated: Optional[str] = None
+
+
+class RunbookDetail(BaseModel):
+    """Detailed runbook information including steps"""
+    id: str
+    name: str
+    description: str
+    version: str
+    author: Optional[str] = None
+    metadata: Dict[str, Any] = {}
+    variables: Dict[str, Any] = {}
+    steps: List[Dict[str, Any]]
+    file_path: str
+
+
+class RunbookListResponse(BaseModel):
+    """List of available runbooks"""
+    runbooks: List[RunbookSummary]
+    total: int
+
+
+class RunbookExecuteRequest(BaseModel):
+    """Request to execute a runbook"""
+    runbook_id: str = Field(..., description="Runbook identifier (filename without extension)")
+    incident_id: Optional[str] = Field(None, description="Link to existing incident")
+    mode: RunbookExecutionModeEnum = RunbookExecutionModeEnum.DRY_RUN
+    auto_approve_level: Optional[str] = Field(
+        None,
+        pattern="^(low|medium|high)$",
+        description="Auto-approve actions up to this severity level"
+    )
+    variables: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Runtime variables to pass to the runbook"
+    )
+    target_host: str = Field("localhost", description="Target host for containment actions")
+
+
+class RunbookStepResult(BaseModel):
+    """Result of a single runbook step"""
+    step_name: str
+    action: str
+    status: RunbookStepStatusEnum
+    severity: str
+    message: Optional[str] = None
+    data: Dict[str, Any] = {}
+    executed_at: Optional[datetime] = None
+    duration_ms: Optional[int] = None
+
+
+class RunbookExecutionStatus(BaseModel):
+    """Current status of runbook execution"""
+    execution_id: str
+    runbook_name: str
+    runbook_version: str
+    incident_id: str
+    status: StatusEnum
+    mode: RunbookExecutionModeEnum
+    started_at: datetime
+    updated_at: datetime
+    completed_at: Optional[datetime] = None
+    current_step: int
+    total_steps: int
+    steps_completed: int
+    steps_failed: int
+    steps_skipped: int
+    steps_awaiting: int
+    step_results: List[RunbookStepResult] = []
+    variables: Dict[str, Any] = {}
+    analyst: str
+    target_host: str
+
+
+class RunbookExecutionResponse(BaseModel):
+    """Response after initiating runbook execution"""
+    execution_id: str
+    incident_id: str
+    runbook_name: str
+    status: StatusEnum
+    message: str
+    monitor_url: str
+
+
+class PendingApproval(BaseModel):
+    """Pending approval request for high-severity action"""
+    approval_id: str
+    execution_id: str
+    step_name: str
+    action: str
+    severity: str
+    description: str
+    parameters: Dict[str, Any]
+    requested_at: datetime
+    expires_at: Optional[datetime] = None
+
+
+class ApprovalDecision(BaseModel):
+    """Analyst decision on pending approval"""
+    approved: bool
+    reason: Optional[str] = None
+
+
+class EvidenceItem(BaseModel):
+    """Evidence item in chain of custody"""
+    evidence_id: str
+    incident_id: str
+    evidence_type: str
+    source: str
+    description: str
+    collected_at: datetime
+    collected_by: str
+    hostname: str
+    file_path: Optional[str] = None
+    file_size: Optional[int] = None
+    sha256: Optional[str] = None
+
+
+class EvidenceChainResponse(BaseModel):
+    """Chain of custody for collected evidence"""
+    incident_id: str
+    created_at: datetime
+    evidence_count: int
+    evidence: List[EvidenceItem]
+
+
+class RollbackRequest(BaseModel):
+    """Request to rollback executed actions"""
+    execution_id: str
+    confirm: bool = Field(..., description="Must be true to confirm rollback")

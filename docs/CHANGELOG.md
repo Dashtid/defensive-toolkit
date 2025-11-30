@@ -7,13 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.1] - 2025-11-30
+
+### REST API for Incident Response Runbooks
+
+Major enhancement: Full REST API integration for the runbook execution engine, enabling remote incident response orchestration.
+
+### Added
+
+- **Runbook API Endpoints** (`api/routers/incident_response.py`):
+  - `GET /runbooks` - List available runbooks with metadata (severity, MITRE ATT&CK, steps)
+  - `GET /runbooks/{runbook_id}` - Get full runbook details including all steps
+  - `POST /runbooks/execute` - Execute runbook with async background processing
+  - `GET /executions` - List all runbook executions with status
+  - `GET /executions/{execution_id}` - Real-time execution status with step results
+  - `GET /approvals` - List pending approval requests for high-severity actions
+  - `POST /approvals/{approval_id}/decide` - Approve or deny pending actions
+  - `GET /executions/{execution_id}/evidence` - Get chain of custody for collected evidence
+  - `GET /executions/{execution_id}/evidence/download` - Download forensic evidence package
+  - `POST /executions/{execution_id}/rollback` - Rollback executed containment actions
+
+- **Runbook Execution Modes**:
+  - `dry_run` - Simulate execution without taking actions (default for safety)
+  - `normal` - Interactive mode with approval prompts via API
+  - `auto` - Auto-approve based on severity level threshold
+
+- **New Pydantic Models** (`api/models.py`):
+  - `RunbookSummary` / `RunbookDetail` / `RunbookListResponse`
+  - `RunbookExecuteRequest` / `RunbookExecutionResponse` / `RunbookExecutionStatus`
+  - `RunbookStepResult` / `RunbookStepStatusEnum` / `RunbookExecutionModeEnum`
+  - `PendingApproval` / `ApprovalDecision`
+  - `EvidenceItem` / `EvidenceChainResponse`
+  - `RollbackRequest`
+
+- **Background Task Execution**:
+  - Async runbook execution with FastAPI BackgroundTasks
+  - Real-time status updates during execution
+  - Step-by-step result tracking with timestamps and duration
+
+- **Approval Workflow API**:
+  - High-severity actions pause for API-based approval
+  - 1-hour expiration on pending approvals
+  - Approve/deny with audit trail (who, when, reason)
+
+### Changed
+
+- Enhanced `incident_response.py` router from stub to full implementation (~1100 lines)
+- Incident management endpoints now support pagination, filtering, and sorting
+- Legacy `/playbooks` endpoints maintained for backward compatibility
+
+### Technical Details
+
+- Asynchronous execution enables non-blocking runbook runs
+- Real-time status polling via GET endpoints
+- Evidence chain of custody with SHA-256 hashes accessible via API
+- Severity-based approval gates enforced in API execution
+- Full integration with RunbookEngine from v1.7.0
+
+### API Examples
+
+```bash
+# List available runbooks
+curl -H "Authorization: Bearer $TOKEN" \
+  https://localhost/api/v1/incident-response/runbooks
+
+# Execute runbook (dry run)
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"runbook_id": "ransomware", "mode": "dry_run"}' \
+  https://localhost/api/v1/incident-response/runbooks/execute
+
+# Check execution status
+curl -H "Authorization: Bearer $TOKEN" \
+  https://localhost/api/v1/incident-response/executions/EXE-20251130-ABC123
+
+# Approve pending action
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"approved": true}' \
+  https://localhost/api/v1/incident-response/approvals/abc12345/decide
+```
+
+---
+
 ## [1.7.0] - 2025-11-30
 
 ### Automated Incident Response Runbooks
 
 Major feature addition: YAML-based incident response automation with approval gates, evidence preservation, and graduated response.
 
-### Added
+### Added (Runbook Engine)
 
 - **Runbook Execution Engine** (`incident-response/runbooks/runbook_engine.py`):
   - YAML-based runbook definition and execution
@@ -777,6 +860,7 @@ See `docs/OPEN_SOURCE_STACK.md` for complete migration guides.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.7.1 | 2025-11-30 | REST API for incident response runbooks |
 | 1.7.0 | 2025-11-30 | Automated incident response runbooks |
 | 1.6.1 | 2025-11-28 | Email alerting for security health checks |
 | 1.6.0 | 2025-11-26 | Enhanced detection rules with 2025 threat coverage |
