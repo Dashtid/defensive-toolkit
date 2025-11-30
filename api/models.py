@@ -798,3 +798,297 @@ class WebhookStats(BaseModel):
     triggers_last_hour: int
     triggers_last_24h: int
     top_triggered_rules: List[Dict[str, Any]] = []
+
+
+# ============================================================================
+# Threat Intelligence Models (v1.7.3)
+# ============================================================================
+
+class IOCTypeEnum(str, Enum):
+    """Types of Indicators of Compromise"""
+    IP = "ip"
+    DOMAIN = "domain"
+    URL = "url"
+    FILE_HASH_MD5 = "md5"
+    FILE_HASH_SHA1 = "sha1"
+    FILE_HASH_SHA256 = "sha256"
+    EMAIL = "email"
+    CVE = "cve"
+
+
+class ThreatIntelSourceEnum(str, Enum):
+    """Supported threat intelligence sources"""
+    VIRUSTOTAL = "virustotal"
+    ABUSEIPDB = "abuseipdb"
+    ALIENVAULT_OTX = "alienvault_otx"
+    MISP = "misp"
+    GREYNOISE = "greynoise"
+    SHODAN = "shodan"
+    URLSCAN = "urlscan"
+    HYBRID_ANALYSIS = "hybrid_analysis"
+    INTERNAL = "internal"
+
+
+class ThreatCategoryEnum(str, Enum):
+    """Threat categories for IOCs"""
+    MALWARE = "malware"
+    PHISHING = "phishing"
+    BOTNET = "botnet"
+    C2 = "command_and_control"
+    RANSOMWARE = "ransomware"
+    SPAM = "spam"
+    SCANNER = "scanner"
+    BRUTE_FORCE = "brute_force"
+    EXPLOIT = "exploit"
+    APT = "apt"
+    CRYPTOCURRENCY = "cryptocurrency"
+    UNKNOWN = "unknown"
+    CLEAN = "clean"
+
+
+class ReputationScoreEnum(str, Enum):
+    """IOC reputation classification"""
+    MALICIOUS = "malicious"
+    SUSPICIOUS = "suspicious"
+    NEUTRAL = "neutral"
+    CLEAN = "clean"
+    UNKNOWN = "unknown"
+
+
+class IOCEnrichmentRequest(BaseModel):
+    """Request to enrich one or more IOCs"""
+    iocs: List[str] = Field(..., min_items=1, max_items=100, description="List of IOCs to enrich")
+    ioc_type: Optional[IOCTypeEnum] = Field(None, description="IOC type (auto-detected if not specified)")
+    sources: List[ThreatIntelSourceEnum] = Field(
+        default_factory=lambda: [ThreatIntelSourceEnum.VIRUSTOTAL, ThreatIntelSourceEnum.ABUSEIPDB],
+        description="Intelligence sources to query"
+    )
+    include_whois: bool = Field(False, description="Include WHOIS data for domains/IPs")
+    include_passive_dns: bool = Field(False, description="Include passive DNS records")
+    include_related_samples: bool = Field(False, description="Include related malware samples")
+
+
+class SourceResult(BaseModel):
+    """Result from a single intelligence source"""
+    source: ThreatIntelSourceEnum
+    queried_at: datetime
+    success: bool
+    error_message: Optional[str] = None
+
+    # Reputation data
+    reputation: Optional[ReputationScoreEnum] = None
+    confidence: Optional[int] = Field(None, ge=0, le=100, description="Confidence score 0-100")
+    risk_score: Optional[int] = Field(None, ge=0, le=100, description="Risk score 0-100")
+
+    # Detection counts (for VT-style sources)
+    malicious_count: Optional[int] = None
+    suspicious_count: Optional[int] = None
+    clean_count: Optional[int] = None
+    total_engines: Optional[int] = None
+
+    # Categorization
+    categories: List[ThreatCategoryEnum] = []
+    tags: List[str] = []
+
+    # Additional context
+    first_seen: Optional[datetime] = None
+    last_seen: Optional[datetime] = None
+    report_count: Optional[int] = None
+
+    # Raw response (truncated for large responses)
+    raw_data: Optional[Dict[str, Any]] = None
+
+
+class WhoisData(BaseModel):
+    """WHOIS registration data"""
+    registrar: Optional[str] = None
+    registrant: Optional[str] = None
+    registrant_country: Optional[str] = None
+    creation_date: Optional[datetime] = None
+    expiration_date: Optional[datetime] = None
+    updated_date: Optional[datetime] = None
+    name_servers: List[str] = []
+    status: List[str] = []
+    raw_text: Optional[str] = None
+
+
+class PassiveDNSRecord(BaseModel):
+    """Passive DNS record"""
+    record_type: str = Field(..., description="A, AAAA, CNAME, MX, etc.")
+    value: str
+    first_seen: Optional[datetime] = None
+    last_seen: Optional[datetime] = None
+    source: Optional[str] = None
+
+
+class RelatedSample(BaseModel):
+    """Related malware sample"""
+    sha256: str
+    file_name: Optional[str] = None
+    file_type: Optional[str] = None
+    file_size: Optional[int] = None
+    detection_ratio: Optional[str] = None
+    first_seen: Optional[datetime] = None
+    relationship_type: str = Field(..., description="communicates_with, downloaded_from, etc.")
+
+
+class GeoIPData(BaseModel):
+    """Geographic IP data"""
+    country: Optional[str] = None
+    country_code: Optional[str] = None
+    city: Optional[str] = None
+    region: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    asn: Optional[int] = None
+    asn_org: Optional[str] = None
+    isp: Optional[str] = None
+
+
+class IOCEnrichmentResult(BaseModel):
+    """Enrichment result for a single IOC"""
+    ioc: str
+    ioc_type: IOCTypeEnum
+    enriched_at: datetime
+
+    # Aggregated verdict
+    overall_reputation: ReputationScoreEnum
+    overall_risk_score: int = Field(..., ge=0, le=100)
+    confidence: int = Field(..., ge=0, le=100)
+
+    # Aggregated categories
+    threat_categories: List[ThreatCategoryEnum] = []
+    tags: List[str] = []
+
+    # Source-specific results
+    source_results: List[SourceResult] = []
+
+    # Optional enrichments
+    whois: Optional[WhoisData] = None
+    geoip: Optional[GeoIPData] = None
+    passive_dns: List[PassiveDNSRecord] = []
+    related_samples: List[RelatedSample] = []
+
+    # Associated threat intel
+    mitre_techniques: List[str] = []
+    threat_actors: List[str] = []
+    campaigns: List[str] = []
+
+    # Recommendations
+    recommended_actions: List[str] = []
+    block_recommended: bool = False
+
+
+class BulkEnrichmentResponse(BaseModel):
+    """Response for bulk IOC enrichment"""
+    request_id: str
+    total_iocs: int
+    enriched_count: int
+    failed_count: int
+    results: List[IOCEnrichmentResult]
+    processing_time_ms: int
+    sources_queried: List[ThreatIntelSourceEnum]
+
+
+class ThreatIntelSourceConfig(BaseModel):
+    """Configuration for a threat intelligence source"""
+    source: ThreatIntelSourceEnum
+    enabled: bool = True
+    api_key_configured: bool = False
+    base_url: Optional[str] = None
+    rate_limit_per_minute: int = 4
+    rate_limit_per_day: int = 500
+    priority: int = Field(1, ge=1, le=10, description="Query priority (lower = higher priority)")
+    timeout_seconds: int = 30
+
+
+class ThreatIntelSourceStatus(BaseModel):
+    """Status of a threat intelligence source"""
+    source: ThreatIntelSourceEnum
+    enabled: bool
+    api_key_configured: bool
+    last_query_at: Optional[datetime] = None
+    queries_today: int = 0
+    queries_remaining: int = 0
+    rate_limited: bool = False
+    last_error: Optional[str] = None
+    average_response_ms: Optional[int] = None
+
+
+class ThreatIntelFeed(BaseModel):
+    """Threat intelligence feed configuration"""
+    feed_id: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    source: ThreatIntelSourceEnum
+    feed_url: Optional[str] = None
+
+    # Feed type and format
+    feed_type: str = Field("iocs", pattern="^(iocs|stix|misp|csv|json)$")
+    ioc_types: List[IOCTypeEnum] = []
+
+    # Sync settings
+    enabled: bool = True
+    sync_interval_minutes: int = Field(60, ge=5, le=1440)
+    last_sync_at: Optional[datetime] = None
+    next_sync_at: Optional[datetime] = None
+
+    # Statistics
+    total_indicators: int = 0
+    new_indicators_last_sync: int = 0
+
+    # Metadata
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class ThreatIntelFeedList(BaseModel):
+    """List of threat intelligence feeds"""
+    feeds: List[ThreatIntelFeed]
+    total: int
+
+
+class IOCSearchRequest(BaseModel):
+    """Search for IOCs in local threat intel database"""
+    query: str = Field(..., min_length=1, description="Search query (IOC value or partial match)")
+    ioc_types: List[IOCTypeEnum] = Field(default_factory=list, description="Filter by IOC types")
+    categories: List[ThreatCategoryEnum] = Field(default_factory=list, description="Filter by categories")
+    min_risk_score: Optional[int] = Field(None, ge=0, le=100)
+    max_age_days: Optional[int] = Field(None, ge=1, description="Maximum age of IOC data")
+    sources: List[ThreatIntelSourceEnum] = Field(default_factory=list, description="Filter by sources")
+    limit: int = Field(100, ge=1, le=1000)
+    offset: int = Field(0, ge=0)
+
+
+class IOCSearchResult(BaseModel):
+    """Local IOC search result"""
+    ioc: str
+    ioc_type: IOCTypeEnum
+    reputation: ReputationScoreEnum
+    risk_score: int
+    categories: List[ThreatCategoryEnum]
+    sources: List[ThreatIntelSourceEnum]
+    first_seen: datetime
+    last_seen: datetime
+    tags: List[str] = []
+
+
+class IOCSearchResponse(BaseModel):
+    """Response for IOC search"""
+    query: str
+    total_matches: int
+    results: List[IOCSearchResult]
+    search_time_ms: int
+
+
+class ThreatIntelStats(BaseModel):
+    """Threat intelligence system statistics"""
+    total_iocs_cached: int
+    iocs_by_type: Dict[str, int]
+    iocs_by_category: Dict[str, int]
+    iocs_by_reputation: Dict[str, int]
+    sources_status: List[ThreatIntelSourceStatus]
+    cache_hit_rate: float = Field(..., ge=0, le=1)
+    queries_last_hour: int
+    queries_last_24h: int
+    average_enrichment_time_ms: int

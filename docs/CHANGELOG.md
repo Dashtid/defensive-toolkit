@@ -7,6 +7,131 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.3] - 2025-11-30
+
+### Threat Intelligence IOC Enrichment
+
+Major enhancement: Multi-source IOC enrichment API for automated threat intelligence gathering from VirusTotal, AbuseIPDB, AlienVault OTX, GreyNoise, and more.
+
+### Added
+
+- **Threat Intel API Router** (`api/routers/threat_intel.py`):
+  - `POST /threat-intel/enrich` - Bulk IOC enrichment (up to 100 IOCs)
+  - `GET /threat-intel/enrich/{ioc}` - Single IOC enrichment
+  - `GET /threat-intel/sources` - Get status of all intel sources
+  - `GET /threat-intel/stats` - Get enrichment system statistics
+  - `DELETE /threat-intel/cache` - Clear IOC cache
+  - `GET /threat-intel/feeds` - List configured threat intel feeds
+  - `POST /threat-intel/feeds` - Create threat intel feed
+  - `DELETE /threat-intel/feeds/{feed_id}` - Delete feed
+  - `GET /threat-intel/detect-type/{ioc}` - Auto-detect IOC type
+
+- **Supported Intelligence Sources**:
+  - VirusTotal - File hashes, URLs, domains, IPs (70+ AV engines)
+  - AbuseIPDB - IP reputation with abuse confidence scores
+  - AlienVault OTX - Pulse-based threat intelligence
+  - GreyNoise - Scanner/bot detection for IPs
+  - Shodan - Internet-connected device intelligence
+  - URLScan.io - URL scanning and screenshots
+  - MISP - Open-source threat sharing platform
+  - Hybrid Analysis - Malware sandbox analysis
+
+- **IOC Type Auto-Detection**:
+  - IPv4/IPv6 addresses
+  - Domain names
+  - URLs (HTTP/HTTPS/FTP)
+  - File hashes (MD5, SHA1, SHA256)
+  - Email addresses
+  - CVE identifiers
+
+- **Aggregated Verdicts**:
+  - Multi-source reputation scoring (malicious/suspicious/neutral/clean/unknown)
+  - Weighted risk scores (0-100)
+  - Confidence levels based on source agreement
+  - Threat categorization (malware, phishing, botnet, C2, ransomware, etc.)
+
+- **Caching System**:
+  - In-memory cache with configurable TTL (default 1 hour)
+  - Cache key based on IOC, type, and sources
+  - Cache hit rate tracking
+  - Manual cache clearing endpoint
+
+- **Rate Limiting**:
+  - Per-source rate limit tracking (minute and day limits)
+  - Automatic rate limit detection
+  - Query remaining counters
+  - Graceful degradation when rate limited
+
+- **Recommendations Engine**:
+  - Automated action recommendations based on verdict
+  - Block recommendations for malicious IOCs
+  - Severity-specific guidance (ransomware, C2, etc.)
+  - IOC type-specific actions (firewall, DNS sinkhole, EDR blocklist)
+
+- **New Pydantic Models** (`api/models.py`):
+  - `IOCTypeEnum` - IP, domain, URL, MD5, SHA1, SHA256, email, CVE
+  - `ThreatIntelSourceEnum` - Supported intelligence sources
+  - `ThreatCategoryEnum` - Malware, phishing, botnet, C2, ransomware, etc.
+  - `ReputationScoreEnum` - Malicious, suspicious, neutral, clean, unknown
+  - `IOCEnrichmentRequest` / `IOCEnrichmentResult` - Enrichment models
+  - `SourceResult` - Per-source result with detection counts
+  - `BulkEnrichmentResponse` - Bulk enrichment response
+  - `GeoIPData` / `WhoisData` / `PassiveDNSRecord` - Extended enrichment
+  - `ThreatIntelFeed` / `ThreatIntelFeedList` - Feed management
+  - `ThreatIntelSourceConfig` / `ThreatIntelSourceStatus` - Source status
+  - `ThreatIntelStats` - System statistics
+
+### Technical Details
+
+- Async concurrent queries to multiple sources using httpx
+- Environment variable configuration for API keys (VIRUSTOTAL_API_KEY, ABUSEIPDB_API_KEY, etc.)
+- Source-specific parsers for different API response formats
+- Aggregation algorithm for multi-source verdict calculation
+- In-memory cache with TTL (production: replace with Redis)
+- Rate limit tracking per source with minute and day counters
+
+### API Examples
+
+```bash
+# Enrich single IP
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://localhost/api/v1/threat-intel/enrich/8.8.8.8"
+
+# Bulk enrich multiple IOCs
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "iocs": ["8.8.8.8", "evil.com", "abc123def456..."],
+    "sources": ["virustotal", "abuseipdb", "alienvault_otx"]
+  }' \
+  https://localhost/api/v1/threat-intel/enrich
+
+# Get source status
+curl -H "Authorization: Bearer $TOKEN" \
+  https://localhost/api/v1/threat-intel/sources
+
+# Auto-detect IOC type
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://localhost/api/v1/threat-intel/detect-type/d41d8cd98f00b204e9800998ecf8427e"
+```
+
+### Environment Variables
+
+```bash
+# API keys for threat intelligence sources
+VIRUSTOTAL_API_KEY=your-vt-api-key
+ABUSEIPDB_API_KEY=your-abuseipdb-key
+OTX_API_KEY=your-alienvault-otx-key
+GREYNOISE_API_KEY=your-greynoise-key
+SHODAN_API_KEY=your-shodan-key
+URLSCAN_API_KEY=your-urlscan-key
+MISP_API_KEY=your-misp-key
+MISP_URL=https://your-misp-instance
+HYBRID_ANALYSIS_API_KEY=your-ha-key
+```
+
+---
+
 ## [1.7.2] - 2025-11-30
 
 ### Webhook/Event-Driven Runbook Triggers
@@ -972,6 +1097,7 @@ See `docs/OPEN_SOURCE_STACK.md` for complete migration guides.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.7.3 | 2025-11-30 | Threat intelligence IOC enrichment |
 | 1.7.2 | 2025-11-30 | Webhook/event-driven runbook triggers |
 | 1.7.1 | 2025-11-30 | REST API for incident response runbooks |
 | 1.7.0 | 2025-11-30 | Automated incident response runbooks |
