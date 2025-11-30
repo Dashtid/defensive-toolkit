@@ -2800,3 +2800,532 @@ class SubscriptionListResponse(BaseModel):
     """Response for listing subscriptions"""
     subscriptions: List[NotificationSubscription]
     total: int
+
+
+# =============================================================================
+# Alert Correlation Engine Models (v1.7.8)
+# =============================================================================
+# Provides alert correlation, MITRE ATT&CK mapping, kill chain tracking,
+# alert clustering, and multi-stage attack detection.
+
+# --- Enums ---
+
+class CorrelationRuleTypeEnum(str, Enum):
+    """Types of correlation rules"""
+    SEQUENCE = "sequence"  # Events must occur in specific order
+    THRESHOLD = "threshold"  # Count of events exceeds threshold
+    TEMPORAL = "temporal"  # Events within time window
+    PATTERN = "pattern"  # Regex or pattern matching
+    AGGREGATION = "aggregation"  # Group by field values
+    STATISTICAL = "statistical"  # Anomaly detection
+    CHAIN = "chain"  # Multi-stage attack chain
+
+
+class CorrelationRuleStatusEnum(str, Enum):
+    """Status of correlation rules"""
+    ACTIVE = "active"
+    DISABLED = "disabled"
+    TESTING = "testing"
+    ARCHIVED = "archived"
+
+
+class KillChainPhaseEnum(str, Enum):
+    """Cyber Kill Chain phases (Lockheed Martin model)"""
+    RECONNAISSANCE = "reconnaissance"
+    WEAPONIZATION = "weaponization"
+    DELIVERY = "delivery"
+    EXPLOITATION = "exploitation"
+    INSTALLATION = "installation"
+    COMMAND_AND_CONTROL = "command_and_control"
+    ACTIONS_ON_OBJECTIVES = "actions_on_objectives"
+
+
+class CorrelatedAlertStatusEnum(str, Enum):
+    """Status of correlated alert groups"""
+    OPEN = "open"
+    INVESTIGATING = "investigating"
+    CONFIRMED = "confirmed"
+    FALSE_POSITIVE = "false_positive"
+    RESOLVED = "resolved"
+
+
+class ClusteringAlgorithmEnum(str, Enum):
+    """Supported clustering algorithms"""
+    KMEANS = "kmeans"
+    DBSCAN = "dbscan"
+    HIERARCHICAL = "hierarchical"
+    SIMILARITY = "similarity"  # Custom similarity scoring
+
+
+class AttackPatternStatusEnum(str, Enum):
+    """Status of detected attack patterns"""
+    DETECTED = "detected"
+    CONFIRMED = "confirmed"
+    IN_PROGRESS = "in_progress"
+    MITIGATED = "mitigated"
+    FALSE_POSITIVE = "false_positive"
+
+
+# --- MITRE ATT&CK Models ---
+
+class MitreTactic(BaseModel):
+    """MITRE ATT&CK Tactic"""
+    id: str = Field(..., description="Tactic ID (e.g., TA0001)")
+    name: str = Field(..., description="Tactic name (e.g., Initial Access)")
+    description: Optional[str] = None
+    url: Optional[str] = None
+
+
+class MitreTechnique(BaseModel):
+    """MITRE ATT&CK Technique"""
+    id: str = Field(..., description="Technique ID (e.g., T1566)")
+    name: str = Field(..., description="Technique name (e.g., Phishing)")
+    tactic_ids: List[str] = Field(default_factory=list, description="Associated tactic IDs")
+    description: Optional[str] = None
+    url: Optional[str] = None
+    is_subtechnique: bool = False
+    parent_technique_id: Optional[str] = None
+    platforms: List[str] = Field(default_factory=list)
+    data_sources: List[str] = Field(default_factory=list)
+    detection: Optional[str] = None
+    mitigations: List[str] = Field(default_factory=list)
+
+
+class MitreMapping(BaseModel):
+    """Mapping of an alert or rule to MITRE ATT&CK"""
+    technique_ids: List[str] = Field(default_factory=list)
+    tactic_ids: List[str] = Field(default_factory=list)
+    kill_chain_phases: List[KillChainPhaseEnum] = Field(default_factory=list)
+    confidence: float = Field(0.0, ge=0.0, le=1.0, description="Confidence in mapping")
+    notes: Optional[str] = None
+
+
+# --- Correlation Rule Models ---
+
+class CorrelationCondition(BaseModel):
+    """Single condition in a correlation rule"""
+    field: str = Field(..., description="Field to match (e.g., source_ip, event_type)")
+    operator: str = Field(..., description="Comparison operator (eq, ne, gt, lt, contains, regex, in)")
+    value: Any = Field(..., description="Value to compare against")
+    case_sensitive: bool = True
+
+
+class CorrelationRuleCreate(BaseModel):
+    """Request to create a correlation rule"""
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    rule_type: CorrelationRuleTypeEnum
+    conditions: List[CorrelationCondition] = Field(..., min_items=1)
+    time_window_seconds: int = Field(300, ge=1, le=86400, description="Time window for correlation")
+    threshold: int = Field(1, ge=1, description="Minimum events to trigger")
+    group_by: List[str] = Field(default_factory=list, description="Fields to group by")
+    severity: SeverityEnum = SeverityEnum.MEDIUM
+    mitre_mapping: Optional[MitreMapping] = None
+    tags: List[str] = Field(default_factory=list)
+    enabled: bool = True
+    actions: List[Dict[str, Any]] = Field(default_factory=list, description="Actions on trigger")
+
+
+class CorrelationRule(BaseModel):
+    """Correlation rule definition"""
+    id: str
+    name: str
+    description: Optional[str] = None
+    rule_type: CorrelationRuleTypeEnum
+    conditions: List[CorrelationCondition]
+    time_window_seconds: int
+    threshold: int
+    group_by: List[str] = Field(default_factory=list)
+    severity: SeverityEnum
+    mitre_mapping: Optional[MitreMapping] = None
+    tags: List[str] = Field(default_factory=list)
+    status: CorrelationRuleStatusEnum = CorrelationRuleStatusEnum.ACTIVE
+    enabled: bool = True
+    actions: List[Dict[str, Any]] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[str] = None
+    trigger_count: int = 0
+    last_triggered: Optional[datetime] = None
+
+
+class CorrelationRuleUpdate(BaseModel):
+    """Request to update a correlation rule"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    rule_type: Optional[CorrelationRuleTypeEnum] = None
+    conditions: Optional[List[CorrelationCondition]] = None
+    time_window_seconds: Optional[int] = Field(None, ge=1, le=86400)
+    threshold: Optional[int] = Field(None, ge=1)
+    group_by: Optional[List[str]] = None
+    severity: Optional[SeverityEnum] = None
+    mitre_mapping: Optional[MitreMapping] = None
+    tags: Optional[List[str]] = None
+    status: Optional[CorrelationRuleStatusEnum] = None
+    enabled: Optional[bool] = None
+    actions: Optional[List[Dict[str, Any]]] = None
+
+
+class CorrelationRuleListResponse(BaseModel):
+    """Response for listing correlation rules"""
+    rules: List[CorrelationRule]
+    total: int
+    active_count: int
+    disabled_count: int
+
+
+# --- Correlated Alert Models ---
+
+class CorrelatedAlertMember(BaseModel):
+    """Individual alert that is part of a correlated group"""
+    alert_id: str
+    timestamp: datetime
+    source: str
+    event_type: str
+    severity: SeverityEnum
+    summary: str
+    raw_data: Dict[str, Any] = Field(default_factory=dict)
+    matched_conditions: List[str] = Field(default_factory=list)
+
+
+class CorrelatedAlertCreate(BaseModel):
+    """Request to create a correlated alert group"""
+    rule_id: str
+    alerts: List[CorrelatedAlertMember] = Field(..., min_items=1)
+    summary: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class CorrelatedAlert(BaseModel):
+    """Correlated alert group - multiple alerts linked together"""
+    id: str
+    rule_id: str
+    rule_name: str
+    alerts: List[CorrelatedAlertMember]
+    alert_count: int
+    first_seen: datetime
+    last_seen: datetime
+    time_span_seconds: int
+    severity: SeverityEnum
+    status: CorrelatedAlertStatusEnum = CorrelatedAlertStatusEnum.OPEN
+    mitre_mapping: Optional[MitreMapping] = None
+    kill_chain_phase: Optional[KillChainPhaseEnum] = None
+    summary: str
+    group_key: str = Field(..., description="Key identifying the correlation group")
+    source_ips: List[str] = Field(default_factory=list)
+    destination_ips: List[str] = Field(default_factory=list)
+    users: List[str] = Field(default_factory=list)
+    hosts: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
+    notes: Optional[str] = None
+    assigned_to: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    resolved_at: Optional[datetime] = None
+    resolution_notes: Optional[str] = None
+
+
+class CorrelatedAlertUpdate(BaseModel):
+    """Request to update a correlated alert"""
+    status: Optional[CorrelatedAlertStatusEnum] = None
+    notes: Optional[str] = None
+    assigned_to: Optional[str] = None
+    tags: Optional[List[str]] = None
+    resolution_notes: Optional[str] = None
+
+
+class CorrelatedAlertListResponse(BaseModel):
+    """Response for listing correlated alerts"""
+    correlated_alerts: List[CorrelatedAlert]
+    total: int
+    by_status: Dict[str, int]
+    by_severity: Dict[str, int]
+
+
+# --- Alert Clustering Models ---
+
+class ClusterConfig(BaseModel):
+    """Configuration for alert clustering"""
+    algorithm: ClusteringAlgorithmEnum = ClusteringAlgorithmEnum.SIMILARITY
+    similarity_threshold: float = Field(0.7, ge=0.0, le=1.0)
+    min_cluster_size: int = Field(2, ge=2)
+    max_cluster_size: int = Field(100, ge=2)
+    features: List[str] = Field(
+        default_factory=lambda: ["source_ip", "destination_ip", "event_type", "severity"],
+        description="Fields to use for clustering"
+    )
+    time_window_hours: int = Field(24, ge=1, le=168)
+
+
+class AlertCluster(BaseModel):
+    """Cluster of similar alerts"""
+    id: str
+    cluster_name: str
+    alerts: List[CorrelatedAlertMember]
+    alert_count: int
+    centroid: Dict[str, Any] = Field(default_factory=dict, description="Cluster centroid features")
+    similarity_score: float = Field(..., ge=0.0, le=1.0)
+    common_features: Dict[str, Any] = Field(default_factory=dict)
+    first_seen: datetime
+    last_seen: datetime
+    severity: SeverityEnum
+    is_deduplicated: bool = False
+    representative_alert_id: str = Field(..., description="Most representative alert")
+    created_at: datetime
+
+
+class ClusteringRequest(BaseModel):
+    """Request to run clustering on alerts"""
+    alert_ids: Optional[List[str]] = None  # If None, cluster recent alerts
+    config: Optional[ClusterConfig] = None
+    time_range_hours: int = Field(24, ge=1, le=168)
+
+
+class ClusteringResponse(BaseModel):
+    """Response from clustering operation"""
+    status: StatusEnum
+    clusters_found: int
+    total_alerts_processed: int
+    alerts_clustered: int
+    alerts_deduplicated: int
+    deduplication_rate_percent: float
+    clusters: List[AlertCluster]
+    processing_time_ms: int
+
+
+# --- Deduplication Models ---
+
+class DeduplicationConfig(BaseModel):
+    """Configuration for alert deduplication"""
+    enabled: bool = True
+    similarity_threshold: float = Field(0.85, ge=0.0, le=1.0)
+    time_window_minutes: int = Field(60, ge=1, le=1440)
+    fields_to_compare: List[str] = Field(
+        default_factory=lambda: ["source_ip", "destination_ip", "event_type", "alert_name"]
+    )
+    keep_strategy: str = Field("first", pattern="^(first|last|highest_severity)$")
+
+
+class DeduplicationResult(BaseModel):
+    """Result of deduplication operation"""
+    original_count: int
+    deduplicated_count: int
+    duplicates_removed: int
+    deduplication_rate_percent: float
+    duplicate_groups: List[Dict[str, Any]]
+
+
+# --- Attack Pattern Models ---
+
+class AttackStage(BaseModel):
+    """Single stage in a multi-stage attack"""
+    stage_number: int
+    name: str
+    description: Optional[str] = None
+    kill_chain_phase: KillChainPhaseEnum
+    mitre_techniques: List[str] = Field(default_factory=list)
+    indicators: List[Dict[str, Any]] = Field(default_factory=list)
+    alerts: List[str] = Field(default_factory=list, description="Alert IDs in this stage")
+    timestamp_start: Optional[datetime] = None
+    timestamp_end: Optional[datetime] = None
+    completed: bool = False
+
+
+class AttackPatternCreate(BaseModel):
+    """Request to create an attack pattern definition"""
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    stages: List[AttackStage] = Field(..., min_items=1)
+    mitre_mapping: Optional[MitreMapping] = None
+    severity: SeverityEnum = SeverityEnum.CRITICAL
+    tags: List[str] = Field(default_factory=list)
+
+
+class AttackPattern(BaseModel):
+    """Detected multi-stage attack pattern"""
+    id: str
+    name: str
+    description: Optional[str] = None
+    stages: List[AttackStage]
+    stages_completed: int
+    stages_total: int
+    progress_percent: float
+    status: AttackPatternStatusEnum
+    severity: SeverityEnum
+    mitre_mapping: Optional[MitreMapping] = None
+    kill_chain_coverage: List[KillChainPhaseEnum] = Field(default_factory=list)
+    source_ips: List[str] = Field(default_factory=list)
+    target_hosts: List[str] = Field(default_factory=list)
+    target_users: List[str] = Field(default_factory=list)
+    first_seen: datetime
+    last_activity: datetime
+    time_span_hours: float
+    confidence: float = Field(0.0, ge=0.0, le=1.0)
+    related_correlated_alerts: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
+    notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AttackPatternUpdate(BaseModel):
+    """Request to update an attack pattern"""
+    status: Optional[AttackPatternStatusEnum] = None
+    notes: Optional[str] = None
+    tags: Optional[List[str]] = None
+
+
+class AttackPatternListResponse(BaseModel):
+    """Response for listing attack patterns"""
+    patterns: List[AttackPattern]
+    total: int
+    by_status: Dict[str, int]
+    by_severity: Dict[str, int]
+    active_attacks: int
+
+
+# --- Alert Ingestion Models ---
+
+class AlertIngest(BaseModel):
+    """Alert to be ingested for correlation"""
+    source: str = Field(..., description="Source system (e.g., siem, edr, firewall)")
+    event_type: str = Field(..., description="Type of event")
+    timestamp: datetime
+    severity: SeverityEnum
+    summary: str
+    source_ip: Optional[str] = None
+    destination_ip: Optional[str] = None
+    user: Optional[str] = None
+    host: Optional[str] = None
+    raw_data: Dict[str, Any] = Field(default_factory=dict)
+    tags: List[str] = Field(default_factory=list)
+
+
+class AlertIngestBatch(BaseModel):
+    """Batch of alerts for correlation processing"""
+    alerts: List[AlertIngest] = Field(..., min_items=1, max_items=1000)
+    process_immediately: bool = True
+
+
+class AlertIngestResponse(BaseModel):
+    """Response from alert ingestion"""
+    status: StatusEnum
+    alerts_received: int
+    alerts_processed: int
+    correlations_triggered: int
+    new_correlated_alerts: int
+    patterns_detected: int
+    processing_time_ms: int
+    errors: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+# --- Correlation Statistics Models ---
+
+class CorrelationStats(BaseModel):
+    """Statistics for the correlation engine"""
+    total_rules: int
+    active_rules: int
+    disabled_rules: int
+    total_correlated_alerts: int
+    open_correlated_alerts: int
+    alerts_processed_24h: int
+    correlations_triggered_24h: int
+    alerts_deduplicated_24h: int
+    deduplication_rate_percent: float
+    avg_correlation_time_ms: float
+    active_attack_patterns: int
+    kill_chain_coverage: Dict[str, int]
+    top_triggered_rules: List[Dict[str, Any]]
+    mitre_technique_frequency: Dict[str, int]
+
+
+class CorrelationHealthCheck(BaseModel):
+    """Health check for correlation engine"""
+    status: str = Field(..., pattern="^(healthy|degraded|unhealthy)$")
+    timestamp: datetime
+    rules_status: Dict[str, Any]
+    processing_status: Dict[str, Any]
+    queue_depth: int
+    avg_latency_ms: float
+    error_rate_percent: float
+    last_correlation_at: Optional[datetime] = None
+    recommendations: List[str] = Field(default_factory=list)
+
+
+# --- Rule Testing Models ---
+
+class RuleTestRequest(BaseModel):
+    """Request to test a correlation rule"""
+    rule_id: Optional[str] = None  # Test existing rule
+    rule: Optional[CorrelationRuleCreate] = None  # Test new rule definition
+    test_alerts: List[AlertIngest] = Field(..., min_items=1)
+
+
+class RuleTestResponse(BaseModel):
+    """Response from rule testing"""
+    status: StatusEnum
+    rule_matched: bool
+    matching_alerts: List[Dict[str, Any]]
+    alerts_tested: int
+    alerts_matched: int
+    match_details: Dict[str, Any]
+    would_trigger: bool
+    execution_time_ms: int
+
+
+# --- Kill Chain Analysis Models ---
+
+class KillChainAnalysis(BaseModel):
+    """Analysis of kill chain progression"""
+    analysis_id: str
+    time_range_start: datetime
+    time_range_end: datetime
+    phases_detected: List[KillChainPhaseEnum]
+    phases_missing: List[KillChainPhaseEnum]
+    coverage_percent: float
+    phase_details: Dict[str, Dict[str, Any]]
+    potential_attack_progression: bool
+    high_risk_indicators: List[str]
+    recommendations: List[str]
+    related_alerts: List[str]
+    created_at: datetime
+
+
+class KillChainAnalysisRequest(BaseModel):
+    """Request for kill chain analysis"""
+    source_ip: Optional[str] = None
+    target_host: Optional[str] = None
+    time_range_hours: int = Field(24, ge=1, le=168)
+    include_all_severities: bool = False
+
+
+# --- Suppression Models ---
+
+class CorrelationSuppression(BaseModel):
+    """Suppression rule for correlation"""
+    id: str
+    name: str
+    description: Optional[str] = None
+    conditions: List[CorrelationCondition]
+    suppress_duration_minutes: int = Field(60, ge=1, le=10080)
+    suppress_count: int = Field(0, description="Number of alerts suppressed")
+    enabled: bool = True
+    expires_at: Optional[datetime] = None
+    created_at: datetime
+    created_by: Optional[str] = None
+
+
+class SuppressionCreateRequest(BaseModel):
+    """Request to create a suppression rule"""
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    conditions: List[CorrelationCondition] = Field(..., min_items=1)
+    suppress_duration_minutes: int = Field(60, ge=1, le=10080)
+    expires_at: Optional[datetime] = None
+
+
+class SuppressionListResponse(BaseModel):
+    """Response for listing suppression rules"""
+    suppressions: List[CorrelationSuppression]
+    total: int
+    active_count: int
