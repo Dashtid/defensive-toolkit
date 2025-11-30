@@ -7,6 +7,162 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.4] - 2025-11-30
+
+### WebSocket Real-Time Updates
+
+Major enhancement: Real-time push notifications for runbook execution, incident updates, alert processing, and IOC enrichment events via WebSocket.
+
+### Added
+
+- **WebSocket Router** (`api/routers/websocket.py`):
+  - `WS /ws/events` - Main WebSocket endpoint for real-time event streaming
+  - `GET /ws/connections` - List all active WebSocket connections (admin)
+  - `GET /ws/connections/{id}` - Get specific connection details
+  - `GET /ws/stats` - Get WebSocket connection statistics
+  - `POST /ws/broadcast` - Broadcast message to channel (admin)
+  - `DELETE /ws/connections/{id}` - Force disconnect connection (admin)
+  - `POST /ws/test/runbook-event` - Send test runbook event
+  - `POST /ws/test/alert-event` - Send test alert event
+
+- **Connection Manager**:
+  - Per-connection tracking with authentication state
+  - Channel-based subscriptions (all, runbooks, incidents, alerts, threat_intel, system)
+  - Execution-specific subscriptions for monitoring specific runbook executions
+  - Incident-specific subscriptions for monitoring specific incidents
+  - User-indexed connections for targeted messaging
+  - Automatic heartbeat messages every 30 seconds
+  - Connection duration tracking and statistics
+
+- **Event Types**:
+  - Connection events: connected, disconnected, authenticated, authentication_failed, heartbeat
+  - Runbook events: started, step_started, step_completed, step_failed, step_skipped, awaiting_approval, completed, failed, progress
+  - Incident events: created, updated, escalated, closed, comment
+  - Alert events: received, processed, triggered_runbook
+  - Threat intel events: enrichment_started, enrichment_completed, high_risk_detected
+  - System events: system_alert, error
+
+- **Subscription Channels**:
+  - `all` - Receive all events
+  - `runbooks` - Runbook execution events only
+  - `incidents` - Incident updates only
+  - `alerts` - Webhook/alert events only
+  - `threat_intel` - IOC enrichment events only
+  - `system` - System alerts and errors
+  - `execution` - Specific execution ID (requires parameter)
+
+- **Publishing Functions** (for integration with other routers):
+  - `publish_runbook_started()` - Broadcast runbook initiation
+  - `publish_runbook_step_event()` - Broadcast step status changes
+  - `publish_runbook_progress()` - Broadcast progress updates with percentage
+  - `publish_approval_request()` - Broadcast pending approval requests
+  - `publish_runbook_completed()` - Broadcast runbook completion
+  - `publish_incident_event()` - Broadcast incident status changes
+  - `publish_alert_event()` - Broadcast webhook alert processing
+  - `publish_ioc_enrichment_event()` - Broadcast IOC enrichment progress
+  - `publish_system_alert()` - Broadcast system-level alerts
+
+- **New Pydantic Models** (`api/models.py`):
+  - `WebSocketEventTypeEnum` - 25 event types for all real-time updates
+  - `WebSocketChannelEnum` - Subscription channel definitions
+  - `WebSocketMessage` - Base message format with event type, channel, timestamp, data
+  - `WebSocketAuthRequest` / `WebSocketAuthResponse` - Authentication models
+  - `WebSocketSubscribeRequest` / `WebSocketSubscribeResponse` - Subscription management
+  - `WebSocketHeartbeat` - Keep-alive message model
+  - `WebSocketConnectionInfo` / `WebSocketConnectionStats` - Connection monitoring
+  - `RunbookProgressEvent` / `RunbookStepEvent` - Runbook execution events
+  - `ApprovalRequestEvent` - Pending approval notifications
+  - `IncidentEvent` / `AlertEvent` - Incident and alert event models
+  - `IOCEnrichmentEvent` - Threat intel enrichment progress
+  - `SystemAlertEvent` - System-level alert model
+
+### Technical Details
+
+- Built on FastAPI native WebSocket support (ASGI-based)
+- JWT token authentication on WebSocket connection
+- Heartbeat loop for connection keep-alive and dead connection detection
+- Per-channel, per-execution, and per-incident broadcasting
+- Connection statistics tracking (messages sent/received, duration, peak connections)
+- Thread-safe connection management
+- Graceful disconnection handling with cleanup
+
+### WebSocket Protocol
+
+```text
+1. Connect to ws://host/api/v1/ws/events
+2. Receive "connected" message with connection_id
+3. Send authentication: {"type": "auth", "token": "jwt-token", "channels": ["all"]}
+4. Receive "authenticated" message on success
+5. Receive real-time events based on subscriptions
+6. Optionally modify subscriptions: {"type": "subscribe", "channels": ["runbooks"]}
+7. Receive periodic heartbeat messages (every 30s)
+```
+
+### API Examples
+
+```javascript
+// JavaScript WebSocket client example
+const ws = new WebSocket('ws://localhost:8000/api/v1/ws/events');
+
+ws.onopen = () => {
+  // Authenticate with JWT token
+  ws.send(JSON.stringify({
+    type: 'auth',
+    token: 'your-jwt-token',
+    channels: ['runbooks', 'incidents'],
+    executions: ['exec-001'],  // Optional: specific execution IDs
+    incidents: ['INC-001']     // Optional: specific incident IDs
+  }));
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log(`Event: ${data.event_type}, Channel: ${data.channel}`);
+
+  switch(data.event_type) {
+    case 'runbook_progress':
+      updateProgressBar(data.data.percentage_complete);
+      break;
+    case 'runbook_awaiting_approval':
+      showApprovalDialog(data.data);
+      break;
+    case 'incident_updated':
+      refreshIncidentView(data.data.incident_id);
+      break;
+  }
+};
+
+// Subscribe to additional channels dynamically
+ws.send(JSON.stringify({
+  type: 'subscribe',
+  channels: ['threat_intel']
+}));
+```
+
+```bash
+# Get WebSocket statistics
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://localhost/api/v1/ws/stats?token=$TOKEN"
+
+# List active connections (admin)
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://localhost/api/v1/ws/connections?token=$TOKEN"
+
+# Send test runbook event
+curl -X POST \
+  "https://localhost/api/v1/ws/test/runbook-event?token=$TOKEN&execution_id=test-001"
+```
+
+### Security
+
+- JWT token required for authentication (same as REST API)
+- Connections without authentication receive only "connected" message
+- Admin-only endpoints for connection management and broadcasting
+- Per-user connection tracking for targeted messaging
+- Automatic disconnection on authentication failure
+
+---
+
 ## [1.7.3] - 2025-11-30
 
 ### Threat Intelligence IOC Enrichment

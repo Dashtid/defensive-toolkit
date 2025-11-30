@@ -5,6 +5,7 @@ All API endpoints use these models for type safety and automatic validation.
 Following FastAPI best practices for 2025.
 """
 
+import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from enum import Enum
@@ -1092,3 +1093,251 @@ class ThreatIntelStats(BaseModel):
     queries_last_hour: int
     queries_last_24h: int
     average_enrichment_time_ms: int
+
+
+# ============================================================================
+# WebSocket Real-Time Updates Models (v1.7.4)
+# ============================================================================
+
+class WebSocketEventTypeEnum(str, Enum):
+    """Types of real-time events"""
+    # Connection events
+    CONNECTED = "connected"
+    DISCONNECTED = "disconnected"
+    AUTHENTICATED = "authenticated"
+    AUTHENTICATION_FAILED = "authentication_failed"
+    HEARTBEAT = "heartbeat"
+
+    # Runbook execution events
+    RUNBOOK_STARTED = "runbook_started"
+    RUNBOOK_STEP_STARTED = "runbook_step_started"
+    RUNBOOK_STEP_COMPLETED = "runbook_step_completed"
+    RUNBOOK_STEP_FAILED = "runbook_step_failed"
+    RUNBOOK_STEP_SKIPPED = "runbook_step_skipped"
+    RUNBOOK_AWAITING_APPROVAL = "runbook_awaiting_approval"
+    RUNBOOK_COMPLETED = "runbook_completed"
+    RUNBOOK_FAILED = "runbook_failed"
+    RUNBOOK_PROGRESS = "runbook_progress"
+
+    # Incident events
+    INCIDENT_CREATED = "incident_created"
+    INCIDENT_UPDATED = "incident_updated"
+    INCIDENT_ESCALATED = "incident_escalated"
+    INCIDENT_CLOSED = "incident_closed"
+    INCIDENT_COMMENT = "incident_comment"
+
+    # Webhook/Alert events
+    ALERT_RECEIVED = "alert_received"
+    ALERT_PROCESSED = "alert_processed"
+    ALERT_TRIGGERED_RUNBOOK = "alert_triggered_runbook"
+
+    # Threat intel events
+    IOC_ENRICHMENT_STARTED = "ioc_enrichment_started"
+    IOC_ENRICHMENT_COMPLETED = "ioc_enrichment_completed"
+    IOC_HIGH_RISK_DETECTED = "ioc_high_risk_detected"
+
+    # System events
+    SYSTEM_ALERT = "system_alert"
+    ERROR = "error"
+
+
+class WebSocketChannelEnum(str, Enum):
+    """Subscription channels for events"""
+    ALL = "all"                          # All events
+    RUNBOOKS = "runbooks"                # Runbook execution events
+    INCIDENTS = "incidents"              # Incident updates
+    ALERTS = "alerts"                    # Webhook/alert events
+    THREAT_INTEL = "threat_intel"        # IOC enrichment events
+    SYSTEM = "system"                    # System alerts and errors
+    EXECUTION = "execution"              # Specific execution ID (requires param)
+
+
+class WebSocketMessage(BaseModel):
+    """Base WebSocket message format"""
+    event_type: WebSocketEventTypeEnum
+    channel: WebSocketChannelEnum
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    message_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    data: Dict[str, Any] = {}
+
+
+class WebSocketAuthRequest(BaseModel):
+    """Authentication request for WebSocket connection"""
+    token: str = Field(..., description="JWT access token or API key")
+    subscribe_channels: List[WebSocketChannelEnum] = Field(
+        default_factory=lambda: [WebSocketChannelEnum.ALL],
+        description="Channels to subscribe to"
+    )
+    subscribe_executions: List[str] = Field(
+        default_factory=list,
+        description="Specific execution IDs to monitor"
+    )
+    subscribe_incidents: List[str] = Field(
+        default_factory=list,
+        description="Specific incident IDs to monitor"
+    )
+
+
+class WebSocketAuthResponse(BaseModel):
+    """Authentication response"""
+    success: bool
+    message: str
+    user: Optional[str] = None
+    subscribed_channels: List[WebSocketChannelEnum] = []
+    connection_id: Optional[str] = None
+    expires_at: Optional[datetime] = None
+
+
+class WebSocketSubscribeRequest(BaseModel):
+    """Request to modify subscriptions"""
+    action: str = Field(..., pattern="^(subscribe|unsubscribe)$")
+    channels: List[WebSocketChannelEnum] = []
+    execution_ids: List[str] = []
+    incident_ids: List[str] = []
+
+
+class WebSocketSubscribeResponse(BaseModel):
+    """Subscription modification response"""
+    success: bool
+    message: str
+    current_subscriptions: Dict[str, List[str]] = {}
+
+
+class WebSocketHeartbeat(BaseModel):
+    """Heartbeat message for connection keep-alive"""
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    sequence: int
+    connection_uptime_seconds: int
+
+
+class WebSocketConnectionInfo(BaseModel):
+    """Information about a WebSocket connection"""
+    connection_id: str
+    user: str
+    connected_at: datetime
+    last_activity: datetime
+    subscribed_channels: List[WebSocketChannelEnum]
+    subscribed_executions: List[str]
+    subscribed_incidents: List[str]
+    messages_sent: int
+    messages_received: int
+    client_ip: Optional[str] = None
+    user_agent: Optional[str] = None
+
+
+class WebSocketConnectionStats(BaseModel):
+    """Statistics for WebSocket connections"""
+    active_connections: int
+    total_connections_today: int
+    total_messages_sent: int
+    total_messages_received: int
+    connections_by_channel: Dict[str, int] = {}
+    average_connection_duration_seconds: float
+    peak_connections_today: int
+    last_activity_at: Optional[datetime] = None
+
+
+class RunbookProgressEvent(BaseModel):
+    """Real-time progress update for runbook execution"""
+    execution_id: str
+    runbook_name: str
+    incident_id: str
+    current_step: int
+    total_steps: int
+    steps_completed: int
+    steps_failed: int
+    steps_skipped: int
+    steps_awaiting: int
+    percentage_complete: float = Field(..., ge=0, le=100)
+    current_step_name: Optional[str] = None
+    current_step_action: Optional[str] = None
+    status: StatusEnum
+    estimated_remaining_seconds: Optional[int] = None
+
+
+class RunbookStepEvent(BaseModel):
+    """Event for individual runbook step status change"""
+    execution_id: str
+    runbook_name: str
+    incident_id: str
+    step_index: int
+    step_name: str
+    action: str
+    severity: str
+    status: RunbookStepStatusEnum
+    message: Optional[str] = None
+    data: Dict[str, Any] = {}
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    duration_ms: Optional[int] = None
+
+
+class ApprovalRequestEvent(BaseModel):
+    """Event when a runbook step requires approval"""
+    execution_id: str
+    runbook_name: str
+    incident_id: str
+    approval_id: str
+    step_name: str
+    action: str
+    severity: str
+    description: str
+    parameters: Dict[str, Any] = {}
+    requested_by: str
+    requested_at: datetime
+    expires_at: Optional[datetime] = None
+
+
+class IncidentEvent(BaseModel):
+    """Event for incident status changes"""
+    incident_id: str
+    title: str
+    previous_status: Optional[IncidentStatusEnum] = None
+    current_status: IncidentStatusEnum
+    severity: SeverityEnum
+    assigned_to: Optional[str] = None
+    updated_by: str
+    update_type: str  # created, status_change, assigned, escalated, comment, closed
+    comment: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AlertEvent(BaseModel):
+    """Event for incoming alerts from webhooks"""
+    webhook_id: str
+    webhook_name: str
+    alert_id: str
+    source: WebhookSourceEnum
+    severity: str
+    title: str
+    received_at: datetime
+    processed: bool
+    triggered_runbook: Optional[str] = None
+    execution_id: Optional[str] = None
+    incident_id: Optional[str] = None
+
+
+class IOCEnrichmentEvent(BaseModel):
+    """Event for IOC enrichment progress"""
+    request_id: str
+    ioc: str
+    ioc_type: IOCTypeEnum
+    status: str  # started, source_completed, completed, failed
+    sources_queried: List[ThreatIntelSourceEnum] = []
+    sources_completed: int = 0
+    total_sources: int = 0
+    overall_reputation: Optional[ReputationScoreEnum] = None
+    risk_score: Optional[int] = None
+    high_risk_detected: bool = False
+    completed_at: Optional[datetime] = None
+    processing_time_ms: Optional[int] = None
+
+
+class SystemAlertEvent(BaseModel):
+    """System-level alert event"""
+    alert_type: str  # rate_limit_warning, api_error, connection_limit, etc.
+    severity: str  # info, warning, error, critical
+    title: str
+    description: str
+    affected_component: Optional[str] = None
+    metadata: Dict[str, Any] = {}
