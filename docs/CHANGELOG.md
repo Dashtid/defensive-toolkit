@@ -7,6 +7,142 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.9] - 2025-12-01
+
+### Dashboard Widgets API
+
+Major enhancement: Configurable dashboard system with security-focused widgets, real-time metrics visualization, user-customizable layouts, widget templates, and SSE data streaming.
+
+### Added
+
+- **Dashboard API Router** (`api/routers/dashboard.py`):
+  - **Dashboard Management**:
+    - `GET /dashboard/dashboards` - List accessible dashboards
+    - `GET /dashboard/dashboards/{id}` - Get dashboard with widgets
+    - `POST /dashboard/dashboards` - Create new dashboard
+    - `PATCH /dashboard/dashboards/{id}` - Update dashboard
+    - `DELETE /dashboard/dashboards/{id}` - Delete dashboard
+    - `POST /dashboard/dashboards/{id}/share` - Share with users
+    - `POST /dashboard/dashboards/{id}/duplicate` - Clone dashboard
+  - **Widget Management**:
+    - `GET /dashboard/widgets` - List widgets with filtering
+    - `GET /dashboard/widgets/{id}` - Get widget details
+    - `POST /dashboard/dashboards/{id}/widgets` - Create widget
+    - `PATCH /dashboard/widgets/{id}` - Update widget
+    - `DELETE /dashboard/widgets/{id}` - Delete widget
+    - `GET /dashboard/widgets/{id}/data` - Fetch widget data
+    - `POST /dashboard/widgets/positions` - Bulk position update
+  - **Widget Templates**:
+    - `GET /dashboard/templates` - List available templates
+    - `GET /dashboard/templates/{id}` - Get template details
+    - `POST /dashboard/dashboards/{id}/widgets/from-template` - Create from template
+  - **Export/Import**:
+    - `GET /dashboard/dashboards/{id}/export` - Export dashboard config
+    - `POST /dashboard/dashboards/import` - Import dashboard
+  - **Layout Snapshots**:
+    - `GET /dashboard/dashboards/{id}/snapshots` - List snapshots
+    - `POST /dashboard/dashboards/{id}/snapshots` - Create snapshot
+    - `POST /dashboard/dashboards/{id}/snapshots/{id}/restore` - Restore layout
+  - **Real-time Streaming**:
+    - `GET /dashboard/widgets/{id}/stream` - SSE data stream
+  - **Statistics & Health**:
+    - `GET /dashboard/stats` - Dashboard system statistics
+    - `GET /dashboard/health` - Health check
+
+- **15 Widget Types**:
+  - `counter` - Single metric with trend indicator
+  - `chart_line` - Time-series line chart
+  - `chart_bar` - Bar chart
+  - `chart_pie` - Pie/donut chart
+  - `chart_area` - Area chart
+  - `heatmap` - Heat map visualization
+  - `table` - Data table with pagination
+  - `list` - Simple list
+  - `map` - Geographic map with clustering
+  - `gauge` - Gauge/speedometer
+  - `sparkline` - Mini inline chart
+  - `status` - Status indicator
+  - `timeline` - Event timeline
+  - `treemap` - Hierarchical treemap
+  - `custom` - Custom widget type
+
+- **11 Security Widget Categories**:
+  - threat_overview, incident_metrics, vulnerability
+  - compliance, network, endpoint, user_activity
+  - siem, correlation, system_health, custom
+
+- **10 Built-in Widget Templates**:
+  - Active Threats Counter
+  - Incidents Timeline
+  - Severity Distribution (Pie)
+  - Top Vulnerabilities Table
+  - Attack Activity Heatmap
+  - Threat Geography Map
+  - Compliance Score Gauge
+  - System Health Status
+  - Correlated Alerts Counter
+  - SIEM Events Rate
+
+- **Dashboard Layout Features**:
+  - 3 layout types: grid, freeform, responsive
+  - 24-column grid system (configurable 12-48)
+  - Drag-and-drop widget positioning
+  - Layout snapshots for undo/redo
+  - Dashboard variables for dynamic filtering
+
+- **Widget Data Configuration**:
+  - Configurable data sources with API endpoints
+  - 9 aggregation types: count, sum, avg, min, max, p95, p99, rate, delta
+  - 8 time range presets (15m to 90d) + custom
+  - 9 refresh intervals (realtime to 1h) + manual
+  - Caching with configurable TTL (0-3600s)
+  - Transform expressions (JSONPath/JMESPath)
+
+- **Widget Visualization Options**:
+  - Chart series configuration with stacking
+  - Axis labels, min/max, logarithmic scale
+  - 8 heatmap color scales (viridis, plasma, etc.)
+  - Table columns with sorting, filtering, links
+  - Threshold-based color indicators
+  - Map clustering with zoom controls
+
+- **Sharing & Collaboration**:
+  - Per-dashboard sharing with user lists
+  - Public/private dashboard visibility
+  - Default dashboard per user
+  - Dashboard duplication with widgets
+
+- **New Pydantic Models** (`api/models.py`):
+  - **Enums**: WidgetTypeEnum, WidgetCategoryEnum, DashboardLayoutTypeEnum, RefreshIntervalEnum, TimeRangePresetEnum, AggregationTypeEnum, ThresholdOperatorEnum
+  - **Config Models**: WidgetThreshold, WidgetDataSource, WidgetPosition, ChartSeriesConfig, ChartAxisConfig, ChartConfig, TableColumnConfig, TableConfig, CounterConfig, GaugeConfig, MapConfig, HeatmapConfig, TimelineConfig, WidgetConfigUnion
+  - **Widget Models**: WidgetCreate, Widget, WidgetUpdate, WidgetDataResponse, WidgetListResponse
+  - **Dashboard Models**: DashboardVariable, DashboardCreate, Dashboard, DashboardUpdate, DashboardListResponse
+  - **Template Models**: WidgetTemplate, WidgetTemplateListResponse
+  - **Export/Import Models**: DashboardExport, DashboardImportRequest, DashboardImportResponse
+  - **Real-time Models**: WidgetDataSubscription, WidgetDataEvent
+  - **Statistics Models**: DashboardStats, DashboardHealthCheck
+  - **Layout Models**: LayoutSnapshot, LayoutSnapshotListResponse
+  - **Bulk Models**: BulkWidgetPositionUpdate, BulkWidgetPositionResponse
+
+### Technical Details
+
+- Server-Sent Events (SSE) for real-time widget data streaming
+- Widget data caching with configurable TTL per widget
+- Automatic cache invalidation on widget update
+- Mock data generation for demonstration (production: actual API calls)
+- Grid-based layout system compatible with common dashboard frameworks
+- Built-in templates initialized on module load
+
+### Security Considerations
+
+- Access control: owner, shared users, or public
+- Owner-only operations: update, delete, share, snapshots
+- No sensitive data in exported configurations
+- Cache isolation per widget
+- Rate limiting through data source cache TTL
+
+---
+
 ## [1.7.8] - 2025-11-30
 
 ### Alert Correlation Engine

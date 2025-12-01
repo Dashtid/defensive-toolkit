@@ -3329,3 +3329,535 @@ class SuppressionListResponse(BaseModel):
     suppressions: List[CorrelationSuppression]
     total: int
     active_count: int
+
+
+# =============================================================================
+# Dashboard Widgets API Models (v1.7.9)
+# =============================================================================
+# Configurable dashboard system with security-focused widgets, real-time
+# metrics visualization, user-customizable layouts, and data aggregation.
+
+# --- Dashboard Enums ---
+
+class WidgetTypeEnum(str, Enum):
+    """Types of dashboard widgets"""
+    COUNTER = "counter"  # Single metric value with trend
+    CHART_LINE = "chart_line"  # Time-series line chart
+    CHART_BAR = "chart_bar"  # Bar chart
+    CHART_PIE = "chart_pie"  # Pie/donut chart
+    CHART_AREA = "chart_area"  # Area chart
+    HEATMAP = "heatmap"  # Heat map visualization
+    TABLE = "table"  # Data table
+    LIST = "list"  # Simple list
+    MAP = "map"  # Geographic map
+    GAUGE = "gauge"  # Gauge/speedometer
+    SPARKLINE = "sparkline"  # Mini inline chart
+    STATUS = "status"  # Status indicator
+    TIMELINE = "timeline"  # Event timeline
+    TREEMAP = "treemap"  # Hierarchical treemap
+    CUSTOM = "custom"  # Custom widget type
+
+
+class WidgetCategoryEnum(str, Enum):
+    """Categories of security widgets"""
+    THREAT_OVERVIEW = "threat_overview"
+    INCIDENT_METRICS = "incident_metrics"
+    VULNERABILITY = "vulnerability"
+    COMPLIANCE = "compliance"
+    NETWORK = "network"
+    ENDPOINT = "endpoint"
+    USER_ACTIVITY = "user_activity"
+    SIEM = "siem"
+    CORRELATION = "correlation"
+    SYSTEM_HEALTH = "system_health"
+    CUSTOM = "custom"
+
+
+class DashboardLayoutTypeEnum(str, Enum):
+    """Dashboard layout types"""
+    GRID = "grid"  # Fixed grid layout
+    FREEFORM = "freeform"  # Free positioning
+    RESPONSIVE = "responsive"  # Auto-responsive
+
+
+class RefreshIntervalEnum(str, Enum):
+    """Widget refresh intervals"""
+    REALTIME = "realtime"  # SSE/WebSocket
+    SECONDS_10 = "10s"
+    SECONDS_30 = "30s"
+    MINUTE_1 = "1m"
+    MINUTES_5 = "5m"
+    MINUTES_15 = "15m"
+    MINUTES_30 = "30m"
+    HOUR_1 = "1h"
+    MANUAL = "manual"
+
+
+class TimeRangePresetEnum(str, Enum):
+    """Preset time ranges for widgets"""
+    LAST_15_MINUTES = "15m"
+    LAST_HOUR = "1h"
+    LAST_4_HOURS = "4h"
+    LAST_24_HOURS = "24h"
+    LAST_7_DAYS = "7d"
+    LAST_30_DAYS = "30d"
+    LAST_90_DAYS = "90d"
+    CUSTOM = "custom"
+
+
+class AggregationTypeEnum(str, Enum):
+    """Data aggregation types"""
+    COUNT = "count"
+    SUM = "sum"
+    AVG = "avg"
+    MIN = "min"
+    MAX = "max"
+    PERCENTILE_95 = "p95"
+    PERCENTILE_99 = "p99"
+    RATE = "rate"
+    DELTA = "delta"
+
+
+class ThresholdOperatorEnum(str, Enum):
+    """Threshold comparison operators"""
+    GT = "gt"  # Greater than
+    GTE = "gte"  # Greater than or equal
+    LT = "lt"  # Less than
+    LTE = "lte"  # Less than or equal
+    EQ = "eq"  # Equal
+    BETWEEN = "between"  # Between two values
+
+
+# --- Widget Configuration Models ---
+
+class WidgetThreshold(BaseModel):
+    """Threshold configuration for visual indicators"""
+    operator: ThresholdOperatorEnum
+    value: float
+    value_max: Optional[float] = None  # For BETWEEN operator
+    color: str = Field(..., pattern="^#[0-9A-Fa-f]{6}$")
+    label: Optional[str] = None
+
+
+class WidgetDataSource(BaseModel):
+    """Data source configuration for a widget"""
+    endpoint: str = Field(..., description="API endpoint to fetch data from")
+    method: str = Field("GET", pattern="^(GET|POST)$")
+    params: Dict[str, Any] = Field(default_factory=dict)
+    body: Optional[Dict[str, Any]] = None
+    transform: Optional[str] = Field(None, description="JSONPath or JMESPath expression")
+    cache_ttl_seconds: int = Field(60, ge=0, le=3600)
+
+
+class WidgetPosition(BaseModel):
+    """Widget position in grid layout"""
+    x: int = Field(0, ge=0, le=23)
+    y: int = Field(0, ge=0)
+    width: int = Field(4, ge=1, le=24)
+    height: int = Field(3, ge=1, le=12)
+
+
+class ChartSeriesConfig(BaseModel):
+    """Configuration for a chart series"""
+    name: str
+    field: str
+    color: Optional[str] = None
+    type: Optional[str] = None  # Override chart type per series
+    aggregation: AggregationTypeEnum = AggregationTypeEnum.COUNT
+    stack_group: Optional[str] = None
+
+
+class ChartAxisConfig(BaseModel):
+    """Axis configuration for charts"""
+    label: Optional[str] = None
+    min: Optional[float] = None
+    max: Optional[float] = None
+    format: Optional[str] = None  # Number format string
+    logarithmic: bool = False
+
+
+class ChartConfig(BaseModel):
+    """Configuration for chart widgets"""
+    series: List[ChartSeriesConfig] = Field(default_factory=list)
+    x_axis: Optional[ChartAxisConfig] = None
+    y_axis: Optional[ChartAxisConfig] = None
+    show_legend: bool = True
+    legend_position: str = Field("bottom", pattern="^(top|bottom|left|right)$")
+    stacked: bool = False
+    fill: bool = False
+    smooth: bool = True
+
+
+class TableColumnConfig(BaseModel):
+    """Configuration for table columns"""
+    field: str
+    header: str
+    width: Optional[int] = None
+    sortable: bool = True
+    filterable: bool = False
+    format: Optional[str] = None
+    link_template: Optional[str] = None
+
+
+class TableConfig(BaseModel):
+    """Configuration for table widgets"""
+    columns: List[TableColumnConfig] = Field(default_factory=list)
+    page_size: int = Field(10, ge=5, le=100)
+    show_pagination: bool = True
+    show_search: bool = True
+    row_click_action: Optional[str] = None
+    highlight_rules: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class CounterConfig(BaseModel):
+    """Configuration for counter widgets"""
+    value_field: str
+    label: str
+    unit: Optional[str] = None
+    format: Optional[str] = None
+    show_trend: bool = True
+    trend_field: Optional[str] = None
+    trend_comparison: str = Field("previous_period", pattern="^(previous_period|baseline|target)$")
+    thresholds: List[WidgetThreshold] = Field(default_factory=list)
+    icon: Optional[str] = None
+
+
+class GaugeConfig(BaseModel):
+    """Configuration for gauge widgets"""
+    value_field: str
+    min_value: float = 0
+    max_value: float = 100
+    unit: Optional[str] = None
+    thresholds: List[WidgetThreshold] = Field(default_factory=list)
+    show_value: bool = True
+    arc_width: int = Field(20, ge=5, le=50)
+
+
+class MapConfig(BaseModel):
+    """Configuration for map widgets"""
+    lat_field: str
+    lon_field: str
+    value_field: Optional[str] = None
+    label_field: Optional[str] = None
+    cluster: bool = True
+    initial_zoom: int = Field(2, ge=1, le=18)
+    initial_center: Optional[List[float]] = None
+    tile_layer: str = "openstreetmap"
+
+
+class HeatmapConfig(BaseModel):
+    """Configuration for heatmap widgets"""
+    x_field: str
+    y_field: str
+    value_field: str
+    x_labels: Optional[List[str]] = None
+    y_labels: Optional[List[str]] = None
+    color_scale: str = Field("viridis", pattern="^(viridis|plasma|inferno|magma|cividis|blues|reds|greens)$")
+    show_values: bool = True
+
+
+class TimelineConfig(BaseModel):
+    """Configuration for timeline widgets"""
+    timestamp_field: str
+    title_field: str
+    description_field: Optional[str] = None
+    category_field: Optional[str] = None
+    severity_field: Optional[str] = None
+    max_items: int = Field(50, ge=10, le=200)
+
+
+# --- Widget Models ---
+
+class WidgetConfigUnion(BaseModel):
+    """Union of all widget configuration types"""
+    chart: Optional[ChartConfig] = None
+    table: Optional[TableConfig] = None
+    counter: Optional[CounterConfig] = None
+    gauge: Optional[GaugeConfig] = None
+    map: Optional[MapConfig] = None
+    heatmap: Optional[HeatmapConfig] = None
+    timeline: Optional[TimelineConfig] = None
+    custom: Optional[Dict[str, Any]] = None
+
+
+class WidgetCreate(BaseModel):
+    """Request to create a widget"""
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = None
+    widget_type: WidgetTypeEnum
+    category: WidgetCategoryEnum
+    data_source: WidgetDataSource
+    config: WidgetConfigUnion = Field(default_factory=WidgetConfigUnion)
+    position: WidgetPosition = Field(default_factory=WidgetPosition)
+    refresh_interval: RefreshIntervalEnum = RefreshIntervalEnum.MINUTES_5
+    time_range: TimeRangePresetEnum = TimeRangePresetEnum.LAST_24_HOURS
+    custom_time_start: Optional[datetime] = None
+    custom_time_end: Optional[datetime] = None
+    tags: List[str] = Field(default_factory=list)
+    visible: bool = True
+
+
+class Widget(BaseModel):
+    """Dashboard widget"""
+    id: str
+    name: str
+    description: Optional[str] = None
+    widget_type: WidgetTypeEnum
+    category: WidgetCategoryEnum
+    data_source: WidgetDataSource
+    config: WidgetConfigUnion
+    position: WidgetPosition
+    refresh_interval: RefreshIntervalEnum
+    time_range: TimeRangePresetEnum
+    custom_time_start: Optional[datetime] = None
+    custom_time_end: Optional[datetime] = None
+    tags: List[str] = Field(default_factory=list)
+    visible: bool = True
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[str] = None
+    last_data_fetch: Optional[datetime] = None
+    error_count: int = 0
+    last_error: Optional[str] = None
+
+
+class WidgetUpdate(BaseModel):
+    """Request to update a widget"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    widget_type: Optional[WidgetTypeEnum] = None
+    category: Optional[WidgetCategoryEnum] = None
+    data_source: Optional[WidgetDataSource] = None
+    config: Optional[WidgetConfigUnion] = None
+    position: Optional[WidgetPosition] = None
+    refresh_interval: Optional[RefreshIntervalEnum] = None
+    time_range: Optional[TimeRangePresetEnum] = None
+    custom_time_start: Optional[datetime] = None
+    custom_time_end: Optional[datetime] = None
+    tags: Optional[List[str]] = None
+    visible: Optional[bool] = None
+
+
+class WidgetDataResponse(BaseModel):
+    """Response containing widget data"""
+    widget_id: str
+    data: Any
+    timestamp: datetime
+    cached: bool = False
+    cache_expires_at: Optional[datetime] = None
+    query_time_ms: int
+    row_count: Optional[int] = None
+    truncated: bool = False
+
+
+class WidgetListResponse(BaseModel):
+    """Response for listing widgets"""
+    widgets: List[Widget]
+    total: int
+    by_type: Dict[str, int]
+    by_category: Dict[str, int]
+
+
+# --- Dashboard Models ---
+
+class DashboardVariable(BaseModel):
+    """Dashboard variable for dynamic filtering"""
+    name: str = Field(..., pattern="^[a-zA-Z_][a-zA-Z0-9_]*$")
+    label: str
+    type: str = Field(..., pattern="^(text|select|multiselect|date|daterange)$")
+    default_value: Any = None
+    options: Optional[List[Dict[str, Any]]] = None  # For select types
+    data_source: Optional[WidgetDataSource] = None  # Dynamic options
+
+
+class DashboardCreate(BaseModel):
+    """Request to create a dashboard"""
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = None
+    layout_type: DashboardLayoutTypeEnum = DashboardLayoutTypeEnum.GRID
+    columns: int = Field(24, ge=12, le=48)
+    row_height: int = Field(50, ge=30, le=100)
+    variables: List[DashboardVariable] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
+    is_default: bool = False
+    is_public: bool = False
+
+
+class Dashboard(BaseModel):
+    """Dashboard definition"""
+    id: str
+    name: str
+    description: Optional[str] = None
+    layout_type: DashboardLayoutTypeEnum
+    columns: int
+    row_height: int
+    widgets: List[Widget] = Field(default_factory=list)
+    widget_ids: List[str] = Field(default_factory=list)
+    variables: List[DashboardVariable] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
+    is_default: bool = False
+    is_public: bool = False
+    owner: str
+    shared_with: List[str] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
+    last_viewed_at: Optional[datetime] = None
+    view_count: int = 0
+
+
+class DashboardUpdate(BaseModel):
+    """Request to update a dashboard"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    layout_type: Optional[DashboardLayoutTypeEnum] = None
+    columns: Optional[int] = Field(None, ge=12, le=48)
+    row_height: Optional[int] = Field(None, ge=30, le=100)
+    variables: Optional[List[DashboardVariable]] = None
+    tags: Optional[List[str]] = None
+    is_default: Optional[bool] = None
+    is_public: Optional[bool] = None
+    shared_with: Optional[List[str]] = None
+
+
+class DashboardListResponse(BaseModel):
+    """Response for listing dashboards"""
+    dashboards: List[Dashboard]
+    total: int
+    owned: int
+    shared: int
+    public: int
+
+
+# --- Widget Template Models ---
+
+class WidgetTemplate(BaseModel):
+    """Pre-configured widget template"""
+    id: str
+    name: str
+    description: Optional[str] = None
+    category: WidgetCategoryEnum
+    widget_type: WidgetTypeEnum
+    preview_image: Optional[str] = None
+    default_config: WidgetConfigUnion
+    default_data_source: WidgetDataSource
+    default_position: WidgetPosition
+    tags: List[str] = Field(default_factory=list)
+    is_builtin: bool = True
+    usage_count: int = 0
+    created_at: datetime
+
+
+class WidgetTemplateListResponse(BaseModel):
+    """Response for listing widget templates"""
+    templates: List[WidgetTemplate]
+    total: int
+    by_category: Dict[str, int]
+
+
+# --- Dashboard Export/Import Models ---
+
+class DashboardExport(BaseModel):
+    """Exported dashboard configuration"""
+    version: str = "1.0"
+    exported_at: datetime
+    dashboard: Dashboard
+    widgets: List[Widget]
+
+
+class DashboardImportRequest(BaseModel):
+    """Request to import a dashboard"""
+    dashboard_export: DashboardExport
+    rename_to: Optional[str] = None
+    overwrite_existing: bool = False
+
+
+class DashboardImportResponse(BaseModel):
+    """Response from dashboard import"""
+    status: StatusEnum
+    dashboard_id: str
+    widgets_imported: int
+    warnings: List[str] = Field(default_factory=list)
+
+
+# --- Real-time Data Models ---
+
+class WidgetDataSubscription(BaseModel):
+    """Subscription for real-time widget data"""
+    widget_id: str
+    dashboard_id: str
+    subscriber_id: str
+    subscribed_at: datetime
+
+
+class WidgetDataEvent(BaseModel):
+    """Real-time widget data event (for SSE/WebSocket)"""
+    event_type: str = Field(..., pattern="^(data|error|heartbeat)$")
+    widget_id: str
+    timestamp: datetime
+    data: Optional[Any] = None
+    error: Optional[str] = None
+
+
+# --- Dashboard Statistics Models ---
+
+class DashboardStats(BaseModel):
+    """Dashboard system statistics"""
+    total_dashboards: int
+    total_widgets: int
+    active_users_24h: int
+    total_views_24h: int
+    avg_widgets_per_dashboard: float
+    widgets_by_type: Dict[str, int]
+    widgets_by_category: Dict[str, int]
+    most_viewed_dashboards: List[Dict[str, Any]]
+    most_used_templates: List[Dict[str, Any]]
+    data_fetch_errors_24h: int
+    avg_data_fetch_time_ms: float
+
+
+class DashboardHealthCheck(BaseModel):
+    """Health check for dashboard system"""
+    status: str = Field(..., pattern="^(healthy|degraded|unhealthy)$")
+    timestamp: datetime
+    widgets_status: Dict[str, Any]
+    data_sources_status: Dict[str, Any]
+    cache_status: Dict[str, Any]
+    realtime_connections: int
+    recommendations: List[str] = Field(default_factory=list)
+
+
+# --- Layout Snapshot Models ---
+
+class LayoutSnapshot(BaseModel):
+    """Saved layout snapshot for undo/redo"""
+    id: str
+    dashboard_id: str
+    widgets_positions: Dict[str, WidgetPosition]
+    created_at: datetime
+    created_by: Optional[str] = None
+    description: Optional[str] = None
+
+
+class LayoutSnapshotListResponse(BaseModel):
+    """Response for listing layout snapshots"""
+    snapshots: List[LayoutSnapshot]
+    total: int
+
+
+# --- Bulk Operations ---
+
+class BulkWidgetPositionUpdate(BaseModel):
+    """Bulk update widget positions"""
+    updates: List[Dict[str, Any]] = Field(
+        ...,
+        min_items=1,
+        description="List of {widget_id, position} objects"
+    )
+
+
+class BulkWidgetPositionResponse(BaseModel):
+    """Response from bulk position update"""
+    status: StatusEnum
+    updated: int
+    failed: int
+    errors: List[Dict[str, Any]] = Field(default_factory=list)
