@@ -341,7 +341,7 @@ FAKE_USERS_DB = {
         "full_name": "Administrator",
         "email": "admin@example.com",
         # Password: "changeme123"
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+        "hashed_password": "$2b$12$sQSM7EN4n1mDR4F.RUDaMuZwcneJb29BEFV/WdcmMFT5FNAMfvV.q",
         "disabled": False,
         "scopes": ["admin", "read", "write"],
     },
@@ -350,7 +350,7 @@ FAKE_USERS_DB = {
         "full_name": "Security Analyst",
         "email": "analyst@example.com",
         # Password: "analyst123"
-        "hashed_password": "$2b$12$KIX.xCnQx.SwM8w9xGg5P.Q0NF8YEfH0dGvDCZpWjKGPYEMvlC7eS",
+        "hashed_password": "$2b$12$RGr69ZJ7OCu4A56VJXGEjOQtCuEXRWOtFiOSpEVu6gHLjQY1uRaO6",
         "disabled": False,
         "scopes": ["read"],
     }

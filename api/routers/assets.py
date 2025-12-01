@@ -153,8 +153,9 @@ def calculate_risk_score(asset: Dict[str, Any]) -> AssetRiskScore:
     cloud_metadata = asset.get("cloud_metadata", {})
     if cloud_metadata and cloud_metadata.get("public_ip"):
         exposure_score = 8.0
-    security_controls = asset.get("security_controls", {})
-    has_sensitive_data = asset.get("data_classification", "").lower() in ["confidential", "restricted", "secret"]
+    security_controls = asset.get("security_controls", {}) or {}
+    data_classification = asset.get("data_classification") or ""
+    has_sensitive_data = data_classification.lower() in ["confidential", "restricted", "secret"]
     if has_sensitive_data:
         exposure_score = min(10.0, exposure_score + 2.0)
 
