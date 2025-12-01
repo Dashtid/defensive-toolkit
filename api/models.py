@@ -3861,3 +3861,1097 @@ class BulkWidgetPositionResponse(BaseModel):
     updated: int
     failed: int
     errors: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+# =============================================================================
+# ASSET INVENTORY & MANAGEMENT MODELS (v1.7.10)
+# =============================================================================
+# Comprehensive asset inventory system with CMDB integration, criticality
+# scoring, network topology, and lifecycle management following CIS Controls
+# v8.1 asset classification (devices, software, data, users, networks).
+# =============================================================================
+
+
+# --- Asset Enums ---
+
+class AssetTypeEnum(str, Enum):
+    """Asset type classification based on CIS Controls v8.1"""
+    # Hardware Devices
+    SERVER = "server"
+    WORKSTATION = "workstation"
+    LAPTOP = "laptop"
+    MOBILE_DEVICE = "mobile_device"
+    NETWORK_DEVICE = "network_device"  # Router, switch, firewall, etc.
+    IOT_DEVICE = "iot_device"
+    PRINTER = "printer"
+    STORAGE_DEVICE = "storage_device"
+    VIRTUAL_MACHINE = "virtual_machine"
+
+    # Cloud Resources
+    CLOUD_INSTANCE = "cloud_instance"
+    CLOUD_CONTAINER = "cloud_container"
+    CLOUD_FUNCTION = "cloud_function"
+    CLOUD_DATABASE = "cloud_database"
+    CLOUD_STORAGE = "cloud_storage"
+
+    # Network
+    NETWORK_SEGMENT = "network_segment"
+    VLAN = "vlan"
+    SUBNET = "subnet"
+    VPN_GATEWAY = "vpn_gateway"
+    LOAD_BALANCER = "load_balancer"
+
+    # Software/Services
+    APPLICATION = "application"
+    SERVICE = "service"
+    DATABASE = "database"
+    WEB_APPLICATION = "web_application"
+    API_ENDPOINT = "api_endpoint"
+
+    # Identity
+    USER_ACCOUNT = "user_account"
+    SERVICE_ACCOUNT = "service_account"
+    GROUP = "group"
+
+    # Data
+    DATA_REPOSITORY = "data_repository"
+    FILE_SHARE = "file_share"
+
+    # Other
+    UNKNOWN = "unknown"
+    OTHER = "other"
+
+
+class AssetStatusEnum(str, Enum):
+    """Asset lifecycle status"""
+    DISCOVERED = "discovered"
+    PENDING_REVIEW = "pending_review"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    MAINTENANCE = "maintenance"
+    DECOMMISSIONING = "decommissioning"
+    DECOMMISSIONED = "decommissioned"
+    MISSING = "missing"
+    COMPROMISED = "compromised"
+    QUARANTINED = "quarantined"
+
+
+class AssetCriticalityEnum(str, Enum):
+    """Asset criticality levels (qualitative)"""
+    CRITICAL = "critical"  # Business-critical, contains sensitive data
+    HIGH = "high"  # Important for operations
+    MEDIUM = "medium"  # Standard business asset
+    LOW = "low"  # Non-essential
+    MINIMAL = "minimal"  # No business impact if unavailable
+
+
+class AssetEnvironmentEnum(str, Enum):
+    """Deployment environment"""
+    PRODUCTION = "production"
+    STAGING = "staging"
+    DEVELOPMENT = "development"
+    TEST = "test"
+    QA = "qa"
+    DR = "dr"  # Disaster recovery
+    DMZ = "dmz"
+    ISOLATED = "isolated"
+    UNKNOWN = "unknown"
+
+
+class AssetOwnershipEnum(str, Enum):
+    """Asset ownership type"""
+    OWNED = "owned"
+    LEASED = "leased"
+    RENTED = "rented"
+    BYOD = "byod"
+    MANAGED = "managed"
+    THIRD_PARTY = "third_party"
+    SHARED = "shared"
+    UNKNOWN = "unknown"
+
+
+class DiscoveryMethodEnum(str, Enum):
+    """How the asset was discovered"""
+    MANUAL = "manual"
+    AGENT = "agent"
+    NETWORK_SCAN = "network_scan"
+    CLOUD_API = "cloud_api"
+    CMDB_IMPORT = "cmdb_import"
+    AD_SYNC = "ad_sync"  # Active Directory
+    SCCM = "sccm"  # System Center Configuration Manager
+    SIEM = "siem"
+    VULNERABILITY_SCANNER = "vulnerability_scanner"
+    EDR = "edr"  # Endpoint Detection and Response
+    DHCP = "dhcp"
+    DNS = "dns"
+    SNMP = "snmp"
+    API = "api"
+    OTHER = "other"
+
+
+class ComplianceStatusEnum(str, Enum):
+    """Asset compliance status"""
+    COMPLIANT = "compliant"
+    NON_COMPLIANT = "non_compliant"
+    PARTIALLY_COMPLIANT = "partially_compliant"
+    UNKNOWN = "unknown"
+    NOT_APPLICABLE = "not_applicable"
+    PENDING_ASSESSMENT = "pending_assessment"
+
+
+class RelationshipTypeEnum(str, Enum):
+    """Types of relationships between assets"""
+    HOSTS = "hosts"  # Server hosts VM/container
+    HOSTED_BY = "hosted_by"
+    CONNECTS_TO = "connects_to"
+    DEPENDS_ON = "depends_on"
+    DEPENDENCY_OF = "dependency_of"
+    CONTAINS = "contains"
+    CONTAINED_BY = "contained_by"
+    MANAGES = "manages"
+    MANAGED_BY = "managed_by"
+    AUTHENTICATES_TO = "authenticates_to"
+    MEMBER_OF = "member_of"
+    BACKUP_OF = "backup_of"
+    REPLICATED_TO = "replicated_to"
+    ROUTES_TO = "routes_to"
+    PROTECTED_BY = "protected_by"
+
+
+class ScanTypeEnum(str, Enum):
+    """Types of asset discovery scans"""
+    FULL = "full"
+    INCREMENTAL = "incremental"
+    TARGETED = "targeted"
+    QUICK = "quick"
+    DEEP = "deep"
+    NETWORK_ONLY = "network_only"
+    AGENT_ONLY = "agent_only"
+
+
+# --- Asset Configuration Models ---
+
+class NetworkInterface(BaseModel):
+    """Network interface details"""
+    name: str
+    mac_address: Optional[str] = None
+    ip_addresses: List[str] = Field(default_factory=list)
+    ipv6_addresses: List[str] = Field(default_factory=list)
+    netmask: Optional[str] = None
+    gateway: Optional[str] = None
+    dns_servers: List[str] = Field(default_factory=list)
+    is_primary: bool = False
+    speed_mbps: Optional[int] = None
+    duplex: Optional[str] = None
+    vlan_id: Optional[int] = None
+    status: str = "up"
+
+
+class HardwareInfo(BaseModel):
+    """Hardware specifications"""
+    manufacturer: Optional[str] = None
+    model: Optional[str] = None
+    serial_number: Optional[str] = None
+    cpu_model: Optional[str] = None
+    cpu_cores: Optional[int] = None
+    cpu_threads: Optional[int] = None
+    ram_gb: Optional[float] = None
+    storage_gb: Optional[float] = None
+    storage_type: Optional[str] = None  # SSD, HDD, NVMe, etc.
+    gpu_model: Optional[str] = None
+    bios_version: Optional[str] = None
+    firmware_version: Optional[str] = None
+    purchase_date: Optional[datetime] = None
+    warranty_expiry: Optional[datetime] = None
+
+
+class OperatingSystem(BaseModel):
+    """Operating system information"""
+    name: str
+    version: Optional[str] = None
+    build: Optional[str] = None
+    architecture: Optional[str] = None  # x64, x86, arm64
+    kernel_version: Optional[str] = None
+    install_date: Optional[datetime] = None
+    last_boot: Optional[datetime] = None
+    patch_level: Optional[str] = None
+    end_of_life: Optional[datetime] = None
+    is_supported: bool = True
+
+
+class InstalledSoftware(BaseModel):
+    """Installed software details"""
+    name: str
+    version: Optional[str] = None
+    vendor: Optional[str] = None
+    install_date: Optional[datetime] = None
+    install_path: Optional[str] = None
+    is_security_tool: bool = False
+    is_authorized: bool = True
+    license_type: Optional[str] = None
+    cpe: Optional[str] = None  # Common Platform Enumeration
+
+
+class CloudMetadata(BaseModel):
+    """Cloud-specific asset metadata"""
+    provider: str  # aws, azure, gcp, etc.
+    account_id: Optional[str] = None
+    region: Optional[str] = None
+    availability_zone: Optional[str] = None
+    instance_type: Optional[str] = None
+    instance_id: Optional[str] = None
+    vpc_id: Optional[str] = None
+    subnet_id: Optional[str] = None
+    security_groups: List[str] = Field(default_factory=list)
+    tags: Dict[str, str] = Field(default_factory=dict)
+    launch_time: Optional[datetime] = None
+    state: Optional[str] = None
+    public_ip: Optional[str] = None
+    private_ip: Optional[str] = None
+    ami_id: Optional[str] = None  # For AWS
+    resource_group: Optional[str] = None  # For Azure
+
+
+class AssetLocation(BaseModel):
+    """Physical or logical location"""
+    site: Optional[str] = None
+    building: Optional[str] = None
+    floor: Optional[str] = None
+    room: Optional[str] = None
+    rack: Optional[str] = None
+    rack_position: Optional[int] = None
+    datacenter: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    address: Optional[str] = None
+    geo_coordinates: Optional[Dict[str, float]] = None  # lat, lon
+
+
+class AssetOwner(BaseModel):
+    """Asset ownership information"""
+    owner_id: Optional[str] = None
+    owner_name: Optional[str] = None
+    owner_email: Optional[str] = None
+    owner_department: Optional[str] = None
+    technical_contact_id: Optional[str] = None
+    technical_contact_name: Optional[str] = None
+    technical_contact_email: Optional[str] = None
+    business_unit: Optional[str] = None
+    cost_center: Optional[str] = None
+
+
+class AssetRiskScore(BaseModel):
+    """Comprehensive risk scoring (inspired by Tenable ACR/VPR)"""
+    # Overall score (1-10 scale, 10 being most critical)
+    overall_score: float = Field(..., ge=1.0, le=10.0)
+
+    # Component scores
+    criticality_score: float = Field(default=5.0, ge=1.0, le=10.0)
+    vulnerability_score: float = Field(default=5.0, ge=1.0, le=10.0)
+    exposure_score: float = Field(default=5.0, ge=1.0, le=10.0)
+    threat_score: float = Field(default=5.0, ge=1.0, le=10.0)
+
+    # Factors
+    has_sensitive_data: bool = False
+    is_internet_facing: bool = False
+    has_critical_vulnerabilities: bool = False
+    days_since_last_scan: Optional[int] = None
+    patch_compliance_percentage: Optional[float] = None
+    active_threats_count: int = 0
+
+    # Metadata
+    calculated_at: datetime = Field(default_factory=datetime.utcnow)
+    calculation_method: str = "weighted_average"
+    factors_considered: List[str] = Field(default_factory=list)
+
+
+class VulnerabilitySummary(BaseModel):
+    """Summary of vulnerabilities on an asset"""
+    total_count: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    info_count: int = 0
+    exploitable_count: int = 0
+    patch_available_count: int = 0
+    last_scan_date: Optional[datetime] = None
+    scanner_source: Optional[str] = None
+
+
+class SecurityControls(BaseModel):
+    """Security controls status on the asset"""
+    antivirus_installed: bool = False
+    antivirus_updated: bool = False
+    antivirus_product: Optional[str] = None
+
+    edr_installed: bool = False
+    edr_product: Optional[str] = None
+    edr_status: Optional[str] = None
+
+    firewall_enabled: bool = False
+    firewall_product: Optional[str] = None
+
+    encryption_enabled: bool = False
+    encryption_type: Optional[str] = None
+
+    mfa_enabled: bool = False
+    backup_enabled: bool = False
+    backup_last_run: Optional[datetime] = None
+
+    dlp_enabled: bool = False
+    siem_agent_installed: bool = False
+    vulnerability_agent_installed: bool = False
+
+    compliance_frameworks: List[str] = Field(default_factory=list)
+
+
+# --- Asset CRUD Models ---
+
+class AssetCreate(BaseModel):
+    """Create a new asset"""
+    # Required fields
+    name: str = Field(..., min_length=1, max_length=255)
+    asset_type: AssetTypeEnum
+
+    # Classification
+    status: AssetStatusEnum = AssetStatusEnum.DISCOVERED
+    criticality: AssetCriticalityEnum = AssetCriticalityEnum.MEDIUM
+    criticality_score: float = Field(default=5.0, ge=1.0, le=10.0)
+    environment: AssetEnvironmentEnum = AssetEnvironmentEnum.UNKNOWN
+    ownership_type: AssetOwnershipEnum = AssetOwnershipEnum.UNKNOWN
+
+    # Identifiers
+    hostname: Optional[str] = None
+    fqdn: Optional[str] = None
+    primary_ip: Optional[str] = None
+    mac_address: Optional[str] = None
+    serial_number: Optional[str] = None
+    asset_tag: Optional[str] = None
+    external_id: Optional[str] = None  # ID from external system (CMDB, etc.)
+
+    # Details
+    description: Optional[str] = None
+    notes: Optional[str] = None
+
+    # Network
+    network_interfaces: List[NetworkInterface] = Field(default_factory=list)
+
+    # Hardware/OS
+    hardware: Optional[HardwareInfo] = None
+    operating_system: Optional[OperatingSystem] = None
+    installed_software: List[InstalledSoftware] = Field(default_factory=list)
+
+    # Cloud
+    cloud_metadata: Optional[CloudMetadata] = None
+    is_cloud_asset: bool = False
+
+    # Location/Ownership
+    location: Optional[AssetLocation] = None
+    owner: Optional[AssetOwner] = None
+
+    # Discovery
+    discovery_method: DiscoveryMethodEnum = DiscoveryMethodEnum.MANUAL
+    discovery_source: Optional[str] = None
+
+    # Security
+    security_controls: Optional[SecurityControls] = None
+    data_classification: Optional[str] = None  # Public, Internal, Confidential, etc.
+
+    # Compliance
+    compliance_status: ComplianceStatusEnum = ComplianceStatusEnum.UNKNOWN
+    compliance_frameworks: List[str] = Field(default_factory=list)
+
+    # Metadata
+    tags: List[str] = Field(default_factory=list)
+    custom_attributes: Dict[str, Any] = Field(default_factory=dict)
+
+
+class Asset(BaseModel):
+    """Complete asset model"""
+    id: str
+
+    # Required fields
+    name: str
+    asset_type: AssetTypeEnum
+
+    # Classification
+    status: AssetStatusEnum
+    criticality: AssetCriticalityEnum
+    criticality_score: float
+    environment: AssetEnvironmentEnum
+    ownership_type: AssetOwnershipEnum
+
+    # Identifiers
+    hostname: Optional[str] = None
+    fqdn: Optional[str] = None
+    primary_ip: Optional[str] = None
+    mac_address: Optional[str] = None
+    serial_number: Optional[str] = None
+    asset_tag: Optional[str] = None
+    external_id: Optional[str] = None
+
+    # Details
+    description: Optional[str] = None
+    notes: Optional[str] = None
+
+    # Network
+    network_interfaces: List[NetworkInterface] = Field(default_factory=list)
+
+    # Hardware/OS
+    hardware: Optional[HardwareInfo] = None
+    operating_system: Optional[OperatingSystem] = None
+    installed_software: List[InstalledSoftware] = Field(default_factory=list)
+
+    # Cloud
+    cloud_metadata: Optional[CloudMetadata] = None
+    is_cloud_asset: bool = False
+
+    # Location/Ownership
+    location: Optional[AssetLocation] = None
+    owner: Optional[AssetOwner] = None
+
+    # Discovery
+    discovery_method: DiscoveryMethodEnum
+    discovery_source: Optional[str] = None
+    first_seen: datetime
+    last_seen: datetime
+
+    # Security
+    security_controls: Optional[SecurityControls] = None
+    vulnerability_summary: Optional[VulnerabilitySummary] = None
+    risk_score: Optional[AssetRiskScore] = None
+    data_classification: Optional[str] = None
+
+    # Compliance
+    compliance_status: ComplianceStatusEnum
+    compliance_frameworks: List[str] = Field(default_factory=list)
+
+    # Metadata
+    tags: List[str] = Field(default_factory=list)
+    custom_attributes: Dict[str, Any] = Field(default_factory=dict)
+
+    # Audit
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
+
+
+class AssetUpdate(BaseModel):
+    """Update an existing asset"""
+    name: Optional[str] = None
+    asset_type: Optional[AssetTypeEnum] = None
+    status: Optional[AssetStatusEnum] = None
+    criticality: Optional[AssetCriticalityEnum] = None
+    criticality_score: Optional[float] = Field(default=None, ge=1.0, le=10.0)
+    environment: Optional[AssetEnvironmentEnum] = None
+    ownership_type: Optional[AssetOwnershipEnum] = None
+    hostname: Optional[str] = None
+    fqdn: Optional[str] = None
+    primary_ip: Optional[str] = None
+    mac_address: Optional[str] = None
+    serial_number: Optional[str] = None
+    asset_tag: Optional[str] = None
+    external_id: Optional[str] = None
+    description: Optional[str] = None
+    notes: Optional[str] = None
+    network_interfaces: Optional[List[NetworkInterface]] = None
+    hardware: Optional[HardwareInfo] = None
+    operating_system: Optional[OperatingSystem] = None
+    installed_software: Optional[List[InstalledSoftware]] = None
+    cloud_metadata: Optional[CloudMetadata] = None
+    is_cloud_asset: Optional[bool] = None
+    location: Optional[AssetLocation] = None
+    owner: Optional[AssetOwner] = None
+    security_controls: Optional[SecurityControls] = None
+    data_classification: Optional[str] = None
+    compliance_status: Optional[ComplianceStatusEnum] = None
+    compliance_frameworks: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    custom_attributes: Optional[Dict[str, Any]] = None
+
+
+class AssetListResponse(BaseModel):
+    """Paginated list of assets"""
+    assets: List[Asset]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+
+class AssetSearchQuery(BaseModel):
+    """Advanced asset search query"""
+    query: Optional[str] = None  # Full-text search
+    asset_types: Optional[List[AssetTypeEnum]] = None
+    statuses: Optional[List[AssetStatusEnum]] = None
+    criticalities: Optional[List[AssetCriticalityEnum]] = None
+    environments: Optional[List[AssetEnvironmentEnum]] = None
+    discovery_methods: Optional[List[DiscoveryMethodEnum]] = None
+    compliance_statuses: Optional[List[ComplianceStatusEnum]] = None
+
+    # IP/Network filters
+    ip_range: Optional[str] = None
+    subnet: Optional[str] = None
+    vlan_id: Optional[int] = None
+
+    # Location filters
+    site: Optional[str] = None
+    datacenter: Optional[str] = None
+
+    # Owner filters
+    owner_id: Optional[str] = None
+    department: Optional[str] = None
+    business_unit: Optional[str] = None
+
+    # Risk/Vulnerability filters
+    min_risk_score: Optional[float] = None
+    max_risk_score: Optional[float] = None
+    has_critical_vulnerabilities: Optional[bool] = None
+    has_exploitable_vulnerabilities: Optional[bool] = None
+
+    # Time filters
+    first_seen_after: Optional[datetime] = None
+    first_seen_before: Optional[datetime] = None
+    last_seen_after: Optional[datetime] = None
+    last_seen_before: Optional[datetime] = None
+    not_seen_since: Optional[datetime] = None
+
+    # Cloud filters
+    is_cloud_asset: Optional[bool] = None
+    cloud_provider: Optional[str] = None
+    cloud_region: Optional[str] = None
+
+    # Security filters
+    has_edr: Optional[bool] = None
+    has_antivirus: Optional[bool] = None
+    is_encrypted: Optional[bool] = None
+
+    # Tag/Attribute filters
+    tags: Optional[List[str]] = None
+    tags_match_all: bool = False
+    custom_attributes: Optional[Dict[str, Any]] = None
+
+    # OS/Software filters
+    os_name: Optional[str] = None
+    os_version: Optional[str] = None
+    software_name: Optional[str] = None
+    software_version: Optional[str] = None
+
+    # Pagination
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=50, ge=1, le=500)
+
+    # Sorting
+    sort_by: str = "last_seen"
+    sort_order: str = Field(default="desc", pattern="^(asc|desc)$")
+
+
+# --- Asset Relationship Models ---
+
+class AssetRelationshipCreate(BaseModel):
+    """Create a relationship between assets"""
+    source_asset_id: str
+    target_asset_id: str
+    relationship_type: RelationshipTypeEnum
+    description: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    is_bidirectional: bool = False
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+
+
+class AssetRelationship(BaseModel):
+    """Relationship between two assets"""
+    id: str
+    source_asset_id: str
+    source_asset_name: str
+    target_asset_id: str
+    target_asset_name: str
+    relationship_type: RelationshipTypeEnum
+    description: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    is_bidirectional: bool
+    confidence: float
+    discovered_by: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AssetRelationshipListResponse(BaseModel):
+    """List of asset relationships"""
+    relationships: List[AssetRelationship]
+    total: int
+
+
+# --- Asset Group Models ---
+
+class AssetGroupCreate(BaseModel):
+    """Create an asset group"""
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    group_type: str = "static"  # static, dynamic
+
+    # For static groups
+    asset_ids: List[str] = Field(default_factory=list)
+
+    # For dynamic groups
+    filter_query: Optional[AssetSearchQuery] = None
+
+    # Metadata
+    tags: List[str] = Field(default_factory=list)
+    owner_id: Optional[str] = None
+    color: Optional[str] = None  # For UI display
+
+
+class AssetGroup(BaseModel):
+    """Asset group"""
+    id: str
+    name: str
+    description: Optional[str] = None
+    group_type: str
+    asset_ids: List[str] = Field(default_factory=list)
+    asset_count: int
+    filter_query: Optional[Dict[str, Any]] = None
+    tags: List[str] = Field(default_factory=list)
+    owner_id: Optional[str] = None
+    color: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[str] = None
+
+
+class AssetGroupUpdate(BaseModel):
+    """Update an asset group"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    asset_ids: Optional[List[str]] = None
+    filter_query: Optional[AssetSearchQuery] = None
+    tags: Optional[List[str]] = None
+    owner_id: Optional[str] = None
+    color: Optional[str] = None
+
+
+class AssetGroupListResponse(BaseModel):
+    """List of asset groups"""
+    groups: List[AssetGroup]
+    total: int
+
+
+# --- Discovery Scan Models ---
+
+class DiscoveryScanConfig(BaseModel):
+    """Configuration for asset discovery scan"""
+    name: str = Field(..., min_length=1, max_length=255)
+    scan_type: ScanTypeEnum = ScanTypeEnum.FULL
+    description: Optional[str] = None
+
+    # Target specification
+    target_networks: List[str] = Field(default_factory=list)  # CIDR notation
+    target_domains: List[str] = Field(default_factory=list)
+    target_cloud_accounts: List[str] = Field(default_factory=list)
+    exclude_ranges: List[str] = Field(default_factory=list)
+
+    # Discovery methods to use
+    use_network_scan: bool = True
+    use_agent_data: bool = True
+    use_cloud_api: bool = True
+    use_ad_sync: bool = False
+    use_dns_enumeration: bool = False
+    use_snmp: bool = False
+
+    # Scan settings
+    ports_to_scan: List[int] = Field(default_factory=lambda: [22, 80, 443, 445, 3389])
+    scan_timeout_seconds: int = 300
+    max_concurrent_hosts: int = 100
+    retry_count: int = 2
+
+    # Scheduling
+    schedule_enabled: bool = False
+    schedule_cron: Optional[str] = None
+
+    # Actions
+    auto_import: bool = True
+    auto_tag: bool = True
+    default_tags: List[str] = Field(default_factory=list)
+
+    # Notifications
+    notify_on_completion: bool = False
+    notification_emails: List[str] = Field(default_factory=list)
+
+
+class DiscoveryScan(BaseModel):
+    """Discovery scan execution"""
+    id: str
+    name: str
+    config: DiscoveryScanConfig
+    status: str  # pending, running, completed, failed, cancelled
+
+    # Execution details
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    duration_seconds: Optional[int] = None
+
+    # Results
+    total_hosts_scanned: int = 0
+    new_assets_found: int = 0
+    updated_assets: int = 0
+    failed_hosts: int = 0
+
+    # Errors
+    errors: List[Dict[str, Any]] = Field(default_factory=list)
+
+    # Metadata
+    created_at: datetime
+    created_by: Optional[str] = None
+    last_run_at: Optional[datetime] = None
+
+
+class DiscoveryScanCreate(BaseModel):
+    """Create a new discovery scan"""
+    config: DiscoveryScanConfig
+    run_immediately: bool = False
+
+
+class DiscoveryScanListResponse(BaseModel):
+    """List of discovery scans"""
+    scans: List[DiscoveryScan]
+    total: int
+
+
+class DiscoveryScanResult(BaseModel):
+    """Results from a discovery scan"""
+    scan_id: str
+    scan_name: str
+    status: str
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+    # Statistics
+    total_hosts_scanned: int
+    new_assets: List[Dict[str, Any]] = Field(default_factory=list)
+    updated_assets: List[Dict[str, Any]] = Field(default_factory=list)
+    failed_hosts: List[Dict[str, Any]] = Field(default_factory=list)
+
+    # Summary
+    by_asset_type: Dict[str, int] = Field(default_factory=dict)
+    by_os: Dict[str, int] = Field(default_factory=dict)
+    by_network: Dict[str, int] = Field(default_factory=dict)
+
+
+# --- Network Topology Models ---
+
+class TopologyNode(BaseModel):
+    """Node in network topology"""
+    id: str
+    asset_id: str
+    asset_name: str
+    asset_type: AssetTypeEnum
+    ip_address: Optional[str] = None
+    status: AssetStatusEnum
+    criticality: AssetCriticalityEnum
+    risk_score: Optional[float] = None
+
+    # Visualization
+    x: Optional[float] = None
+    y: Optional[float] = None
+    size: int = 1
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    group: Optional[str] = None
+
+
+class TopologyEdge(BaseModel):
+    """Edge in network topology"""
+    id: str
+    source: str
+    target: str
+    relationship_type: RelationshipTypeEnum
+    label: Optional[str] = None
+    weight: float = 1.0
+    color: Optional[str] = None
+    style: str = "solid"  # solid, dashed, dotted
+
+
+class NetworkTopology(BaseModel):
+    """Network topology graph"""
+    nodes: List[TopologyNode]
+    edges: List[TopologyEdge]
+    total_nodes: int
+    total_edges: int
+    generated_at: datetime
+
+    # Metadata
+    filters_applied: Dict[str, Any] = Field(default_factory=dict)
+    layout_algorithm: str = "force-directed"
+
+
+class TopologyQuery(BaseModel):
+    """Query parameters for topology generation"""
+    # Scope
+    asset_ids: Optional[List[str]] = None
+    asset_group_id: Optional[str] = None
+    network_segment: Optional[str] = None
+    datacenter: Optional[str] = None
+
+    # Filters
+    asset_types: Optional[List[AssetTypeEnum]] = None
+    min_criticality: Optional[AssetCriticalityEnum] = None
+    include_relationships: Optional[List[RelationshipTypeEnum]] = None
+
+    # Depth
+    max_depth: int = Field(default=3, ge=1, le=10)
+
+    # Layout
+    layout_algorithm: str = "force-directed"  # force-directed, hierarchical, circular
+
+
+# --- CMDB Integration Models ---
+
+class CMDBSyncConfig(BaseModel):
+    """Configuration for CMDB synchronization"""
+    name: str = Field(..., min_length=1, max_length=255)
+    cmdb_type: str  # servicenow, jira, cmdb, custom
+
+    # Connection
+    endpoint_url: str
+    auth_type: str = "api_key"  # api_key, oauth, basic
+    # Note: Credentials stored separately in secrets
+
+    # Mapping
+    field_mapping: Dict[str, str] = Field(default_factory=dict)
+    type_mapping: Dict[str, str] = Field(default_factory=dict)
+    status_mapping: Dict[str, str] = Field(default_factory=dict)
+
+    # Sync settings
+    sync_direction: str = "bidirectional"  # import, export, bidirectional
+    sync_frequency_minutes: int = 60
+    batch_size: int = 100
+
+    # Filters
+    import_filter: Optional[str] = None  # Query to filter what to import
+    export_filter: Optional[AssetSearchQuery] = None
+
+    # Behavior
+    create_missing: bool = True
+    update_existing: bool = True
+    delete_removed: bool = False
+
+    # Metadata
+    enabled: bool = True
+    last_sync_at: Optional[datetime] = None
+
+
+class CMDBSyncResult(BaseModel):
+    """Result of CMDB synchronization"""
+    config_id: str
+    sync_type: str  # scheduled, manual
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    status: str  # running, completed, failed
+
+    # Statistics
+    records_processed: int = 0
+    imported: int = 0
+    exported: int = 0
+    updated: int = 0
+    deleted: int = 0
+    failed: int = 0
+
+    # Errors
+    errors: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+# --- Asset Import/Export Models ---
+
+class AssetImportConfig(BaseModel):
+    """Configuration for asset import"""
+    format: str = "csv"  # csv, json, xlsx
+    column_mapping: Dict[str, str] = Field(default_factory=dict)
+    default_values: Dict[str, Any] = Field(default_factory=dict)
+
+    # Behavior
+    update_existing: bool = True
+    match_on: List[str] = Field(default_factory=lambda: ["hostname", "primary_ip"])
+    skip_invalid: bool = False
+    dry_run: bool = False
+
+
+class AssetImportResult(BaseModel):
+    """Result of asset import"""
+    import_id: str
+    filename: str
+    format: str
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    status: str
+
+    # Statistics
+    total_records: int
+    imported: int
+    updated: int
+    skipped: int
+    failed: int
+
+    # Details
+    errors: List[Dict[str, Any]] = Field(default_factory=list)
+    warnings: List[Dict[str, Any]] = Field(default_factory=list)
+    imported_asset_ids: List[str] = Field(default_factory=list)
+
+
+class AssetExportConfig(BaseModel):
+    """Configuration for asset export"""
+    format: str = "csv"  # csv, json, xlsx
+    columns: List[str] = Field(default_factory=list)  # Empty = all columns
+    include_software: bool = False
+    include_vulnerabilities: bool = False
+    include_relationships: bool = False
+    filter_query: Optional[AssetSearchQuery] = None
+
+
+class AssetExportResult(BaseModel):
+    """Result of asset export"""
+    export_id: str
+    format: str
+    total_assets: int
+    file_size_bytes: int
+    download_url: str
+    expires_at: datetime
+    created_at: datetime
+
+
+# --- Asset Statistics Models ---
+
+class AssetStatistics(BaseModel):
+    """Overall asset inventory statistics"""
+    total_assets: int
+
+    # By status
+    by_status: Dict[str, int] = Field(default_factory=dict)
+
+    # By type
+    by_type: Dict[str, int] = Field(default_factory=dict)
+
+    # By criticality
+    by_criticality: Dict[str, int] = Field(default_factory=dict)
+
+    # By environment
+    by_environment: Dict[str, int] = Field(default_factory=dict)
+
+    # By compliance
+    by_compliance_status: Dict[str, int] = Field(default_factory=dict)
+
+    # Risk distribution
+    risk_distribution: Dict[str, int] = Field(default_factory=dict)  # low, medium, high, critical
+    average_risk_score: float = 0.0
+
+    # Discovery
+    new_assets_7d: int = 0
+    updated_assets_7d: int = 0
+    missing_assets: int = 0
+
+    # Cloud
+    cloud_assets: int = 0
+    by_cloud_provider: Dict[str, int] = Field(default_factory=dict)
+
+    # Security
+    assets_without_edr: int = 0
+    assets_without_antivirus: int = 0
+    assets_with_critical_vulns: int = 0
+
+    # Time
+    generated_at: datetime
+
+
+class AssetTrendData(BaseModel):
+    """Asset inventory trends over time"""
+    period: str  # daily, weekly, monthly
+    data_points: List[Dict[str, Any]] = Field(default_factory=list)
+    # Each point: {date, total, new, decommissioned, by_type, by_criticality, avg_risk}
+
+
+# --- Asset Activity/Audit Models ---
+
+class AssetActivity(BaseModel):
+    """Activity log entry for an asset"""
+    id: str
+    asset_id: str
+    activity_type: str  # created, updated, deleted, scanned, status_changed, etc.
+    description: str
+    details: Dict[str, Any] = Field(default_factory=dict)
+    performed_by: Optional[str] = None
+    timestamp: datetime
+
+
+class AssetActivityListResponse(BaseModel):
+    """List of asset activities"""
+    activities: List[AssetActivity]
+    total: int
+    page: int
+    page_size: int
+
+
+# --- Bulk Operations ---
+
+class BulkAssetUpdate(BaseModel):
+    """Bulk update multiple assets"""
+    asset_ids: List[str] = Field(..., min_items=1, max_items=1000)
+    updates: AssetUpdate
+
+
+class BulkAssetUpdateResult(BaseModel):
+    """Result of bulk asset update"""
+    status: StatusEnum
+    total: int
+    updated: int
+    failed: int
+    errors: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class BulkAssetTag(BaseModel):
+    """Bulk tag/untag assets"""
+    asset_ids: List[str] = Field(..., min_items=1, max_items=1000)
+    tags_to_add: List[str] = Field(default_factory=list)
+    tags_to_remove: List[str] = Field(default_factory=list)
+
+
+class BulkAssetDelete(BaseModel):
+    """Bulk delete assets"""
+    asset_ids: List[str] = Field(..., min_items=1, max_items=1000)
+    soft_delete: bool = True
+    reason: Optional[str] = None
+
+
+class BulkOperationResult(BaseModel):
+    """Generic bulk operation result"""
+    operation: str
+    status: StatusEnum
+    total: int
+    succeeded: int
+    failed: int
+    errors: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+# --- Asset Health Check ---
+
+class AssetHealthCheck(BaseModel):
+    """Health check for asset inventory system"""
+    status: str = Field(..., pattern="^(healthy|degraded|unhealthy)$")
+    timestamp: datetime
+
+    # Component status
+    database_status: str
+    discovery_engine_status: str
+    cmdb_sync_status: str
+
+    # Statistics
+    total_assets: int
+    assets_synced_today: int
+    pending_discoveries: int
+    failed_syncs_24h: int
+
+    # Issues
+    issues: List[Dict[str, Any]] = Field(default_factory=list)
+    recommendations: List[str] = Field(default_factory=list)

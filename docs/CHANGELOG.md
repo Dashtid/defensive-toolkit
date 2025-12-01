@@ -7,6 +7,131 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.10] - 2025-12-01
+
+### Asset Inventory & Management
+
+Major enhancement: Comprehensive asset inventory system with CMDB integration, criticality scoring, network topology visualization, and lifecycle management following CIS Controls v8.1 asset classification.
+
+### Added
+
+- **Asset API Router** (`api/routers/assets.py`):
+  - **Asset CRUD Operations**:
+    - `GET /assets` - List assets with pagination and filtering
+    - `GET /assets/{id}` - Get asset details
+    - `POST /assets` - Create new asset
+    - `PUT /assets/{id}` - Update asset
+    - `DELETE /assets/{id}` - Delete/decommission asset
+  - **Advanced Search**:
+    - `POST /assets/search` - Advanced search with 30+ filter criteria
+  - **Asset Relationships**:
+    - `GET /assets/{id}/relationships` - Get asset relationships
+    - `POST /assets/{id}/relationships` - Create relationship
+    - `DELETE /assets/relationships/{id}` - Delete relationship
+  - **Asset Groups**:
+    - `GET /assets/groups` - List asset groups
+    - `GET /assets/groups/{id}` - Get group details
+    - `POST /assets/groups` - Create group (static or dynamic)
+    - `PUT /assets/groups/{id}` - Update group
+    - `DELETE /assets/groups/{id}` - Delete group
+    - `GET /assets/groups/{id}/assets` - List assets in group
+    - `POST /assets/groups/{id}/assets/{asset_id}` - Add asset to group
+    - `DELETE /assets/groups/{id}/assets/{asset_id}` - Remove from group
+  - **Discovery Scans**:
+    - `GET /assets/discovery/scans` - List scans
+    - `GET /assets/discovery/scans/{id}` - Get scan details
+    - `POST /assets/discovery/scans` - Create scan configuration
+    - `POST /assets/discovery/scans/{id}/run` - Run scan
+    - `POST /assets/discovery/scans/{id}/cancel` - Cancel scan
+    - `GET /assets/discovery/scans/{id}/results` - Get results
+    - `DELETE /assets/discovery/scans/{id}` - Delete scan
+  - **Network Topology**:
+    - `POST /assets/topology` - Generate topology visualization
+    - `GET /assets/{id}/topology` - Asset-centered topology
+  - **CMDB Integration**:
+    - `GET /assets/cmdb/configs` - List CMDB configs
+    - `GET /assets/cmdb/configs/{id}` - Get config
+    - `POST /assets/cmdb/configs` - Create config
+    - `POST /assets/cmdb/configs/{id}/sync` - Trigger sync
+    - `DELETE /assets/cmdb/configs/{id}` - Delete config
+  - **Import/Export**:
+    - `POST /assets/import` - Import from CSV/JSON/XLSX
+    - `POST /assets/export` - Export to file
+    - `GET /assets/export/{id}/download` - Download export
+  - **Statistics & Trends**:
+    - `GET /assets/statistics` - Comprehensive statistics
+    - `GET /assets/trends` - Trend data over time
+  - **Activity Log**:
+    - `GET /assets/{id}/activity` - Asset activity history
+  - **Bulk Operations**:
+    - `POST /assets/bulk/update` - Bulk update assets
+    - `POST /assets/bulk/tag` - Bulk add/remove tags
+    - `POST /assets/bulk/delete` - Bulk delete/decommission
+    - `POST /assets/bulk/recalculate-risk` - Bulk risk recalc
+  - **Risk Score**:
+    - `GET /assets/{id}/risk-score` - Get risk score
+    - `POST /assets/{id}/risk-score/recalculate` - Force recalc
+  - **Health Check**:
+    - `GET /assets/health` - System health check
+
+- **33 Asset Types** (based on CIS Controls v8.1):
+  - Hardware: server, workstation, laptop, mobile_device, network_device, iot_device, printer, storage_device, virtual_machine
+  - Cloud: cloud_instance, cloud_container, cloud_function, cloud_database, cloud_storage
+  - Network: network_segment, vlan, subnet, vpn_gateway, load_balancer
+  - Software: application, service, database, web_application, api_endpoint
+  - Identity: user_account, service_account, group
+  - Data: data_repository, file_share
+  - Other: unknown, other
+
+- **Asset Status Lifecycle**:
+  - discovered, pending_review, active, inactive, maintenance
+  - decommissioning, decommissioned, missing, compromised, quarantined
+
+- **Criticality Levels** (1-10 scale):
+  - critical (10), high (8), medium (5), low (3), minimal (1)
+  - Quantitative scoring with qualitative labels
+
+- **Risk Scoring System** (inspired by Tenable ACR/VPR):
+  - Overall score (1-10 scale)
+  - Component scores: criticality, vulnerability, exposure, threat
+  - Factors: sensitive data, internet-facing, critical vulns, patch compliance
+  - Weighted average calculation method
+
+- **Security Controls Tracking**:
+  - Antivirus, EDR, firewall, encryption status
+  - MFA, backup, DLP, SIEM agent presence
+  - Vulnerability agent status
+
+- **Discovery Methods**:
+  - manual, agent, network_scan, cloud_api, cmdb_import
+  - ad_sync, sccm, siem, vulnerability_scanner, edr
+  - dhcp, dns, snmp, api
+
+- **15 Relationship Types**:
+  - hosts/hosted_by, connects_to, depends_on/dependency_of
+  - contains/contained_by, manages/managed_by
+  - authenticates_to, member_of, backup_of
+  - replicated_to, routes_to, protected_by
+
+- **Network Topology Visualization**:
+  - Force-directed, hierarchical, circular layouts
+  - Node attributes: type, status, criticality, risk score
+  - Edge attributes: relationship type, confidence, style
+
+- **CMDB Sync Features**:
+  - ServiceNow, Jira, custom CMDB support
+  - Bidirectional sync with field mapping
+  - Import/export filtering
+  - Scheduled synchronization
+
+- **Import/Export Formats**:
+  - CSV, JSON, XLSX support
+  - Column mapping configuration
+  - Dry-run mode for validation
+  - Match-on fields for update detection
+
+---
+
 ## [1.7.9] - 2025-12-01
 
 ### Dashboard Widgets API
