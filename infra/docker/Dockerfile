@@ -29,9 +29,11 @@ COPY uv.lock* ./
 
 # Create virtual environment and install dependencies
 RUN uv venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+ENV PATH="/opt/venv/bin:$PATH" \
+    UV_PROJECT_ENVIRONMENT="/opt/venv"
 
 # Install dependencies only (excluding Windows-only extras and project itself)
+# UV_PROJECT_ENVIRONMENT ensures uv sync uses /opt/venv instead of .venv
 RUN uv sync --no-dev --no-install-project --extra threat-intel --extra advanced
 
 # Install gunicorn for production server
