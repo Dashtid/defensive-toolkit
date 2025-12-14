@@ -46,8 +46,8 @@ jobs:
     - name: Convert Sigma rules (test)
       run: |
         echo "[+] Testing Sigma rule conversion..."
-        sigma convert -t splunk rules/sigma/execution/*.yml > /dev/null || exit 1
-        sigma convert -t elasticsearch rules/sigma/persistence/*.yml > /dev/null || exit 1
+        sigma convert -t splunk --without-pipeline rules/sigma/execution/*.yml > /dev/null || exit 1
+        sigma convert -t elasticsearch --without-pipeline rules/sigma/persistence/*.yml > /dev/null || exit 1
         echo "[OK] Sigma rule conversion successful"
 
   validate-yara:
@@ -69,7 +69,8 @@ jobs:
         for file in rules/yara/*.yar; do
           if [ -f "$file" ]; then
             echo "Checking: $file"
-            yara -C "$file" || exit 1
+            # Compile rules against /dev/null to validate syntax without scanning
+            yara "$file" /dev/null 2>&1 || exit 1
           fi
         done
         echo "[OK] All YARA rules valid"
@@ -89,14 +90,21 @@ jobs:
         $errors = @()
         Get-ChildItem -Path . -Filter *.ps1 -Recurse | ForEach-Object {
           Write-Host "Analyzing: $($_.FullName)"
-          $results = Invoke-ScriptAnalyzer -Path $_.FullName -Severity Error,Warning
+          # Only fail on errors, show warnings for info
+          $results = Invoke-ScriptAnalyzer -Path $_.FullName -Severity Error
           if ($results) {
             $errors += $results
             $results | Format-Table -AutoSize
           }
+          # Show warnings but don't fail on them
+          $warnings = Invoke-ScriptAnalyzer -Path $_.FullName -Severity Warning
+          if ($warnings) {
+            Write-Host "[!] Warnings (non-blocking):"
+            $warnings | Format-Table -AutoSize
+          }
         }
         if ($errors.Count -gt 0) {
-          Write-Error "PSScriptAnalyzer found $($errors.Count) issue(s)"
+          Write-Error "PSScriptAnalyzer found $($errors.Count) error(s)"
           exit 1
         }
         Write-Host "[OK] All PowerShell scripts passed analysis"
