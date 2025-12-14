@@ -87,6 +87,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Prepare platform slug
+      id: platform
+      run: |
+        platform=${{ matrix.platform }}
+        echo "slug=${platform//\//-}" >> $GITHUB_OUTPUT
+
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
 
@@ -120,7 +126,7 @@ jobs:
     - name: Upload API image artifact
       uses: actions/upload-artifact@v4
       with:
-        name: api-image-${{ matrix.platform }}
+        name: api-image-${{ steps.platform.outputs.slug }}
         path: /tmp/api-image.tar
         retention-days: 1
 
@@ -139,7 +145,7 @@ jobs:
     - name: Upload Nginx image artifact
       uses: actions/upload-artifact@v4
       with:
-        name: nginx-image-${{ matrix.platform }}
+        name: nginx-image-${{ steps.platform.outputs.slug }}
         path: /tmp/nginx-image.tar
         retention-days: 1
 
@@ -158,13 +164,13 @@ jobs:
     - name: Download API image artifact
       uses: actions/download-artifact@v4
       with:
-        name: api-image-linux/amd64
+        name: api-image-linux-amd64
         path: /tmp
 
     - name: Download Nginx image artifact
       uses: actions/download-artifact@v4
       with:
-        name: nginx-image-linux/amd64
+        name: nginx-image-linux-amd64
         path: /tmp
 
     - name: Load API image
