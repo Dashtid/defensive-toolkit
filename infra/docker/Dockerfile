@@ -30,8 +30,8 @@ COPY uv.lock* ./
 RUN uv venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install all dependencies (including API)
-RUN uv sync --no-dev --all-extras
+# Install dependencies (excluding Windows-only extras)
+RUN uv sync --no-dev --extra threat-intel --extra advanced
 
 # Install gunicorn for production server
 RUN uv pip install gunicorn
