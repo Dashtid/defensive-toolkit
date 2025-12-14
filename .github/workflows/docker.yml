@@ -316,13 +316,13 @@ jobs:
 
     - name: Start Docker Compose stack
       run: |
-        docker-compose -f infra/docker/docker-compose.yml up -d
+        docker compose -f infra/docker/docker-compose.yml up -d
         sleep 30  # Wait for services to start
 
     - name: Check container status
       run: |
-        docker-compose -f infra/docker/docker-compose.yml ps
-        docker-compose -f infra/docker/docker-compose.yml ps | grep "Up" || exit 1
+        docker compose -f infra/docker/docker-compose.yml ps
+        docker compose -f infra/docker/docker-compose.yml ps | grep -E "Up|running" || exit 1
 
     - name: Health check - API
       run: |
@@ -364,17 +364,17 @@ jobs:
       if: failure()
       run: |
         echo "=== API Logs ==="
-        docker-compose -f infra/docker/docker-compose.yml logs api
+        docker compose -f infra/docker/docker-compose.yml logs api
         echo "=== Nginx Logs ==="
-        docker-compose -f infra/docker/docker-compose.yml logs nginx
+        docker compose -f infra/docker/docker-compose.yml logs nginx
         echo "=== Prometheus Logs ==="
-        docker-compose -f infra/docker/docker-compose.yml logs prometheus
+        docker compose -f infra/docker/docker-compose.yml logs prometheus
         echo "=== Grafana Logs ==="
-        docker-compose -f infra/docker/docker-compose.yml logs grafana
+        docker compose -f infra/docker/docker-compose.yml logs grafana
 
     - name: Stop Docker Compose stack
       if: always()
-      run: docker-compose -f infra/docker/docker-compose.yml down -v
+      run: docker compose -f infra/docker/docker-compose.yml down -v
 
   # ============================================================================
   # Test Results Summary
