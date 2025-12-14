@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Windows 11 Security Audit - DADAZBPG9</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        h1 { color: #0078d4; }
+        .summary { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stats { display: flex; gap: 20px; }
+        .stat { padding: 15px; border-radius: 5px; min-width: 120px; text-align: center; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        th { background: #0078d4; color: white; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        tr:hover { background: #f5f5f5; }
+        .status-pass { color: #28a745; font-weight: bold; }
+        .status-fail { color: #dc3545; font-weight: bold; }
+        .status-warning { color: #ffc107; font-weight: bold; }
+        .risk-high { color: #dc3545; }
+        .risk-medium { color: #ff8c00; }
+        .risk-low { color: #6c757d; }
+    </style>
+</head>
+<body>
+    <h1>Windows 11 Security Audit Report</h1>
+    <div class="summary">
+        <h2>System Information</h2>
+        <p><strong>Computer:</strong> DADAZBPG9</p>
+        <p><strong>Windows Version:</strong> Windows 10 Pro</p>
+        <p><strong>Build:</strong> 26200</p>
+        <p><strong>Audit Date:</strong> 11/28/2025 20:50:56</p>
+
+        <h2>Summary</h2>
+        <div class="stats">
+            <div class="stat pass"><h3>18</h3><p>Passed</p></div>
+            <div class="stat fail"><h3>2</h3><p>Failed</p></div>
+            <div class="stat warning"><h3>1</h3><p>Warnings</p></div>
+        </div>
+        <p><strong>Overall Pass Rate:</strong> 85.7%</p>
+    </div>
+
+    <h2>Detailed Results</h2>
+    <table>
+        <tr>
+            <th>Category</th>
+            <th>Check Name</th>
+            <th>Status</th>
+            <th>Current Value</th>
+            <th>Recommended</th>
+            <th>Risk</th>
+            <th>Reference</th>
+        </tr>        <tr>
+            <td>Encryption</td>
+            <td>BitLocker System Drive Encryption</td>
+            <td class="status-pass">Pass</td>
+            <td>On</td>
+            <td>On</td>
+            <td class="risk-high">High</td>
+            <td>CIS 18.10.9.1</td>
+        </tr>        <tr>
+            <td>Antivirus</td>
+            <td>Windows Defender Real-time Protection</td>
+            <td class="status-pass">Pass</td>
+            <td>True</td>
+            <td>True</td>
+            <td class="risk-high">High</td>
+            <td>MS Baseline</td>
+        </tr>        <tr>
+            <td>Antivirus</td>
+            <td>Windows Defender Cloud Protection</td>
+            <td class="status-pass">Pass</td>
+            <td>2</td>
+            <td>2 (Advanced)</td>
+            <td class="risk-medium">Medium</td>
+            <td>MS Baseline</td>
+        </tr>        <tr>
+            <td>Firewall</td>
+            <td>Windows Firewall (Domain Profile)</td>
+            <td class="status-pass">Pass</td>
+            <td>True</td>
+            <td>True</td>
+            <td class="risk-high">High</td>
+            <td>CIS 9.1</td>
+        </tr>        <tr>
+            <td>Firewall</td>
+            <td>Windows Firewall (Public Profile)</td>
+            <td class="status-pass">Pass</td>
+            <td>True</td>
+            <td>True</td>
+            <td class="risk-high">High</td>
+            <td>CIS 9.1</td>
+        </tr>        <tr>
+            <td>Firewall</td>
+            <td>Windows Firewall (Private Profile)</td>
+            <td class="status-pass">Pass</td>
+            <td>True</td>
+            <td>True</td>
+            <td class="risk-high">High</td>
+            <td>CIS 9.1</td>
+        </tr>        <tr>
+            <td>Access Control</td>
+            <td>UAC Admin Consent Prompt</td>
+            <td class="status-pass">Pass</td>
+            <td>5</td>
+            <td>2 (Prompt for consent)</td>
+            <td class="risk-high">High</td>
+            <td>CIS 2.3.17.1</td>
+        </tr>        <tr>
+            <td>Boot Security</td>
+            <td>Secure Boot</td>
+            <td class="status-pass">Pass</td>
+            <td>True</td>
+            <td>True</td>
+            <td class="risk-high">High</td>
+            <td>ACSC High Priority</td>
+        </tr>        <tr>
+            <td>Network Security</td>
+            <td>SMBv1 Protocol Disabled</td>
+            <td class="status-pass">Pass</td>
+            <td>Disabled</td>
+            <td>Disabled</td>
+            <td class="risk-high">High</td>
+            <td>MS Baseline</td>
+        </tr>        <tr>
+            <td>Account Policy</td>
+            <td>Account Lockout Threshold</td>
+            <td class="status-fail">Fail</td>
+            <td>Never</td>
+            <td>5-10 attempts</td>
+            <td class="risk-medium">Medium</td>
+            <td>CIS 1.2.1</td>
+        </tr>        <tr>
+            <td>Account Policy</td>
+            <td>Password Complexity</td>
+            <td class="status-pass">Pass</td>
+            <td>1</td>
+            <td>1 (Enabled)</td>
+            <td class="risk-medium">Medium</td>
+            <td>CIS 1.1</td>
+        </tr>        <tr>
+            <td>Remote Access</td>
+            <td>Remote Desktop Disabled</td>
+            <td class="status-warning">Warning</td>
+            <td>Enabled</td>
+            <td>Disabled (unless needed)</td>
+            <td class="risk-medium">Medium</td>
+            <td>CIS 18.9.62</td>
+        </tr>        <tr>
+            <td>Account Security</td>
+            <td>Guest Account Disabled</td>
+            <td class="status-pass">Pass</td>
+            <td>False</td>
+            <td>False (Disabled)</td>
+            <td class="risk-medium">Medium</td>
+            <td>CIS 2.3.1</td>
+        </tr>        <tr>
+            <td>Update Management</td>
+            <td>Automatic Windows Updates</td>
+            <td class="status-pass">Pass</td>
+            <td>Not Set</td>
+            <td>0 (Enabled)</td>
+            <td class="risk-medium">Medium</td>
+            <td>CIS 18.9.108</td>
+        </tr>        <tr>
+            <td>Auditing</td>
+            <td>PowerShell Script Block Logging</td>
+            <td class="status-fail">Fail</td>
+            <td>Not Set</td>
+            <td>1 (Enabled)</td>
+            <td class="risk-medium">Medium</td>
+            <td>MS Baseline</td>
+        </tr>        <tr>
+            <td>Antivirus</td>
+            <td>PUA Protection</td>
+            <td class="status-pass">Pass</td>
+            <td>1</td>
+            <td>1 (Enabled)</td>
+            <td class="risk-low">Low</td>
+            <td>MS Recommended</td>
+        </tr>        <tr>
+            <td>User Experience</td>
+            <td>Show File Extensions</td>
+            <td class="status-pass">Pass</td>
+            <td>0</td>
+            <td>0 (Show extensions)</td>
+            <td class="risk-low">Low</td>
+            <td>ACSC Low Priority</td>
+        </tr>        <tr>
+            <td>Privacy</td>
+            <td>Telemetry Level</td>
+            <td class="status-pass">Pass</td>
+            <td>0</td>
+            <td>0-1 (Security/Basic)</td>
+            <td class="risk-low">Low</td>
+            <td>Privacy</td>
+        </tr>        <tr>
+            <td>Credential Protection</td>
+            <td>Credential Guard</td>
+            <td class="status-pass">Pass</td>
+            <td>1 2 3 4 5 7</td>
+            <td>Running (if hardware supports)</td>
+            <td class="risk-medium">Medium</td>
+            <td>MS Baseline</td>
+        </tr>        <tr>
+            <td>System Security</td>
+            <td>Memory Integrity (HVCI)</td>
+            <td class="status-pass">Pass</td>
+            <td>1</td>
+            <td>1 (Enabled)</td>
+            <td class="risk-medium">Medium</td>
+            <td>MS Baseline</td>
+        </tr>        <tr>
+            <td>User Account</td>
+            <td>Using Standard User Account for Daily Work</td>
+            <td class="status-pass">Pass</td>
+            <td>Standard</td>
+            <td>Standard User (Non-Admin)</td>
+            <td class="risk-high">High</td>
+            <td>Best Practice</td>
+        </tr>    </table>
+</body>
+</html>

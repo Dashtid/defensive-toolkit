@@ -1,0 +1,84 @@
+title: Critical Service Termination - Ransomware and Sabotage
+id: 55556666-2222-eeee-2222-222222222222
+status: stable
+description: |
+    Detects termination of critical services commonly targeted by ransomware
+    and destructive malware. Attackers stop backup services, databases, and
+    security software before encryption or data destruction. This technique
+    is standard in modern RaaS operations.
+references:
+    - https://attack.mitre.org/techniques/T1489/
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-291a
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.impact
+    - attack.t1489
+    - threat.ransomware
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_net_stop:
+        Image|endswith:
+            - '\net.exe'
+            - '\net1.exe'
+        CommandLine|contains: 'stop'
+        CommandLine|contains:
+            - 'vss'
+            - 'sql'
+            - 'mysql'
+            - 'oracle'
+            - 'postgres'
+            - 'mongo'
+            - 'exchange'
+            - 'backup'
+            - 'veeam'
+            - 'acronis'
+            - 'sophos'
+            - 'symantec'
+            - 'mcafee'
+            - 'defender'
+            - 'kaspersky'
+            - 'avast'
+            - 'avg'
+            - 'malwarebytes'
+    selection_sc_stop:
+        Image|endswith: '\sc.exe'
+        CommandLine|contains:
+            - 'stop'
+            - 'delete'
+            - 'config'
+            - 'disabled'
+    selection_taskkill:
+        Image|endswith: '\taskkill.exe'
+        CommandLine|contains:
+            - '/F'
+            - '/IM'
+        CommandLine|contains:
+            - 'sql'
+            - 'mysql'
+            - 'oracle'
+            - 'backup'
+            - 'veeam'
+            - 'outlook'
+            - 'winword'
+            - 'excel'
+    selection_powershell_stop:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'Stop-Service'
+            - 'Set-Service'
+            - 'Disable-Service'
+            - 'Stop-Process'
+            - 'Kill'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate maintenance windows
+    - Software updates requiring service restarts
+    - System administrators performing authorized changes
+level: high

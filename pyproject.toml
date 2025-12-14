@@ -1,6 +1,6 @@
 [project]
 name = "defensive-toolkit"
-version = "1.1.0"
+version = "1.2.0"
 description = "Blue team security tools for detection, monitoring, incident response, and threat hunting"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -75,36 +75,42 @@ Changelog = "https://github.com/Dashtid/defensive-toolkit/blob/main/docs/CHANGEL
 
 [project.scripts]
 # CLI entry points for utility scripts
-toolkit-cleanup = "scripts.cleanup:main"
-toolkit-validate = "scripts.validate_project:main"
-toolkit-gendocs = "scripts.generate_docs:main"
+toolkit-cleanup = "tools.scripts.cleanup:main"
+toolkit-validate = "tools.scripts.validate_project:main"
+toolkit-gendocs = "tools.scripts.generate_docs:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv]
-# UV-specific configuration
-dev-dependencies = [
+[tool.hatch.build.targets.wheel]
+packages = ["src/defensive_toolkit"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tools",
+    "/rules",
+    "/playbooks",
+    "/tests",
+    "/docs",
+]
+
+[dependency-groups]
+dev = [
     "pytest>=8.3.0",
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.24.0",
-    "pytest-xdist>=3.6.0",  # Parallel test execution
-    "bandit>=1.8.0",  # Security linting
-    "black>=24.10.0",  # Code formatting
-    "ruff>=0.8.0",  # Fast linting
-    "mypy>=1.13.0",  # Type checking
+    "pytest-xdist>=3.6.0",
+    "bandit>=1.8.0",
+    "black>=24.10.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
     "coverage[toml]>=7.6.0",
 ]
 
-# UV cache configuration for faster builds
-cache-keys = [
-    { file = "pyproject.toml" },
-    { file = "uv.lock" },
-]
-
-# Default dependency groups to install
+[tool.uv]
 default-groups = ["dev"]
 
 [tool.pytest.ini_options]
@@ -118,7 +124,7 @@ addopts = [
     "-v",   # Verbose output
     "--strict-markers",  # Strict marker usage
     "--tb=short",  # Shorter traceback format
-    "--cov=.",  # Coverage for all project files
+    "--cov=src/defensive_toolkit",  # Coverage for package
     "--cov-report=html",  # HTML coverage report
     "--cov-report=term-missing",  # Terminal report with missing lines
     "--cov-report=json",  # JSON report for CI/CD
@@ -141,7 +147,7 @@ filterwarnings = [
 
 [tool.coverage.run]
 branch = true
-source = ["."]
+source = ["src/defensive_toolkit"]
 omit = [
     "*/tests/*",
     "*/test_*",

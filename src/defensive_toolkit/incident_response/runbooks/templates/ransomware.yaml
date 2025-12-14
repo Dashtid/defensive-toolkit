@@ -1,0 +1,239 @@
+# Ransomware Incident Response Runbook
+# Defensive Toolkit v1.0.0
+#
+# This runbook provides automated response to ransomware incidents.
+# Follow NIST SP 800-61 and SANS incident response frameworks.
+#
+# CRITICAL: This runbook contains HIGH severity actions that require approval.
+# Run with --dry-run first to validate the workflow.
+
+name: Ransomware Response
+description: Automated response playbook for ransomware incidents
+version: "1.0.0"
+author: Defensive Toolkit
+created: 2025-11-30
+updated: 2025-11-30
+
+# Incident metadata
+metadata:
+  mitre_attack:
+    - T1486  # Data Encrypted for Impact
+    - T1490  # Inhibit System Recovery
+    - T1489  # Service Stop
+  severity: critical
+  estimated_duration: 60-120 minutes
+
+# Runtime variables (can be overridden via --variables)
+variables:
+  alert_email: "security@company.com"
+  oncall_team: "security-oncall"
+  quarantine_dir: "/tmp/ir-quarantine"
+
+steps:
+  # Phase 1: Detection & Initial Assessment
+  - name: Log incident start
+    action: log
+    severity: low
+    parameters:
+      message: "Ransomware incident response initiated"
+      level: info
+
+  - name: Create incident ticket
+    action: create_ticket
+    severity: medium
+    description: Create tracking ticket for the incident
+    parameters:
+      system: jira
+      title: "Ransomware Incident - ${hostname}"
+      description: |
+        Ransomware incident detected on ${hostname}.
+        Incident ID: ${incident_id}
+        Time: ${timestamp}
+
+        Initial assessment in progress.
+      priority: critical
+
+  - name: Send initial alert
+    action: send_alert
+    severity: medium
+    description: Notify security team of ransomware detection
+    parameters:
+      method: email
+      recipients:
+        - "${alert_email}"
+      subject: "CRITICAL: Ransomware Detected - ${hostname}"
+      message: |
+        Ransomware activity detected on ${hostname}.
+
+        Incident ID: ${incident_id}
+        Detection Time: ${timestamp}
+
+        Automated response playbook has been initiated.
+        Containment actions pending approval.
+      severity: critical
+
+  # Phase 2: Containment
+  - name: Isolate affected host
+    action: isolate_host
+    severity: critical
+    description: Isolate host from network to prevent lateral movement
+    parameters:
+      hostname: localhost
+      method: firewall
+      allow_management: true
+      management_ips:
+        - "10.0.0.0/8"      # Internal management network
+        - "192.168.0.0/16"  # Backup management network
+
+  - name: Block known ransomware C2
+    action: block_ip
+    severity: high
+    description: Block communication to known command and control servers
+    when: "c2_ips is defined"
+    parameters:
+      ip_address: "${c2_ip}"
+      direction: both
+
+  # Phase 3: Evidence Preservation
+  - name: Capture volatile evidence
+    action: collect_evidence
+    severity: medium
+    description: Collect volatile system state before it's lost
+    parameters:
+      evidence_type: processes
+      source: "*"
+      output_dir: "./ir-output/${incident_id}/evidence"
+
+  - name: Collect network state
+    action: collect_evidence
+    severity: medium
+    parameters:
+      evidence_type: network
+      source: "*"
+      output_dir: "./ir-output/${incident_id}/evidence"
+
+  - name: Run triage script
+    action: run_triage
+    severity: medium
+    description: Execute comprehensive triage collection
+    parameters:
+      target: localhost
+      type: auto
+
+  - name: Collect event logs
+    action: collect_evidence
+    severity: medium
+    description: Preserve Windows/Linux event logs
+    parameters:
+      evidence_type: logs
+      source: system
+      output_dir: "./ir-output/${incident_id}/evidence"
+
+  - name: Collect scheduled tasks
+    action: collect_evidence
+    severity: low
+    description: Check for persistence mechanisms
+    parameters:
+      evidence_type: scheduled_tasks
+      source: "*"
+      output_dir: "./ir-output/${incident_id}/evidence"
+
+  # Phase 4: Eradication
+  - name: Prompt for malicious processes
+    action: prompt_analyst
+    severity: medium
+    description: Analyst identifies malicious processes to terminate
+    parameters:
+      prompt: "Enter comma-separated list of malicious process names/PIDs to kill (or 'skip')"
+      variable: malicious_processes
+
+  - name: Kill malicious processes
+    action: kill_process
+    severity: high
+    description: Terminate identified malicious processes
+    when: "malicious_processes != 'skip'"
+    parameters:
+      process_name: "${malicious_processes}"
+      force: true
+
+  - name: Prompt for files to quarantine
+    action: prompt_analyst
+    severity: medium
+    parameters:
+      prompt: "Enter path to ransomware executable/dropper to quarantine (or 'skip')"
+      variable: ransomware_path
+
+  - name: Quarantine ransomware files
+    action: quarantine_file
+    severity: high
+    description: Move ransomware files to quarantine
+    when: "ransomware_path != 'skip'"
+    parameters:
+      file_path: "${ransomware_path}"
+      quarantine_dir: "${quarantine_dir}"
+      preserve_metadata: true
+
+  # Phase 5: Recovery Preparation
+  - name: Collect user information
+    action: collect_evidence
+    severity: low
+    description: Document affected user accounts
+    parameters:
+      evidence_type: users
+      source: "*"
+      output_dir: "./ir-output/${incident_id}/evidence"
+
+  - name: Create forensic package
+    action: create_forensic_package
+    severity: medium
+    description: Package all collected evidence
+    parameters:
+      evidence_dir: "./ir-output/${incident_id}/evidence"
+      output_file: "./ir-output/${incident_id}/${incident_id}_forensic_package.zip"
+      include_chain_of_custody: true
+
+  # Phase 6: Post-Incident
+  - name: Update incident severity
+    action: update_severity
+    severity: low
+    parameters:
+      incident_id: "${incident_id}"
+      new_severity: critical
+      reason: "Ransomware confirmed - containment actions completed"
+      notify: true
+
+  - name: Send completion notification
+    action: send_alert
+    severity: low
+    parameters:
+      method: email
+      recipients:
+        - "${alert_email}"
+      subject: "Ransomware Response Complete - ${incident_id}"
+      message: |
+        Ransomware incident response playbook completed.
+
+        Incident ID: ${incident_id}
+        Host: ${hostname}
+
+        Actions Taken:
+        - Host isolated from network
+        - Evidence collected and preserved
+        - Malicious processes terminated (if identified)
+        - Ransomware files quarantined (if identified)
+        - Forensic package created
+
+        Next Steps:
+        1. Review forensic package
+        2. Determine scope of encryption
+        3. Assess backup restoration options
+        4. Begin recovery procedures
+        5. Conduct lessons learned session
+      severity: medium
+
+  - name: Log incident completion
+    action: log
+    severity: low
+    parameters:
+      message: "Ransomware incident response playbook completed"
+      level: info

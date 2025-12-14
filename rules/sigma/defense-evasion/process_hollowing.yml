@@ -1,0 +1,58 @@
+title: Process Hollowing Detection
+id: d1b2c3d4-2222-7777-dddd-222222222222
+status: stable
+description: |
+    Detects indicators of process hollowing, where attackers create a process
+    in a suspended state, hollow out its memory, and replace it with malicious
+    code. The process appears legitimate but executes attacker payloads.
+    Used extensively by infostealers and loaders in 2025.
+references:
+    - https://attack.mitre.org/techniques/T1055/012/
+    - https://www.elastic.co/guide/en/security/current/process-hollowing.html
+    - https://www.vmray.com/march-2025-detection-highlights-detecting-cpu-property-queries-and-another-month-of-yara-rules/
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.defense_evasion
+    - attack.privilege_escalation
+    - attack.t1055.012
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_suspended_process:
+        CommandLine|contains:
+            - 'CREATE_SUSPENDED'
+            - 'NtUnmapViewOfSection'
+            - 'NtMapViewOfSection'
+            - 'ZwUnmapViewOfSection'
+            - 'NtWriteVirtualMemory'
+            - 'WriteProcessMemory'
+            - 'NtResumeThread'
+            - 'ResumeThread'
+    selection_api_sequence:
+        CommandLine|contains:
+            - 'VirtualAllocEx'
+            - 'GetThreadContext'
+            - 'SetThreadContext'
+            - 'NtAllocateVirtualMemory'
+    selection_suspicious_parent_child:
+        ParentImage|endswith:
+            - '\svchost.exe'
+            - '\explorer.exe'
+            - '\notepad.exe'
+        Image|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+        CommandLine|contains:
+            - 'hidden'
+            - 'bypass'
+            - 'enc'
+    condition: 1 of selection_*
+falsepositives:
+    - Debugging tools
+    - Process monitoring software
+    - Certain legitimate installers
+level: high

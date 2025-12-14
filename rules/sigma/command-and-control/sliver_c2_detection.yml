@@ -1,0 +1,65 @@
+title: Sliver C2 Framework Detection
+id: 44445555-2222-dddd-2222-222222222222
+status: stable
+description: |
+    Detects Sliver C2 framework implant activity. Sliver is an open-source
+    cross-platform adversary emulation framework increasingly used by threat
+    actors as an alternative to Cobalt Strike. It supports multiple C2
+    protocols including HTTP(S), DNS, mTLS, and WireGuard.
+references:
+    - https://attack.mitre.org/software/S0633/
+    - https://github.com/BishopFox/sliver
+    - https://www.ncsc.gov.uk/news/sliver-c2-implant-increasingly-used-by-threat-actors
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.command_and_control
+    - attack.t1071
+    - attack.t1095
+    - threat.sliver
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_sliver_spawns:
+        ParentImage|endswith:
+            - '\svchost.exe'
+            - '\services.exe'
+            - '\lsass.exe'
+        Image|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+            - '\conhost.exe'
+        CommandLine|contains:
+            - 'whoami'
+            - 'hostname'
+            - 'ipconfig'
+    selection_execute_assembly:
+        CommandLine|contains:
+            - 'execute-assembly'
+            - 'inline-execute'
+            - 'sideload'
+    selection_sliver_operators:
+        CommandLine|contains:
+            - 'sliver-client'
+            - 'sliver-server'
+            - '.sliver'
+    selection_wireguard_tunnel:
+        Image|endswith: '\wireguard.exe'
+        CommandLine|contains:
+            - '/installtunnelservice'
+            - 'wg0'
+    selection_mtls_pattern:
+        CommandLine|contains:
+            - '--mtls'
+            - 'mtls://'
+            - ':8888'
+            - ':443'
+        CommandLine|re: 'https?://[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate WireGuard VPN usage
+    - Authorized penetration testing
+level: high

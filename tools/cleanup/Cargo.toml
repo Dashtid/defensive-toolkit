@@ -1,0 +1,15 @@
+[package]
+name = "cleanup"
+version.workspace = true
+edition.workspace = true
+description = "Deep cleanup utility for defensive-toolkit"
+
+[[bin]]
+name = "cleanup"
+path = "src/main.rs"
+
+[dependencies]
+walkdir.workspace = true
+colored.workspace = true
+clap.workspace = true
+anyhow.workspace = true

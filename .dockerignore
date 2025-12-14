@@ -1,0 +1,140 @@
+# Docker ignore file for Defensive Toolkit
+# Excludes unnecessary files from Docker build context
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.json
+*.cover
+.hypothesis/
+.tox/
+
+# Documentation
+docs/_build/
+*.md
+!README.md
+CONTRIBUTING.md
+CHANGELOG.md
+LICENSE
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Data and temporary files
+data/
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+*.lnk
+
+# Security
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+
+# Monitoring
+prometheus/data/
+grafana/data/
+
+# Build artifacts
+*.whl
+*.tar.gz
+
+# Node modules (if any frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Coverage reports
+.coverage
+coverage.xml
+*.cover
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# Large files that shouldn't be in container
+*.iso
+*.vmdk
+*.pcap
+*.pcapng
+*.evtx
+
+# Forensics data
+forensics/samples/
+forensics/output/
+
+# Vulnerability scan results
+vulnerability-mgmt/reports/
+
+# Test fixtures
+tests/fixtures/large/

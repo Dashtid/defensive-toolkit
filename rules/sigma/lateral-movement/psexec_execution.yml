@@ -1,0 +1,56 @@
+title: PsExec and Similar Remote Execution Detection
+id: 11112222-1111-aaaa-1111-111111111111
+status: stable
+description: |
+    Detects PsExec and similar tools used for remote command execution.
+    These tools are commonly used by attackers for lateral movement,
+    including both legitimate Sysinternals PsExec and malicious variants.
+    Also detects Impacket's psexec.py behavior patterns.
+references:
+    - https://attack.mitre.org/techniques/T1569/002/
+    - https://attack.mitre.org/techniques/T1021/002/
+    - https://docs.microsoft.com/en-us/sysinternals/downloads/psexec
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.lateral_movement
+    - attack.execution
+    - attack.t1569.002
+    - attack.t1021.002
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_psexec:
+        Image|endswith:
+            - '\PsExec.exe'
+            - '\PsExec64.exe'
+            - '\PSEXESVC.exe'
+    selection_psexec_pattern:
+        CommandLine|contains:
+            - 'psexec'
+            - '\\\\'
+            - '-accepteula'
+            - '-s cmd'
+            - '-s powershell'
+            - '-i -s'
+    selection_impacket_pattern:
+        ParentImage|endswith: '\services.exe'
+        Image|endswith: '\cmd.exe'
+        CommandLine|contains:
+            - '/Q /c'
+            - 'echo'
+            - '\\\\127.0.0.1\\'
+    selection_paexec:
+        Image|endswith:
+            - '\PAExec.exe'
+            - '\RemCom.exe'
+            - '\CSExec.exe'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate system administration
+    - Software deployment tools
+    - IT automation
+level: medium

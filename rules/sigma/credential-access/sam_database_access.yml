@@ -1,0 +1,58 @@
+title: SAM Database Access and Dumping
+id: e1b2c3d4-3333-8888-eeee-333333333333
+status: stable
+description: |
+    Detects access to or dumping of the SAM (Security Account Manager) database
+    which contains local account password hashes. Attackers dump SAM to obtain
+    credentials for local accounts and potentially reuse across systems.
+references:
+    - https://attack.mitre.org/techniques/T1003/002/
+    - https://www.elastic.co/guide/en/security/current/sam-registry-hive-access.html
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.credential_access
+    - attack.t1003.002
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_reg_save:
+        Image|endswith: '\reg.exe'
+        CommandLine|contains:
+            - 'save'
+            - 'export'
+        CommandLine|contains:
+            - 'hklm\sam'
+            - 'hklm\security'
+            - 'hklm\system'
+            - 'HKEY_LOCAL_MACHINE\SAM'
+            - 'HKEY_LOCAL_MACHINE\SECURITY'
+            - 'HKEY_LOCAL_MACHINE\SYSTEM'
+    selection_shadow_copy:
+        CommandLine|contains:
+            - 'vssadmin'
+            - 'wmic shadowcopy'
+        CommandLine|contains:
+            - '\Windows\System32\config\SAM'
+            - '\Windows\System32\config\SECURITY'
+            - '\Windows\System32\config\SYSTEM'
+    selection_esentutl:
+        Image|endswith: '\esentutl.exe'
+        CommandLine|contains:
+            - '/y'
+            - 'config\SAM'
+            - 'config\SECURITY'
+            - 'config\SYSTEM'
+    selection_ntdsutil:
+        Image|endswith: '\ntdsutil.exe'
+        CommandLine|contains:
+            - 'ifm'
+            - 'create full'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate backup operations
+    - System migration tools
+level: critical

@@ -1,0 +1,55 @@
+# Splunk Configuration
+# Update these values for your environment
+
+splunk:
+  # Splunk server details
+  host: localhost
+  port: 8089
+
+  # Authentication
+  username: admin
+  password: changeme  # Use environment variable: ${SPLUNK_PASSWORD}
+
+  # Deployment settings
+  app: search  # Splunk app to deploy to
+
+  # Alert settings
+  alert:
+    email_to: security@example.com
+    email_subject_prefix: "[Sigma Alert]"
+    schedule: "*/15 * * * *"  # Cron format: every 15 minutes
+
+  # Search settings
+  search:
+    earliest_time: "-15m"
+    latest_time: "now"
+
+# Sigma rule conversion settings
+sigma:
+  rules_directory: ../../../rules/sigma
+
+  # Rule filtering (optional)
+  filters:
+    # Only deploy rules with these levels
+    levels:
+      - critical
+      - high
+      - medium
+
+    # Only deploy rules with these tags
+    # tags:
+    #   - attack.execution
+    #   - attack.credential_access
+
+  # Rule customization
+  customize:
+    # Add index specification to all queries
+    index: windows  # e.g., index=windows
+
+    # Add sourcetype filter
+    # sourcetype: WinEventLog:Security
+
+# Logging
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  file: splunk_deployment.log

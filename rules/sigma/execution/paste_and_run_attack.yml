@@ -1,0 +1,63 @@
+title: Paste and Run Attack - Fake CAPTCHA Technique
+id: a1b2c3d4-4444-4444-aaaa-444444444444
+status: stable
+description: |
+    Detects the "Paste and Run" attack technique where users are tricked
+    by fake CAPTCHA or verification pages to paste and execute malicious
+    PowerShell or CMD commands. This technique delivers LummaC2, HijackLoader,
+    and other malware. Identified as a top threat in 2025 threat reports.
+references:
+    - https://attack.mitre.org/techniques/T1204/002/
+    - https://redcanary.com/blog/threat-detection/2025-threat-detection-report/
+    - https://www.darktrace.com/blog/2025-cyber-threat-landscape-darktraces-mid-year-review
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.execution
+    - attack.t1204.002
+    - attack.initial_access
+    - attack.t1566.002
+    - detection.emerging_threats
+    - threat.lummac2
+    - threat.hijackloader
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_shell:
+        ParentImage|endswith:
+            - '\explorer.exe'
+            - '\cmd.exe'
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+            - '\cmd.exe'
+    selection_clipboard_pattern:
+        CommandLine|contains:
+            - 'mshta'
+            - 'IEX'
+            - 'Invoke-Expression'
+            - 'DownloadString'
+            - 'DownloadFile'
+            - 'Start-BitsTransfer'
+            - 'curl '
+            - 'wget '
+            - 'certutil'
+            - 'bitsadmin'
+    selection_obfuscation:
+        CommandLine|contains:
+            - '^'
+            - '`'
+            - '$env:'
+            - '[char]'
+            - '-join'
+            - 'FromBase64String'
+    selection_common_payloads:
+        CommandLine|re: '(https?://[^\s]+\.(exe|dll|ps1|bat|vbs|hta))'
+    condition: selection_shell and (selection_clipboard_pattern or selection_obfuscation or selection_common_payloads)
+falsepositives:
+    - Legitimate system administration scripts
+    - Developer testing environments
+    - Authorized automation tools
+level: high

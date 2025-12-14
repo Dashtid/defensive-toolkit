@@ -1,0 +1,44 @@
+# OpenSearch Security Analytics Configuration
+# https://opensearch.org/docs/latest/security-analytics/
+
+opensearch:
+  # OpenSearch cluster connection
+  host: localhost
+  port: 9200
+  protocol: https
+
+  # Authentication
+  username: admin
+  password: ${OPENSEARCH_PASSWORD}  # Set via environment variable
+
+  # Security
+  verify_ssl: true
+  ca_cert: /path/to/ca.crt  # Optional: CA certificate path
+  timeout: 30
+
+  # Index Configuration
+  alerts_index: security-alerts
+  rules_index: security-rules
+  findings_index: security-findings
+
+  # Rule Deployment
+  rule_category: custom_detection
+  severity_mapping:
+    low: 1
+    medium: 2
+    high: 3
+    critical: 4
+
+# Deployment Options
+deployment:
+  deploy_as_detectors: true
+  auto_enable: true
+  backup_rules: true
+  validate_before_deploy: true
+  dry_run: false
+
+# Logging
+logging:
+  level: INFO
+  file: ./opensearch_deployment.log
+  format: "[%(asctime)s] %(levelname)s - %(message)s"

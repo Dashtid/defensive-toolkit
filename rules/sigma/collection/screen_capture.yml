@@ -1,0 +1,69 @@
+title: Screen Capture and Recording Detection
+id: 22223333-2222-bbbb-2222-222222222222
+status: stable
+description: |
+    Detects screen capture and recording activities commonly used by
+    infostealers, RATs, and spyware. Attackers capture screenshots to
+    steal sensitive information displayed on screen including credentials,
+    documents, and communications.
+references:
+    - https://attack.mitre.org/techniques/T1113/
+    - https://www.elastic.co/guide/en/security/current/screen-capture.html
+author: Defensive Toolkit
+date: 2025-11-26
+modified: 2025-11-26
+tags:
+    - attack.collection
+    - attack.t1113
+    - detection.emerging_threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_screenshot_tools:
+        Image|endswith:
+            - '\screenshot.exe'
+            - '\screencapture.exe'
+            - '\nircmd.exe'
+        CommandLine|contains:
+            - 'savescreenshot'
+            - 'screenshot'
+    selection_powershell_screenshot:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'CopyFromScreen'
+            - 'Graphics.CopyFromScreen'
+            - 'System.Drawing.Bitmap'
+            - 'System.Windows.Forms.Screen'
+            - 'GetDesktopWindow'
+            - 'BitBlt'
+            - 'PrintWindow'
+    selection_native_api:
+        CommandLine|contains:
+            - 'Gdi32.dll'
+            - 'User32.dll'
+            - 'GetDC'
+            - 'CreateCompatibleDC'
+            - 'CreateCompatibleBitmap'
+    selection_recording_tools:
+        Image|endswith:
+            - '\ffmpeg.exe'
+            - '\obs.exe'
+        CommandLine|contains:
+            - 'gdigrab'
+            - 'desktop'
+            - '-f gdigrab'
+    filter_legitimate:
+        Image|startswith:
+            - 'C:\Program Files\Microsoft Office\'
+            - 'C:\Program Files (x86)\Microsoft Office\'
+            - 'C:\Windows\System32\SnippingTool.exe'
+    condition: (selection_screenshot_tools or selection_powershell_screenshot or selection_native_api or selection_recording_tools) and not filter_legitimate
+falsepositives:
+    - Legitimate screenshot tools (Snipping Tool, Greenshot)
+    - Screen recording software
+    - Remote support applications
+    - Documentation tools
+level: medium

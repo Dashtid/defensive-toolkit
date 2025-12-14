@@ -4,11 +4,11 @@ on:
   push:
     branches: [ main, develop ]
     paths:
-      - 'detection-rules/**'
+      - 'rules/**'
   pull_request:
     branches: [ main ]
     paths:
-      - 'detection-rules/**'
+      - 'rules/**'
 
 jobs:
   validate-sigma:
@@ -32,7 +32,7 @@ jobs:
     - name: Validate Sigma rule syntax
       run: |
         echo "[+] Validating Sigma rules..."
-        for file in detection-rules/sigma/**/*.yml; do
+        for file in rules/sigma/**/*.yml; do
           if [ -f "$file" ]; then
             echo "Checking: $file"
             sigma check "$file" || exit 1
@@ -43,8 +43,8 @@ jobs:
     - name: Convert Sigma rules (test)
       run: |
         echo "[+] Testing Sigma rule conversion..."
-        sigma convert -t splunk detection-rules/sigma/execution/*.yml > /dev/null || exit 1
-        sigma convert -t elasticsearch detection-rules/sigma/persistence/*.yml > /dev/null || exit 1
+        sigma convert -t splunk rules/sigma/execution/*.yml > /dev/null || exit 1
+        sigma convert -t elasticsearch rules/sigma/persistence/*.yml > /dev/null || exit 1
         echo "[OK] Sigma rule conversion successful"
 
   validate-yara:
@@ -63,7 +63,7 @@ jobs:
     - name: Validate YARA rule syntax
       run: |
         echo "[+] Validating YARA rules..."
-        for file in detection-rules/yara/*.yar; do
+        for file in rules/yara/*.yar; do
           if [ -f "$file" ]; then
             echo "Checking: $file"
             yara -C "$file" || exit 1
