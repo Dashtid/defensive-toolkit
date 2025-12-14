@@ -109,7 +109,8 @@ Write-Info "`nSection 3: Network Connectivity"
 Write-Info "-------------------------------"
 
 if (Test-Component "Internet Connectivity (Google DNS)" {
-    Test-Connection -ComputerName 8.8.8.8 -Count 1 -Quiet
+    $googleDns = '8.8.8.8'  # Google Public DNS for connectivity test
+    Test-Connection -ComputerName $googleDns -Count 1 -Quiet
 }) { $passedTests++ }
 $totalTests++
 

@@ -30,7 +30,6 @@ jobs:
         pip install sigma-cli PyYAML
         # Install backend plugins for conversion testing
         sigma plugin install splunk
-        sigma plugin install elasticsearch
 
     - name: Validate Sigma rule syntax
       run: |
@@ -47,7 +46,7 @@ jobs:
       run: |
         echo "[+] Testing Sigma rule conversion..."
         sigma convert -t splunk --without-pipeline rules/sigma/execution/*.yml > /dev/null || exit 1
-        sigma convert -t elasticsearch --without-pipeline rules/sigma/persistence/*.yml > /dev/null || exit 1
+        sigma convert -t lucene --without-pipeline rules/sigma/persistence/*.yml > /dev/null || exit 1
         echo "[OK] Sigma rule conversion successful"
 
   validate-yara:
