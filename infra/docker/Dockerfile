@@ -61,8 +61,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy application code
-COPY --chown=toolkit:toolkit api/ ./api/
+# Copy application code (src layout)
+COPY --chown=toolkit:toolkit src/defensive_toolkit/ ./defensive_toolkit/
 COPY --chown=toolkit:toolkit rules/ ./rules/
 COPY --chown=toolkit:toolkit pyproject.toml ./
 
@@ -98,7 +98,7 @@ USER toolkit
 EXPOSE 8000
 
 # Use Gunicorn with Uvicorn workers for production (2025 best practice)
-CMD ["gunicorn", "api.main:app", \
+CMD ["gunicorn", "defensive_toolkit.api.main:app", \
      "--workers", "4", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--bind", "0.0.0.0:8000", \
