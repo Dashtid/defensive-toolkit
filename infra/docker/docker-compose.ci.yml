@@ -1,0 +1,11 @@
+# Docker Compose CI Override - Use pre-built images instead of building
+# This file overrides build directives to use locally loaded images
+
+services:
+  api:
+    image: defensive-toolkit-api:local
+    pull_policy: never
+
+  nginx:
+    image: defensive-toolkit-nginx:local
+    pull_policy: never

@@ -293,6 +293,36 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Download API image artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: api-image-linux-amd64
+        path: /tmp
+
+    - name: Download Nginx image artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: nginx-image-linux-amd64
+        path: /tmp
+
+    - name: Load pre-built images
+      run: |
+        # Load API image and tag for docker-compose
+        docker load --input /tmp/api-image.tar
+        LOADED_API=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^ghcr.io.*api" | head -1)
+        if [ -n "$LOADED_API" ]; then
+          docker tag "$LOADED_API" defensive-toolkit-api:local
+        fi
+
+        # Load Nginx image and tag for docker-compose
+        docker load --input /tmp/nginx-image.tar
+        LOADED_NGINX=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "defensive-toolkit-nginx" | head -1)
+        if [ -n "$LOADED_NGINX" ]; then
+          docker tag "$LOADED_NGINX" defensive-toolkit-nginx:local
+        fi
+
+        docker image ls -a
+
     - name: Create .env file for testing
       run: |
         cat > .env <<EOF
@@ -316,13 +346,14 @@ jobs:
 
     - name: Start Docker Compose stack
       run: |
-        docker compose -f infra/docker/docker-compose.yml up -d
+        # Use pre-built images with docker-compose override
+        docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.ci.yml up -d
         sleep 30  # Wait for services to start
 
     - name: Check container status
       run: |
-        docker compose -f infra/docker/docker-compose.yml ps
-        docker compose -f infra/docker/docker-compose.yml ps | grep -E "Up|running" || exit 1
+        docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.ci.yml ps
+        docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.ci.yml ps | grep -E "Up|running" || exit 1
 
     - name: Health check - API
       run: |
@@ -364,17 +395,17 @@ jobs:
       if: failure()
       run: |
         echo "=== API Logs ==="
-        docker compose -f infra/docker/docker-compose.yml logs api
+        docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.ci.yml logs api
         echo "=== Nginx Logs ==="
-        docker compose -f infra/docker/docker-compose.yml logs nginx
+        docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.ci.yml logs nginx
         echo "=== Prometheus Logs ==="
-        docker compose -f infra/docker/docker-compose.yml logs prometheus
+        docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.ci.yml logs prometheus
         echo "=== Grafana Logs ==="
-        docker compose -f infra/docker/docker-compose.yml logs grafana
+        docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.ci.yml logs grafana
 
     - name: Stop Docker Compose stack
       if: always()
-      run: docker compose -f infra/docker/docker-compose.yml down -v
+      run: docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.ci.yml down -v
 
   # ============================================================================
   # Test Results Summary
