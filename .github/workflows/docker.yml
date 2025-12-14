@@ -115,6 +115,7 @@ jobs:
       with:
         context: .
         file: ./infra/docker/Dockerfile
+        target: runtime
         platforms: ${{ matrix.platform }}
         push: false
         tags: ${{ steps.meta-api.outputs.tags }}
