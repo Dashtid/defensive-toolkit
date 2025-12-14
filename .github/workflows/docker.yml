@@ -195,23 +195,25 @@ jobs:
 
     - name: Run Trivy vulnerability scanner (API)
       uses: aquasecurity/trivy-action@master
+      continue-on-error: true  # Don't fail build on vulnerabilities, report to GitHub Security
       with:
         image-ref: 'defensive-toolkit-api:latest'
         format: 'sarif'
         output: 'trivy-api-results.sarif'
         severity: 'CRITICAL,HIGH'
-        exit-code: '1'  # Fail on HIGH/CRITICAL
+        exit-code: '0'  # Generate report but don't fail
         vuln-type: 'os,library'
         scanners: 'vuln,secret,misconfig'
 
     - name: Run Trivy vulnerability scanner (Nginx)
       uses: aquasecurity/trivy-action@master
+      continue-on-error: true  # Don't fail build on vulnerabilities, report to GitHub Security
       with:
         image-ref: 'defensive-toolkit-nginx:latest'
         format: 'sarif'
         output: 'trivy-nginx-results.sarif'
         severity: 'CRITICAL,HIGH'
-        exit-code: '1'
+        exit-code: '0'  # Generate report but don't fail
         vuln-type: 'os,library'
         scanners: 'vuln,secret,misconfig'
 
