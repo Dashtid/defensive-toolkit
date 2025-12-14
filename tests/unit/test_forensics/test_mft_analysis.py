@@ -196,7 +196,17 @@ class TestSuspiciousFileAnalysis:
 
         # All should be in suspicious extensions list
         for ext in suspicious_extensions:
-            assert ext.lower() in [".exe", ".dll", ".ps1", ".bat", ".cmd", ".vbs", ".js", ".hta"]
+            assert ext.lower() in [
+                ".exe",
+                ".dll",
+                ".ps1",
+                ".bat",
+                ".cmd",
+                ".vbs",
+                ".js",
+                ".hta",
+                ".scr",
+            ]
 
     def test_detect_timestomping(self, tmp_path):
         """Test detection of timestamp manipulation"""

@@ -32,12 +32,21 @@ class TestAuditScript:
         """Test that audit script exists."""
         assert script_path.exists(), f"Script not found: {script_path}"
 
+    @pytest.mark.skipif(
+        not hasattr(__import__("os"), "X_OK") or __import__("sys").platform == "win32",
+        reason="Executable check not reliable on Windows",
+    )
     def test_script_is_executable(self, script_path: Path):
         """Test that script is executable."""
         import os
 
         assert os.access(script_path, os.X_OK), f"Script not executable: {script_path}"
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
+    @pytest.mark.requires_root
     def test_script_runs_without_errors(self, script_path: Path):
         """Test that audit script runs without errors."""
         # Note: This may fail on Windows/non-root, but tests script structure
@@ -46,6 +55,11 @@ class TestAuditScript:
         # Script should attempt to run (may fail due to permissions)
         assert result.returncode == 0 or "root" in result.stderr.lower() or "EUID" in result.stderr
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
+    @pytest.mark.requires_root
     def test_output_contains_checks(self, script_path: Path):
         """Test that audit output contains security checks."""
         result = subprocess.run(["bash", str(script_path)], capture_output=True, text=True)
@@ -175,6 +189,11 @@ class TestAuditScoring:
 class TestAuditOutput:
     """Tests for audit output formatting."""
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
+    @pytest.mark.requires_root
     def test_has_header(self, script_path=AUDIT_SCRIPT):
         """Test that audit has formatted header."""
         result = subprocess.run(["bash", str(script_path)], capture_output=True, text=True)
@@ -247,6 +266,11 @@ class TestAuditIntegration:
         assert "audit-security-posture.sh" in content
         assert "audit" in content.lower()
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
+    @pytest.mark.requires_root
     def test_audit_script_independent(self):
         """Test that audit script can run independently."""
         # Script should not require hardening to be run first
@@ -256,6 +280,10 @@ class TestAuditIntegration:
         output = result.stdout + result.stderr
         assert len(output) > 50, "Should produce meaningful output"
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
     def test_bash_syntax_valid(self):
         """Test that script has valid bash syntax."""
         result = subprocess.run(["bash", "-n", str(AUDIT_SCRIPT)], capture_output=True, text=True)
@@ -266,6 +294,11 @@ class TestAuditIntegration:
 class TestAuditOutputFormats:
     """Tests for audit output format support."""
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
+    @pytest.mark.requires_root
     def test_default_text_output(self, script_path=AUDIT_SCRIPT):
         """Test that audit produces text output by default."""
         result = subprocess.run(["bash", str(script_path)], capture_output=True, text=True)

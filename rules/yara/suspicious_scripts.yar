@@ -94,9 +94,11 @@ rule Suspicious_Batch_Script
 
     condition:
         filesize < 100KB and
+        $echo_off and
         (
             ($powershell_invoke and ($download or $bitsadmin)) or
             ($vssadmin or $bcdedit) or
+            ($net_use and 2 of ($schtasks, $reg_add, $sc_create, $wmic, $disable_fw)) or
             (3 of ($schtasks, $reg_add, $sc_create, $wmic, $disable_fw))
         )
 }

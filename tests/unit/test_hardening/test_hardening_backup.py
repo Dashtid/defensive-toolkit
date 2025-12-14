@@ -153,6 +153,10 @@ class TestBackupScript:
         # Should check for root
         assert "EUID" in content or "root" in content.lower()
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
     def test_bash_syntax_valid(self, script_path: Path):
         """Test that script has valid bash syntax."""
         result = subprocess.run(["bash", "-n", str(script_path)], capture_output=True, text=True)
@@ -290,6 +294,10 @@ class TestRestoreScript:
         # Should check for root
         assert "EUID" in content or "root" in content.lower()
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
     def test_bash_syntax_valid(self, script_path: Path):
         """Test that script has valid bash syntax."""
         result = subprocess.run(["bash", "-n", str(script_path)], capture_output=True, text=True)

@@ -24,6 +24,10 @@ HARDENING_DIR = (
 UBUNTU_SCRIPT = HARDENING_DIR / "harden-ubuntu.sh"
 
 
+@pytest.mark.skipif(
+    __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+    reason="Requires bash shell (Linux/macOS)",
+)
 class TestUbuntuHardeningScript:
     """Tests for Ubuntu hardening script."""
 
@@ -283,6 +287,10 @@ class TestUbuntuScriptIntegration:
             assert os.access(script_path, os.X_OK), f"Script not executable: {script_name}"
 
 
+@pytest.mark.skipif(
+    __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+    reason="Requires bash shell (Linux/macOS)",
+)
 class TestHardeningScriptOutput:
     """Tests for script output and reporting."""
 
@@ -318,6 +326,10 @@ class TestHardeningScriptOutput:
 class TestHardeningScriptValidation:
     """Validation tests for hardening script."""
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
     def test_bash_syntax_valid(self):
         """Test that script has valid bash syntax."""
         result = subprocess.run(["bash", "-n", str(UBUNTU_SCRIPT)], capture_output=True, text=True)

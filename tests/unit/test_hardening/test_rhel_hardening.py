@@ -24,6 +24,10 @@ HARDENING_DIR = (
 RHEL_SCRIPT = HARDENING_DIR / "harden-rhel.sh"
 
 
+@pytest.mark.skipif(
+    __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+    reason="Requires bash shell (Linux/macOS)",
+)
 class TestRHELHardeningScript:
     """Tests for RHEL/CentOS hardening script."""
 
@@ -295,6 +299,10 @@ class TestRHELScriptIntegration:
 class TestRHELScriptValidation:
     """Validation tests for RHEL hardening script."""
 
+    @pytest.mark.skipif(
+        __import__("sys").platform == "win32" or __import__("shutil").which("bash") is None,
+        reason="Requires bash shell (Linux/macOS)",
+    )
     def test_bash_syntax_valid(self):
         """Test that script has valid bash syntax."""
         result = subprocess.run(["bash", "-n", str(RHEL_SCRIPT)], capture_output=True, text=True)
