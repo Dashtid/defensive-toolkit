@@ -17,13 +17,9 @@ from pathlib import Path
 
 import pytest
 
-# Path to hardening scripts
+# Path to hardening scripts (now under src/defensive_toolkit/)
 HARDENING_DIR = (
-    Path(__file__).parent.parent.parent.parent
-    / "src"
-    / "defensive_toolkit"
-    / "hardening"
-    / "linux"
+    Path(__file__).parent.parent.parent.parent / "src" / "defensive_toolkit" / "hardening" / "linux"
 )
 RHEL_SCRIPT = HARDENING_DIR / "harden-rhel.sh"
 

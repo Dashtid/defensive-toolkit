@@ -14,13 +14,9 @@ from pathlib import Path
 
 import pytest
 
-# Path to configuration files
+# Path to configuration files (now under src/defensive_toolkit/)
 HARDENING_DIR = (
-    Path(__file__).parent.parent.parent.parent
-    / "src"
-    / "defensive_toolkit"
-    / "hardening"
-    / "linux"
+    Path(__file__).parent.parent.parent.parent / "src" / "defensive_toolkit" / "hardening" / "linux"
 )
 CONFIG_DIR = HARDENING_DIR / "config"
 LEVEL1_CONFIG = CONFIG_DIR / "cis-level1.conf"
