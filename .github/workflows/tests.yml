@@ -34,7 +34,12 @@ jobs:
 
     - name: Install dependencies with uv
       run: |
-        uv sync --all-extras --dev
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          uv sync --extra windows --dev
+        else
+          uv sync --dev
+        fi
+      shell: bash
 
     - name: Run unit tests
       run: |
