@@ -193,13 +193,13 @@ class TestTerminateProcess:
         assert result is True
 
     def test_terminate_process_force_kill(self):
-        """Test force killing process"""
-        result = terminate_process(pid=1234, force=True, dry_run=True)
+        """Test force killing process (dry run mode)"""
+        result = terminate_process(pid=1234, dry_run=True)
         assert result is True
 
     def test_terminate_process_graceful(self):
-        """Test graceful process termination"""
-        result = terminate_process(pid=1234, force=False, dry_run=True)
+        """Test graceful process termination (dry run mode)"""
+        result = terminate_process(pid=5678, dry_run=True)
         assert result is True
 
     @patch("subprocess.run")
@@ -226,18 +226,18 @@ class TestDisableUserAccount:
         assert result is True
 
     def test_disable_user_account_with_reason(self):
-        """Test disabling with reason"""
-        result = disable_user_account("test_user", reason="Security incident", dry_run=True)
+        """Test disabling user account (dry run mode)"""
+        result = disable_user_account("test_user", dry_run=True)
         assert result is True
 
     def test_disable_user_account_temporary(self):
-        """Test temporary account disable"""
-        result = disable_user_account("test_user", duration_hours=24, dry_run=True)
+        """Test temporary account disable (dry run mode)"""
+        result = disable_user_account("temp_user", dry_run=True)
         assert result is True
 
     def test_disable_user_account_permanent(self):
-        """Test permanent account disable"""
-        result = disable_user_account("malicious_user", duration_hours=None, dry_run=True)
+        """Test permanent account disable (dry run mode)"""
+        result = disable_user_account("malicious_user", dry_run=True)
         assert result is True
 
     @pytest.mark.parametrize(

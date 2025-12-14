@@ -322,9 +322,9 @@ class TestPlaybookEngine:
         engine = PlaybookEngine()
         engine.variables = {"status": "active", "count": 10}
 
-        condition = "${status} == 'active'"
-        # Substitute variables first
-        condition = engine._substitute_variables(condition)
+        # _evaluate_condition internally substitutes variables,
+        # so we test with the raw condition containing ${var}
+        condition = "'${status}' == 'active'"
 
         result = engine._evaluate_condition(condition)
         assert result is True
@@ -377,9 +377,9 @@ class TestPlaybookEngineIntegration:
 class TestMainFunction:
     """Test main function and CLI"""
 
-    @patch("sys.argv", ["playbook-engine.py", "--playbook", "test.yaml"])
-    @patch("automation.playbooks.playbook_engine.Path.exists")
-    @patch("automation.playbooks.playbook_engine.PlaybookEngine")
+    @patch("sys.argv", ["playbook_engine.py", "--playbook", "test.yaml"])
+    @patch("defensive_toolkit.automation.playbooks.playbook_engine.Path.exists")
+    @patch("defensive_toolkit.automation.playbooks.playbook_engine.PlaybookEngine")
     def test_main_basic(self, mock_engine_class, mock_exists, sample_playbook_file):
         """Test main function basic execution"""
         mock_exists.return_value = True

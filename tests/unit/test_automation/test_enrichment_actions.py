@@ -129,7 +129,7 @@ class TestThreatIntelligenceSources:
 
         assert isinstance(result, dict)
 
-    @patch("automation.actions.enrichment.requests.get")
+    @patch("defensive_toolkit.automation.actions.enrichment.requests.get")
     def test_virustotal_api_call(self, mock_get):
         """Test actual API call structure"""
         mock_get.return_value = Mock(
