@@ -176,11 +176,21 @@ jobs:
     - name: Load API image
       run: |
         docker load --input /tmp/api-image.tar
+        # Tag loaded image with expected name for Trivy scan
+        LOADED_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^ghcr.io.*api|defensive-toolkit-api" | head -1)
+        if [ -n "$LOADED_IMAGE" ]; then
+          docker tag "$LOADED_IMAGE" defensive-toolkit-api:latest
+        fi
         docker image ls -a
 
     - name: Load Nginx image
       run: |
         docker load --input /tmp/nginx-image.tar
+        # Tag loaded image with expected name for Trivy scan
+        LOADED_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "defensive-toolkit-nginx" | head -1)
+        if [ -n "$LOADED_IMAGE" ]; then
+          docker tag "$LOADED_IMAGE" defensive-toolkit-nginx:latest
+        fi
         docker image ls -a
 
     - name: Run Trivy vulnerability scanner (API)
