@@ -22,16 +22,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv for fast dependency resolution
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy dependency files
+# Copy dependency files (README.md required by pyproject.toml)
 COPY pyproject.toml ./
+COPY README.md ./
 COPY uv.lock* ./
 
 # Create virtual environment and install dependencies
 RUN uv venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install dependencies (excluding Windows-only extras)
-RUN uv sync --no-dev --extra threat-intel --extra advanced
+# Install dependencies only (excluding Windows-only extras and project itself)
+RUN uv sync --no-dev --no-install-project --extra threat-intel --extra advanced
 
 # Install gunicorn for production server
 RUN uv pip install gunicorn
