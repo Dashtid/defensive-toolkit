@@ -1,10 +1,10 @@
 """Monitoring API Router"""
 
-from fastapi import APIRouter, Depends
-from api.models import MonitoringMetrics, AlertConfiguration, APIResponse, StatusEnum
-from api.dependencies import get_current_active_user, require_write_scope
-from datetime import datetime
 import random
+
+from api.dependencies import get_current_active_user, require_write_scope
+from api.models import AlertConfiguration, APIResponse, MonitoringMetrics, StatusEnum
+from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/monitoring", tags=["Monitoring"])
 

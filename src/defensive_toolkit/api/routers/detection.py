@@ -4,18 +4,14 @@ Detection Rules API Router
 Endpoints for managing Sigma and YARA detection rules.
 """
 
-import os
 import glob
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
-from datetime import datetime
+import os
 import uuid
+from datetime import datetime
 
-from api.models import (
-    DetectionRule, DetectionRuleList, DeployRuleRequest,
-    APIResponse, StatusEnum
-)
 from api.dependencies import get_current_active_user, require_write_scope
+from api.models import APIResponse, DeployRuleRequest, DetectionRule, DetectionRuleList, StatusEnum
+from fastapi import APIRouter, Depends, HTTPException, status
 
 router = APIRouter(prefix="/detection", tags=["Detection Rules"])
 
@@ -61,7 +57,7 @@ async def list_rules(
                         severity="medium",
                         created_at=datetime.utcnow()
                     ))
-            except Exception as e:
+            except Exception:
                 # Skip files that can't be read
                 pass
 
@@ -80,7 +76,7 @@ async def list_rules(
                         severity="high",
                         created_at=datetime.utcnow()
                     ))
-            except Exception as e:
+            except Exception:
                 pass
 
     # Apply filters

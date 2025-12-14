@@ -6,13 +6,14 @@ configures the test environment (disabling rate limiting, etc.)
 """
 
 import os
+
 import pytest
 
 # Disable rate limiting for tests before importing any API modules
 os.environ["RATE_LIMIT_ENABLED"] = "false"
 
-from fastapi.testclient import TestClient
 from api.main import app
+from fastapi.testclient import TestClient
 
 
 # Module-scoped TestClient to share across tests

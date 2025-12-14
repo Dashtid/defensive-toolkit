@@ -17,42 +17,38 @@ import asyncio
 import json
 import logging
 import uuid
-from datetime import datetime, timedelta
-from typing import Dict, List, Set, Optional, Any
 from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Set
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query, HTTPException, status
-from fastapi.responses import JSONResponse
-
-from api.auth import verify_token, TokenData
+from api.auth import verify_token
 from api.config import get_settings
 from api.models import (
-    WebSocketEventTypeEnum,
-    WebSocketChannelEnum,
-    WebSocketMessage,
-    WebSocketAuthRequest,
-    WebSocketAuthResponse,
-    WebSocketSubscribeRequest,
-    WebSocketSubscribeResponse,
-    WebSocketHeartbeat,
-    WebSocketConnectionInfo,
-    WebSocketConnectionStats,
-    RunbookProgressEvent,
-    RunbookStepEvent,
+    AlertEvent,
     ApprovalRequestEvent,
     IncidentEvent,
-    AlertEvent,
+    IncidentStatusEnum,
     IOCEnrichmentEvent,
-    SystemAlertEvent,
-    StatusEnum,
+    IOCTypeEnum,
+    ReputationScoreEnum,
+    RunbookProgressEvent,
+    RunbookStepEvent,
     RunbookStepStatusEnum,
     SeverityEnum,
-    IncidentStatusEnum,
-    WebhookSourceEnum,
-    IOCTypeEnum,
+    StatusEnum,
+    SystemAlertEvent,
     ThreatIntelSourceEnum,
-    ReputationScoreEnum,
+    WebhookSourceEnum,
+    WebSocketAuthRequest,
+    WebSocketAuthResponse,
+    WebSocketChannelEnum,
+    WebSocketConnectionInfo,
+    WebSocketConnectionStats,
+    WebSocketEventTypeEnum,
+    WebSocketHeartbeat,
+    WebSocketMessage,
 )
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

@@ -9,11 +9,11 @@ Tests backup-security-settings.sh and restore-security-settings.sh including:
 - Backup validation
 """
 
-import pytest
-import subprocess
 import os
+import subprocess
 from pathlib import Path
 
+import pytest
 
 # Path to hardening scripts
 HARDENING_DIR = Path(__file__).parent.parent.parent.parent / "hardening" / "linux"

@@ -5,11 +5,11 @@ Comprehensive tests for correlation rules, correlated alerts, MITRE ATT&CK mappi
 kill chain analysis, alert clustering, and attack pattern detection.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from fastapi.testclient import TestClient
 
+import pytest
 from api.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

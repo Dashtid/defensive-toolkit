@@ -1,9 +1,9 @@
 """API Performance and Load Tests"""
 
+
 import pytest
-from fastapi.testclient import TestClient
 from api.main import app
-import time
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

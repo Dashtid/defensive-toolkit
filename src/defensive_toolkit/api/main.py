@@ -6,33 +6,50 @@ Main FastAPI application with all routers and middleware.
 
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, status
-from fastapi.security import OAuth2PasswordRequestForm
-from fastapi.responses import JSONResponse, Response
-from fastapi.exceptions import RequestValidationError
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from prometheus_fastapi_instrumentator import Instrumentator
 
-from api.config import get_settings
-from api.models import (
-    Token, RefreshTokenRequest, HealthCheckResponse,
-    APIResponse, StatusEnum, ErrorResponse
-)
 from api.auth import (
-    authenticate_user, create_token_pair, verify_token,
-    get_current_active_user, generate_api_key
+    authenticate_user,
+    create_token_pair,
+    generate_api_key,
+    get_current_active_user,
+    verify_token,
 )
-from api.middleware import (
-    setup_middleware, http_exception_handler, general_exception_handler
+from api.config import get_settings
+from api.middleware import general_exception_handler, setup_middleware
+from api.models import (
+    APIResponse,
+    HealthCheckResponse,
+    RefreshTokenRequest,
+    StatusEnum,
+    Token,
 )
 
 # Import all routers
 from api.routers import (
-    detection, incident_response, threat_hunting, hardening,
-    monitoring, forensics, vulnerability, automation,
-    compliance, log_analysis, webhooks, threat_intel, websocket, siem, scheduler,
-    notifications, correlation, dashboard, assets
+    assets,
+    automation,
+    compliance,
+    correlation,
+    dashboard,
+    detection,
+    forensics,
+    hardening,
+    incident_response,
+    log_analysis,
+    monitoring,
+    notifications,
+    scheduler,
+    siem,
+    threat_hunting,
+    threat_intel,
+    vulnerability,
+    webhooks,
+    websocket,
 )
+from fastapi import Depends, FastAPI, status
+from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from prometheus_fastapi_instrumentator import Instrumentator
 
 settings = get_settings()
 

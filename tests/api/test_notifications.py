@@ -5,11 +5,10 @@ Comprehensive tests for multi-channel notification management, templates,
 routing rules, escalation policies, and delivery tracking.
 """
 
-import pytest
-from datetime import datetime, timedelta
-from fastapi.testclient import TestClient
 
+import pytest
 from api.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

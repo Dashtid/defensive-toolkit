@@ -13,48 +13,43 @@ Based on SIEM integration best practices 2025:
 - https://wazuh.com/blog/detection-with-opensearch-integration/
 """
 
-import asyncio
-import logging
-import uuid
-import time
 import base64
+import logging
+import time
+import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Type
-from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Type
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
-
 from api.auth import get_current_active_user
 from api.config import get_settings
 from api.models import (
-    SIEMPlatformTypeEnum,
-    SIEMConnectionStatusEnum,
+    APIResponse,
+    SIEMAgentInfo,
+    SIEMAgentListResponse,
+    SIEMAggregationBucket,
+    SIEMAggregationRequest,
+    SIEMAggregationResponse,
+    SIEMAlert,
     SIEMAuthTypeEnum,
+    SIEMBulkHealthCheck,
     SIEMConnectionConfig,
     SIEMConnectionConfigList,
     SIEMConnectionStatus,
-    SIEMQueryRequest,
-    SIEMQueryResponse,
-    SIEMAlert,
-    SIEMAggregationRequest,
-    SIEMAggregationResponse,
-    SIEMAggregationBucket,
-    SIEMAgentInfo,
-    SIEMAgentListResponse,
-    SIEMRuleInfo,
-    SIEMRuleListResponse,
-    SIEMIndexInfo,
-    SIEMIndexListResponse,
+    SIEMConnectionStatusEnum,
     SIEMDashboardStats,
     SIEMHealthCheck,
-    SIEMBulkHealthCheck,
-    SIEMAlertAcknowledge,
-    SIEMAlertAcknowledgeResponse,
-    APIResponse,
+    SIEMIndexInfo,
+    SIEMIndexListResponse,
+    SIEMPlatformTypeEnum,
+    SIEMQueryRequest,
+    SIEMQueryResponse,
+    SIEMRuleInfo,
+    SIEMRuleListResponse,
     StatusEnum,
 )
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

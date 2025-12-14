@@ -25,7 +25,6 @@ Usage:
 import argparse
 import json
 import logging
-import os
 import subprocess
 import sys
 from datetime import datetime
@@ -313,7 +312,7 @@ class VolatilityAnalyzer:
             f.write(f"Memory Dump: {self.memory_dump}\n")
             f.write(f"Output Directory: {self.output_dir}\n\n")
 
-            f.write(f"Statistics:\n")
+            f.write("Statistics:\n")
             f.write(f"  Plugins Run: {self.results['statistics']['total_plugins']}\n")
             f.write(f"  Successful: {self.results['statistics']['successful']}\n")
             f.write(f"  Failed: {self.results['statistics']['failed']}\n")

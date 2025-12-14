@@ -5,18 +5,18 @@ Validates system configuration against defined security policies
 Supports YAML policy definitions with automated checks
 """
 
-import os
-import sys
-import json
-import yaml
 import argparse
+import json
 import logging
 import platform
-import subprocess
 import re
-from typing import Dict, List, Optional, Any
+import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Optional
+
+import yaml
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -210,7 +210,7 @@ class PolicyChecker:
 
         if (exists and should_exist) or (not exists and not should_exist):
             result['status'] = 'PASS'
-            result['message'] = f'File existence check passed'
+            result['message'] = 'File existence check passed'
         else:
             result['status'] = 'FAIL'
             if should_exist:
@@ -420,7 +420,7 @@ class PolicyChecker:
 
             if (exists and should_exist) or (not exists and not should_exist):
                 result['status'] = 'PASS'
-                result['message'] = f'User existence check passed'
+                result['message'] = 'User existence check passed'
             else:
                 result['status'] = 'FAIL'
                 if should_exist:
@@ -460,7 +460,6 @@ class PolicyChecker:
                 result['message'] = 'Windows permission checks not yet implemented'
             else:
                 # Linux permission check
-                import stat
                 st = file_path.stat()
                 actual_mode = oct(st.st_mode)[-4:]
 
@@ -504,7 +503,7 @@ class PolicyChecker:
         """Generate plain text report"""
         lines = []
         lines.append("=" * 80)
-        lines.append(f"Security Policy Compliance Report")
+        lines.append("Security Policy Compliance Report")
         lines.append("=" * 80)
         lines.append(f"Policy: {self.policy.get('name', 'Unnamed')}")
         lines.append(f"Description: {self.policy.get('description', 'N/A')}")

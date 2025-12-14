@@ -19,13 +19,11 @@ Usage:
 """
 
 import argparse
-import json
 import logging
-import os
 import sys
 import uuid
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 try:
     from azure.identity import DefaultAzureCredential
@@ -323,7 +321,7 @@ def main():
 
         if stats['deployed'] > 0:
             logger.info(f"\n[OK] Successfully deployed {stats['deployed']} rules to Azure Sentinel")
-            logger.info(f"[i] View in Azure Portal: Sentinel > Analytics > Active rules")
+            logger.info("[i] View in Azure Portal: Sentinel > Analytics > Active rules")
 
     else:
         logger.info("[i] Dry run mode - rules will be converted but not deployed")

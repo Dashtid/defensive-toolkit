@@ -20,10 +20,9 @@ import os
 import platform
 import shutil
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from zipfile import ZipFile
 
 # Import ActionResult from parent - handle both direct and module import

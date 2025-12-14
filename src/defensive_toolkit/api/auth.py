@@ -9,16 +9,16 @@ Implements OAuth2 with JWT tokens following 2025 security best practices:
 - Token blacklisting support (for logout)
 """
 
-from datetime import datetime, timedelta
-from typing import Optional, List
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status, Security
-from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 import secrets
+from datetime import datetime, timedelta
+from typing import List, Optional
 
 from api.config import get_settings
-from api.models import TokenData, Token
+from api.models import Token, TokenData
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 settings = get_settings()
 

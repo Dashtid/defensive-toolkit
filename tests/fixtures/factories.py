@@ -5,10 +5,10 @@ Factory functions for generating realistic test data using Faker.
 Follows the Factory pattern for consistent, maintainable test data generation.
 """
 
-from datetime import datetime, timedelta
+import random
+from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import uuid4
-import random
 
 
 class DetectionRuleFactory:

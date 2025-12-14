@@ -1,9 +1,8 @@
 """Monitoring API Tests"""
 
 import pytest
-from fastapi.testclient import TestClient
 from api.main import app
-from tests.fixtures.factories import AlertFactory
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

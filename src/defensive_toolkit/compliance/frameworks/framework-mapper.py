@@ -5,11 +5,11 @@ Maps controls between CIS, NIST 800-53, ISO 27001, PCI-DSS, and SOC2
 Helps organizations understand control overlap and compliance synergies
 """
 
-import json
 import argparse
+import json
 import logging
-from typing import Dict, List, Optional, Set
 from pathlib import Path
+from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -472,7 +472,7 @@ Examples:
             print(f"\nCoverage Matrix for {args.coverage}:")
             print(f"Total Controls: {result['summary']['total_target_controls']}")
             print(f"Covered Controls: {result['summary']['covered_controls']}")
-            print(f"\nCoverage by Source Framework:")
+            print("\nCoverage by Source Framework:")
             for source, count in result['summary']['coverage_sources'].items():
                 print(f"  - {source}: {count} controls")
 
@@ -482,7 +482,7 @@ Examples:
             print(json.dumps(result, indent=2))
         else:
             print(f"\nRecommended Implementation Order for {', '.join(args.recommend)}:")
-            print(f"(Ordered by multi-framework coverage value)\n")
+            print("(Ordered by multi-framework coverage value)\n")
             for i, control in enumerate(result[:20], 1):  # Top 20
                 print(f"{i}. {control['control_id']}: {control['title']}")
                 print(f"   Coverage Score: {control['coverage_score']}")

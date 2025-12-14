@@ -11,13 +11,11 @@ Tests the harden-ubuntu.sh script functionality including:
 - Service configuration
 """
 
-import pytest
-import subprocess
-import tempfile
 import os
+import subprocess
 from pathlib import Path
-from typing import List
 
+import pytest
 
 # Path to hardening scripts
 HARDENING_DIR = Path(__file__).parent.parent.parent.parent / "hardening" / "linux"

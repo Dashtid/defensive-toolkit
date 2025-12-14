@@ -8,25 +8,37 @@ vulnerability scans, compliance checks, SIEM health monitoring, and reporting.
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from typing import Any, Dict, List, Optional
 
 from api.auth import get_current_active_user
 from api.models import (
-    APIResponse, StatusEnum,
-    ScheduledJobTypeEnum, ScheduledJobStatusEnum, JobExecutionStatusEnum,
-    ScheduleTypeEnum, JobPriorityEnum,
-    ScheduledJobConfig, ScheduledJobCreateRequest, ScheduledJobUpdateRequest,
-    ScheduledJobResponse, ScheduledJobListResponse,
-    JobExecution, JobExecutionListResponse,
-    JobExecutionRequest, JobExecutionResponse,
-    JobCancelRequest, JobCancelResponse,
-    SchedulerStats, SchedulerHealthCheck,
-    CronValidationRequest, CronValidationResponse,
-    JobTypeInfo, JobTypeListResponse,
-    BulkJobActionRequest, BulkJobActionResponse,
-    JobNotificationConfig, JobDependency, JobDependencyResponse,
+    APIResponse,
+    BulkJobActionRequest,
+    BulkJobActionResponse,
+    CronValidationRequest,
+    CronValidationResponse,
+    JobCancelResponse,
+    JobDependency,
+    JobDependencyResponse,
+    JobExecution,
+    JobExecutionListResponse,
+    JobExecutionResponse,
+    JobExecutionStatusEnum,
+    JobTypeInfo,
+    JobTypeListResponse,
+    ScheduledJobConfig,
+    ScheduledJobCreateRequest,
+    ScheduledJobListResponse,
+    ScheduledJobResponse,
+    ScheduledJobStatusEnum,
+    ScheduledJobTypeEnum,
+    ScheduledJobUpdateRequest,
+    SchedulerHealthCheck,
+    SchedulerStats,
+    ScheduleTypeEnum,
+    StatusEnum,
 )
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
 logger = logging.getLogger(__name__)
 
@@ -783,7 +795,7 @@ async def delete_scheduled_job(
     if running:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot delete job with running executions. Cancel them first."
+            detail="Cannot delete job with running executions. Cancel them first."
         )
 
     job = scheduled_jobs.pop(job_id)
@@ -879,7 +891,7 @@ async def trigger_job(
         if running:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Job is already running and concurrent execution is disabled"
+                detail="Job is already running and concurrent execution is disabled"
             )
 
     # Create execution record
@@ -946,7 +958,7 @@ async def trigger_job(
         job_name=job.name,
         status=JobExecutionStatusEnum.PENDING,
         scheduled_at=now,
-        message=f"Job triggered successfully"
+        message="Job triggered successfully"
     )
 
 
@@ -1382,5 +1394,5 @@ async def remove_job_dependency(
 
     return APIResponse(
         status=StatusEnum.SUCCESS,
-        message=f"Dependency removed"
+        message="Dependency removed"
     )

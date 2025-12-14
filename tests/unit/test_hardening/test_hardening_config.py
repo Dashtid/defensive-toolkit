@@ -9,10 +9,10 @@ Tests configuration files including:
 - Setting validation
 """
 
-import pytest
-from pathlib import Path
 import re
+from pathlib import Path
 
+import pytest
 
 # Path to configuration files
 HARDENING_DIR = Path(__file__).parent.parent.parent.parent / "hardening" / "linux"

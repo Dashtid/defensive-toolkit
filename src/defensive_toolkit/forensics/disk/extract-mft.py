@@ -23,10 +23,9 @@ import csv
 import json
 import logging
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -250,7 +249,7 @@ class MFTAnalyzer:
         medium = [f for f in self.suspicious_findings if f['severity'] == 'medium']
         low = [f for f in self.suspicious_findings if f['severity'] == 'low']
 
-        logger.info(f"\nSuspicious Files Summary:")
+        logger.info("\nSuspicious Files Summary:")
         logger.info(f"  Critical: {len(critical)}")
         logger.info(f"  High: {len(high)}")
         logger.info(f"  Medium: {len(medium)}")
@@ -258,7 +257,7 @@ class MFTAnalyzer:
         logger.info(f"  Total: {len(self.suspicious_findings)}")
 
         if self.suspicious_findings:
-            logger.info(f"\n[!] Top 20 Suspicious Files:\n")
+            logger.info("\n[!] Top 20 Suspicious Files:\n")
             for i, finding in enumerate(self.suspicious_findings[:20], 1):
                 logger.info(f"{i}. [{finding['severity'].upper()}] {finding['type']}")
                 logger.info(f"   File: {finding['path']}\\{finding['filename']}")

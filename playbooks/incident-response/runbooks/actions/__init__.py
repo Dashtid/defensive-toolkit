@@ -5,23 +5,23 @@ Containment, preservation, and escalation actions for automated IR.
 """
 
 from .containment import (
-    isolate_host,
     block_ip,
     disable_account,
-    quarantine_file,
+    isolate_host,
     kill_process,
-)
-from .preservation import (
-    collect_evidence,
-    create_forensic_package,
-    capture_memory,
-    snapshot_disk,
+    quarantine_file,
 )
 from .escalation import (
-    send_alert,
     create_ticket,
-    update_severity,
     notify_oncall,
+    send_alert,
+    update_severity,
+)
+from .preservation import (
+    capture_memory,
+    collect_evidence,
+    create_forensic_package,
+    snapshot_disk,
 )
 
 __all__ = [

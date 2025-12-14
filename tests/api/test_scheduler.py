@@ -4,11 +4,11 @@ Scheduler API Router Tests (v1.7.6)
 Comprehensive tests for scheduled job management, execution, and scheduler operations.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from fastapi.testclient import TestClient
 
+import pytest
 from api.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

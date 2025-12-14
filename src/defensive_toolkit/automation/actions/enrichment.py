@@ -9,8 +9,7 @@ Description:
 """
 
 import logging
-import requests
-from typing import Dict, Optional
+from typing import Dict
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)

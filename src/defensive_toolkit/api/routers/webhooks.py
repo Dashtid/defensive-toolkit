@@ -17,20 +17,9 @@ import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta
 from ipaddress import ip_address, ip_network
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Depends,
-    Header,
-    HTTPException,
-    Query,
-    Request,
-    status,
-)
-
+from api.dependencies import get_current_active_user, require_write_scope
 from api.models import (
     APIResponse,
     IncomingAlert,
@@ -47,7 +36,16 @@ from api.models import (
     WebhookTriggerResult,
     WebhookTriggerRule,
 )
-from api.dependencies import get_current_active_user, require_write_scope
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -689,9 +687,8 @@ async def trigger_webhook(
     # Execute runbook (import here to avoid circular)
     try:
         from api.routers.incident_response import (
-            execute_runbook,
-            executions_db,
             RUNBOOKS_DIR,
+            execute_runbook,
         )
 
         # Check if runbook exists

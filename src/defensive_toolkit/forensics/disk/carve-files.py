@@ -22,13 +22,10 @@ Usage:
 import argparse
 import json
 import logging
-import os
-import shutil
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -248,13 +245,13 @@ class FileCarver:
 
         self.results['statistics'] = stats
 
-        logger.info(f"\n[+] Carving Statistics:")
+        logger.info("\n[+] Carving Statistics:")
         logger.info(f"  Total files carved: {stats['total_files']}")
         logger.info(f"  Total size: {stats['total_size'] / (1024*1024):.2f} MB")
         logger.info(f"  Unique file types: {len(stats['file_types'])}")
 
         if stats['file_types']:
-            logger.info(f"\n[+] File Types:")
+            logger.info("\n[+] File Types:")
             for ext, count in sorted(stats['file_types'].items(), key=lambda x: x[1], reverse=True)[:10]:
                 logger.info(f"  {ext}: {count} files")
 
@@ -268,7 +265,7 @@ class FileCarver:
         logger.info(f"Output Directory: {self.output_dir}")
         logger.info(f"Timestamp: {self.results['timestamp']}")
 
-        logger.info(f"\n[+] Tools Run:")
+        logger.info("\n[+] Tools Run:")
         for tool_result in self.results['tools_run']:
             status_icon = "[OK]" if tool_result['status'] == 'success' else "[X]"
             logger.info(f"  {status_icon} {tool_result['tool']}")
@@ -279,7 +276,7 @@ class FileCarver:
 
         if 'statistics' in self.results:
             stats = self.results['statistics']
-            logger.info(f"\n[+] Summary:")
+            logger.info("\n[+] Summary:")
             logger.info(f"  Total files: {stats['total_files']}")
             logger.info(f"  Total size: {stats['total_size'] / (1024*1024):.2f} MB")
             logger.info(f"  File types: {len(stats['file_types'])}")

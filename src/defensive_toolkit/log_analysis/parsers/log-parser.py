@@ -5,14 +5,13 @@ Parses common log formats: Syslog, JSON, Apache/Nginx, Windows Event Log
 Extracts structured data from unstructured logs
 """
 
-import re
-import json
 import argparse
+import json
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+import re
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from dataclasses import dataclass, asdict
+from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)

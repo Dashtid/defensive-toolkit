@@ -1,10 +1,11 @@
 """Automation (SOAR) API Router"""
 
-from fastapi import APIRouter, Depends
-from api.models import AutomationPlaybook, AutomationExecutionStatus, APIResponse, StatusEnum
-from api.dependencies import get_current_active_user, require_write_scope
-from datetime import datetime
 import uuid
+from datetime import datetime
+
+from api.dependencies import get_current_active_user, require_write_scope
+from api.models import AutomationExecutionStatus, AutomationPlaybook, StatusEnum
+from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/automation", tags=["Automation"])
 

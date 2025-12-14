@@ -28,72 +28,67 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
-from fastapi.responses import JSONResponse
-
 from api.auth import get_current_active_user
 from api.models import (
-    StatusEnum,
-    # Channel Types and Enums
-    NotificationChannelTypeEnum,
-    NotificationPriorityEnum,
-    NotificationStatusEnum,
-    NotificationCategoryEnum,
-    ChannelStatusEnum,
-    # Channel Models
-    NotificationChannelCreate,
-    NotificationChannelUpdate,
-    NotificationChannel,
-    NotificationChannelResponse,
-    NotificationChannelListResponse,
-    # Template Models
-    NotificationTemplateCreate,
-    NotificationTemplateUpdate,
-    NotificationTemplate,
-    NotificationTemplateResponse,
-    NotificationTemplateListResponse,
-    TemplateRenderRequest,
-    TemplateRenderResponse,
-    TemplateVariableInfo,
-    # Routing Rule Models
-    RoutingRuleCreate,
-    RoutingRuleUpdate,
-    RoutingRule,
-    RoutingRuleResponse,
-    RoutingRuleListResponse,
-    RoutingCondition,
-    RoutingAction,
-    # Notification Models
-    NotificationCreate,
-    Notification,
-    NotificationResponse,
-    NotificationListResponse,
-    NotificationRetryRequest,
-    NotificationRecipient,
-    # Escalation Models
-    EscalationPolicyCreate,
-    EscalationPolicyUpdate,
-    EscalationPolicy,
-    EscalationPolicyResponse,
-    EscalationPolicyListResponse,
-    EscalationStep,
     ActiveEscalation,
-    EscalationAcknowledgeRequest,
-    EscalationResolveRequest,
-    # Stats and Health
-    NotificationStats,
-    NotificationHealthCheck,
-    ChannelTestRequest,
-    ChannelTestResponse,
     # Bulk Operations
     BulkNotificationRequest,
     BulkNotificationResponse,
+    ChannelStatusEnum,
+    ChannelTestRequest,
+    ChannelTestResponse,
+    EscalationAcknowledgeRequest,
+    EscalationPolicy,
+    # Escalation Models
+    EscalationPolicyCreate,
+    EscalationPolicyListResponse,
+    EscalationPolicyResponse,
+    EscalationPolicyUpdate,
+    EscalationResolveRequest,
+    Notification,
+    NotificationCategoryEnum,
+    NotificationChannel,
+    # Channel Models
+    NotificationChannelCreate,
+    NotificationChannelListResponse,
+    NotificationChannelResponse,
+    # Channel Types and Enums
+    NotificationChannelTypeEnum,
+    NotificationChannelUpdate,
+    # Notification Models
+    NotificationCreate,
+    NotificationHealthCheck,
+    NotificationListResponse,
+    NotificationPriorityEnum,
+    NotificationResponse,
+    NotificationRetryRequest,
+    # Stats and Health
+    NotificationStats,
+    NotificationStatusEnum,
     # Subscriptions
     NotificationSubscription,
+    NotificationTemplate,
+    # Template Models
+    NotificationTemplateCreate,
+    NotificationTemplateListResponse,
+    NotificationTemplateResponse,
+    NotificationTemplateUpdate,
+    RoutingCondition,
+    RoutingRule,
+    # Routing Rule Models
+    RoutingRuleCreate,
+    RoutingRuleListResponse,
+    RoutingRuleResponse,
+    RoutingRuleUpdate,
+    StatusEnum,
     SubscriptionCreateRequest,
-    SubscriptionUpdateRequest,
     SubscriptionListResponse,
+    SubscriptionUpdateRequest,
+    TemplateRenderRequest,
+    TemplateRenderResponse,
 )
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
+from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
@@ -642,7 +637,7 @@ async def update_channel(
 
     return NotificationChannelResponse(
         status=StatusEnum.SUCCESS,
-        message=f"Channel updated successfully",
+        message="Channel updated successfully",
         channel=NotificationChannel(**channel),
     )
 

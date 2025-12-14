@@ -5,9 +5,8 @@ Unit tests for log-analysis/analysis/anomaly-detector.py
 
 import json
 import sys
-from pathlib import Path
-from unittest.mock import Mock, patch
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 

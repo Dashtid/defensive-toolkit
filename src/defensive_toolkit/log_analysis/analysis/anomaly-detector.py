@@ -5,16 +5,16 @@ Statistical anomaly detection in log files
 Detects unusual patterns, frequency spikes, and baseline deviations
 """
 
-import sys
-import json
 import argparse
+import json
 import logging
-from typing import Dict, List, Optional, Tuple
+import re
+import statistics
+import sys
+from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
-from collections import Counter, defaultdict
-import statistics
-import re
+from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)

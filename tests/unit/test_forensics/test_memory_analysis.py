@@ -6,8 +6,7 @@ Unit tests for forensics/memory/volatility-auto-analyze.py
 import json
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
+from unittest.mock import Mock, patch
 
 import pytest
 

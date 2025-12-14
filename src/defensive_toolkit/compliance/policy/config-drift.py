@@ -5,16 +5,15 @@ Detects changes from baseline system configuration
 Monitors configuration files, services, users, and system settings
 """
 
-import os
-import sys
-import json
-import hashlib
 import argparse
+import difflib
+import hashlib
+import json
 import logging
-from typing import Dict, List, Optional
+import sys
 from datetime import datetime
 from pathlib import Path
-import difflib
+from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -201,7 +200,7 @@ class DriftDetector:
                     lines.append(f"    Current Hash:  {details['current_hash'][:16]}...")
                     lines.append(f"    Size Change: {details['baseline_size']} -> {details['current_size']} bytes")
                 elif drift['drift_type'] == 'deleted':
-                    lines.append(f"    File has been deleted from system")
+                    lines.append("    File has been deleted from system")
         else:
             lines.append("NO DRIFT DETECTED")
             lines.append("-" * 80)

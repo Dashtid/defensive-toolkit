@@ -4,19 +4,19 @@ on:
   push:
     branches: [ main, develop ]
     paths:
-      - 'Dockerfile'
-      - 'docker-compose*.yml'
-      - 'nginx/**'
-      - 'api/**'
+      - 'infra/docker/Dockerfile'
+      - 'infra/docker/docker-compose*.yml'
+      - 'infra/nginx/**'
+      - 'src/defensive_toolkit/api/**'
       - 'pyproject.toml'
       - '.github/workflows/docker.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'Dockerfile'
-      - 'docker-compose*.yml'
-      - 'nginx/**'
-      - 'api/**'
+      - 'infra/docker/Dockerfile'
+      - 'infra/docker/docker-compose*.yml'
+      - 'infra/nginx/**'
+      - 'src/defensive_toolkit/api/**'
   workflow_dispatch:  # Allow manual trigger
 
 env:
@@ -38,7 +38,7 @@ jobs:
     - name: Run Hadolint on API Dockerfile
       uses: hadolint/hadolint-action@v3.1.0
       with:
-        dockerfile: Dockerfile
+        dockerfile: infra/docker/Dockerfile
         failure-threshold: warning
         format: sarif
         output-file: hadolint-api.sarif
@@ -46,7 +46,7 @@ jobs:
     - name: Run Hadolint on Nginx Dockerfile
       uses: hadolint/hadolint-action@v3.1.0
       with:
-        dockerfile: nginx/Dockerfile
+        dockerfile: infra/nginx/Dockerfile
         failure-threshold: warning
         format: sarif
         output-file: hadolint-nginx.sarif
@@ -101,7 +101,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./Dockerfile
+        file: ./infra/docker/Dockerfile
         platforms: ${{ matrix.platform }}
         push: false
         tags: ${{ steps.meta-api.outputs.tags }}
@@ -120,8 +120,8 @@ jobs:
     - name: Build Nginx Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./nginx
-        file: ./nginx/Dockerfile
+        context: ./infra/nginx
+        file: ./infra/nginx/Dockerfile
         platforms: ${{ matrix.platform }}
         push: false
         tags: defensive-toolkit-nginx:${{ github.sha }}
@@ -281,21 +281,21 @@ jobs:
 
     - name: Generate SSL certificates
       run: |
-        mkdir -p nginx/ssl
+        mkdir -p infra/nginx/ssl
         openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
-          -keyout nginx/ssl/key.pem \
-          -out nginx/ssl/cert.pem \
+          -keyout infra/nginx/ssl/key.pem \
+          -out infra/nginx/ssl/cert.pem \
           -subj "/C=US/ST=Test/L=Test/O=Test/CN=localhost"
 
     - name: Start Docker Compose stack
       run: |
-        docker-compose up -d
+        docker-compose -f infra/docker/docker-compose.yml up -d
         sleep 30  # Wait for services to start
 
     - name: Check container status
       run: |
-        docker-compose ps
-        docker-compose ps | grep "Up" || exit 1
+        docker-compose -f infra/docker/docker-compose.yml ps
+        docker-compose -f infra/docker/docker-compose.yml ps | grep "Up" || exit 1
 
     - name: Health check - API
       run: |
@@ -337,17 +337,17 @@ jobs:
       if: failure()
       run: |
         echo "=== API Logs ==="
-        docker-compose logs api
+        docker-compose -f infra/docker/docker-compose.yml logs api
         echo "=== Nginx Logs ==="
-        docker-compose logs nginx
+        docker-compose -f infra/docker/docker-compose.yml logs nginx
         echo "=== Prometheus Logs ==="
-        docker-compose logs prometheus
+        docker-compose -f infra/docker/docker-compose.yml logs prometheus
         echo "=== Grafana Logs ==="
-        docker-compose logs grafana
+        docker-compose -f infra/docker/docker-compose.yml logs grafana
 
     - name: Stop Docker Compose stack
       if: always()
-      run: docker-compose down -v
+      run: docker-compose -f infra/docker/docker-compose.yml down -v
 
   # ============================================================================
   # Test Results Summary

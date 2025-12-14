@@ -4,9 +4,6 @@ Notification Actions for Security Automation
 """
 
 import logging
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -28,7 +25,7 @@ def send_email(to: str, subject: str, body: str, smtp_server: str = None, dry_ru
 
 def send_slack(webhook_url: str, message: str, dry_run: bool = False) -> bool:
     """Send Slack notification"""
-    logger.info(f"[+] Sending Slack message")
+    logger.info("[+] Sending Slack message")
 
     if dry_run:
         logger.info("[DRY RUN] Would send Slack message")

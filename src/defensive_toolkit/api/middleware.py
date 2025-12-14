@@ -11,17 +11,17 @@ Implements:
 Following 2025 FastAPI best practices.
 """
 
-import time
 import logging
-from typing import Callable, Dict
-from datetime import datetime, timedelta
+import time
 from collections import defaultdict
-from fastapi import Request, Response, HTTPException, status
+from datetime import datetime
+from typing import Callable, Dict
+
+from api.config import get_settings
+from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
-
-from api.config import get_settings
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

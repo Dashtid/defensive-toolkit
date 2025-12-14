@@ -4,9 +4,8 @@ FastAPI Dependencies
 Common dependencies used across API routers.
 """
 
-from typing import Optional
-from fastapi import Depends, HTTPException, status
 from api.auth import get_current_active_user
+from fastapi import Depends, HTTPException, status
 
 
 async def require_admin_scope(

@@ -5,16 +5,15 @@ Validates system configuration against CIS Controls v8 safeguards
 Supports Windows and Linux systems
 """
 
-import os
-import sys
-import json
 import argparse
+import json
 import logging
 import platform
 import subprocess
-from typing import Dict, List, Optional
+import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)

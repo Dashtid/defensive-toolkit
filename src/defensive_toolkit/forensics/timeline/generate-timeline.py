@@ -28,10 +28,9 @@ import csv
 import json
 import logging
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -67,7 +66,7 @@ class TimelineGenerator:
         Returns:
             bool: True if successful
         """
-        logger.info(f"[+] Generating timeline with log2timeline...")
+        logger.info("[+] Generating timeline with log2timeline...")
         logger.info(f"    Source: {source_path}")
         logger.info(f"    Plaso file: {plaso_file}")
 
@@ -117,7 +116,7 @@ class TimelineGenerator:
         Returns:
             bool: True if successful
         """
-        logger.info(f"[+] Exporting plaso timeline to CSV...")
+        logger.info("[+] Exporting plaso timeline to CSV...")
 
         try:
             cmd = [
@@ -351,17 +350,17 @@ class TimelineGenerator:
 
         logger.info(f"\nTotal Entries: {analysis['total_entries']}")
 
-        logger.info(f"\n[+] Event Types (Top 10):")
+        logger.info("\n[+] Event Types (Top 10):")
         for event_type, count in sorted(analysis['event_types'].items(),
                                        key=lambda x: x[1], reverse=True)[:10]:
             logger.info(f"  {event_type}: {count}")
 
-        logger.info(f"\n[+] Sources:")
+        logger.info("\n[+] Sources:")
         for source, count in sorted(analysis['sources'].items(),
                                     key=lambda x: x[1], reverse=True):
             logger.info(f"  {source}: {count}")
 
-        logger.info(f"\n[+] Busiest Days (Top 5):")
+        logger.info("\n[+] Busiest Days (Top 5):")
         for day, count in sorted(analysis['daily_distribution'].items(),
                                 key=lambda x: x[1], reverse=True)[:5]:
             logger.info(f"  {day}: {count} events")

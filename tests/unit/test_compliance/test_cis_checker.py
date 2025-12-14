@@ -6,7 +6,7 @@ Unit tests for compliance/frameworks/cis-checker.py
 import json
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
 

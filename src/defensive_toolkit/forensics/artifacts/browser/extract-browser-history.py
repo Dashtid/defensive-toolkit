@@ -30,7 +30,6 @@ import shutil
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -391,7 +390,7 @@ class BrowserForensics:
         logger.info(f"\n[+] Browsers Analyzed: {', '.join(self.results['browsers_analyzed']) or 'None'}")
 
         if self.results['artifacts_extracted']:
-            logger.info(f"\n[+] Artifacts Extracted:")
+            logger.info("\n[+] Artifacts Extracted:")
             for artifact, count in self.results['artifacts_extracted'].items():
                 logger.info(f"  {artifact}: {count}")
         else:

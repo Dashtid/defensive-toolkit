@@ -5,12 +5,12 @@ Creates real-time compliance status dashboard
 Combines CIS, NIST, and policy check results
 """
 
-import json
 import argparse
+import json
 import logging
-from typing import Dict, List
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)

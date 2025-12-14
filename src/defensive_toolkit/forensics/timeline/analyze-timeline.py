@@ -27,9 +27,8 @@ import csv
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 try:
     import pandas as pd
@@ -156,7 +155,7 @@ class TimelineAnalyzer:
                     'type': 'Activity Spike',
                     'severity': 'medium',
                     'timestamp': window.isoformat(),
-                    'description': f'Unusual activity spike detected',
+                    'description': 'Unusual activity spike detected',
                     'details': {
                         'event_count': count,
                         'mean': round(mean_count, 2),
@@ -358,14 +357,14 @@ class TimelineAnalyzer:
         high = [f for f in self.findings if f['severity'] == 'high']
         medium = [f for f in self.findings if f['severity'] == 'medium']
 
-        logger.info(f"\n[+] Findings Summary:")
+        logger.info("\n[+] Findings Summary:")
         logger.info(f"  Critical: {len(critical)}")
         logger.info(f"  High: {len(high)}")
         logger.info(f"  Medium: {len(medium)}")
         logger.info(f"  Total: {len(self.findings)}")
 
         if self.findings:
-            logger.info(f"\n[!] Top 15 Findings:\n")
+            logger.info("\n[!] Top 15 Findings:\n")
             for i, finding in enumerate(self.findings[:15], 1):
                 logger.info(f"{i}. [{finding['severity'].upper()}] {finding['type']}")
                 logger.info(f"   {finding['description']}")

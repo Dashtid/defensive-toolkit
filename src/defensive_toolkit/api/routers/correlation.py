@@ -12,76 +12,66 @@ Provides endpoints for:
 - Statistics and health monitoring
 """
 
+import logging
 import re
 import uuid
-import logging
+from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
-from collections import defaultdict
 
-from fastapi import APIRouter, HTTPException, Query, Depends, status
-
+from api.auth import get_current_active_user
 from api.models import (
-    # Enums
-    StatusEnum,
-    SeverityEnum,
-    CorrelationRuleTypeEnum,
-    CorrelationRuleStatusEnum,
-    KillChainPhaseEnum,
-    CorrelatedAlertStatusEnum,
-    ClusteringAlgorithmEnum,
-    AttackPatternStatusEnum,
-    # MITRE Models
-    MitreTactic,
-    MitreTechnique,
-    MitreMapping,
-    # Correlation Rule Models
-    CorrelationCondition,
-    CorrelationRuleCreate,
-    CorrelationRule,
-    CorrelationRuleUpdate,
-    CorrelationRuleListResponse,
-    # Correlated Alert Models
-    CorrelatedAlertMember,
-    CorrelatedAlertCreate,
-    CorrelatedAlert,
-    CorrelatedAlertUpdate,
-    CorrelatedAlertListResponse,
-    # Clustering Models
-    ClusterConfig,
     AlertCluster,
-    ClusteringRequest,
-    ClusteringResponse,
-    # Deduplication Models
-    DeduplicationConfig,
-    DeduplicationResult,
-    # Attack Pattern Models
-    AttackStage,
-    AttackPatternCreate,
-    AttackPattern,
-    AttackPatternUpdate,
-    AttackPatternListResponse,
     # Alert Ingestion Models
-    AlertIngest,
     AlertIngestBatch,
     AlertIngestResponse,
+    # Common Models
+    APIResponse,
+    AttackPattern,
+    AttackPatternCreate,
+    AttackPatternListResponse,
+    AttackPatternStatusEnum,
+    AttackPatternUpdate,
+    # Attack Pattern Models
+    ClusterConfig,
+    ClusteringRequest,
+    ClusteringResponse,
+    CorrelatedAlert,
+    CorrelatedAlertCreate,
+    CorrelatedAlertListResponse,
+    # Correlated Alert Models
+    CorrelatedAlertMember,
+    CorrelatedAlertStatusEnum,
+    CorrelatedAlertUpdate,
+    # Correlation Rule Models
+    CorrelationCondition,
+    CorrelationHealthCheck,
+    CorrelationRule,
+    CorrelationRuleCreate,
+    CorrelationRuleListResponse,
+    CorrelationRuleStatusEnum,
+    CorrelationRuleTypeEnum,
+    CorrelationRuleUpdate,
     # Statistics Models
     CorrelationStats,
-    CorrelationHealthCheck,
+    # Suppression Models
+    CorrelationSuppression,
+    # Deduplication Models
+    KillChainAnalysis,
+    KillChainAnalysisRequest,
+    KillChainPhaseEnum,
+    MitreTactic,
+    MitreTechnique,
     # Rule Testing Models
     RuleTestRequest,
     RuleTestResponse,
-    # Kill Chain Models
-    KillChainAnalysis,
-    KillChainAnalysisRequest,
-    # Suppression Models
-    CorrelationSuppression,
+    SeverityEnum,
+    # Enums
+    StatusEnum,
     SuppressionCreateRequest,
     SuppressionListResponse,
-    # Common Models
-    APIResponse,
 )
-from api.auth import get_current_active_user
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 logger = logging.getLogger(__name__)
 

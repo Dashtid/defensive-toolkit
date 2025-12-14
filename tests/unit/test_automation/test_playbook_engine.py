@@ -6,7 +6,7 @@ Unit tests for automation/playbooks/playbook-engine.py
 import json
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
 import yaml
@@ -14,7 +14,7 @@ import yaml
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from automation.playbooks.playbook_engine import PlaybookEngine, main
+from automation.playbooks.playbook_engine import PlaybookEngine
 
 
 class TestPlaybookEngine:

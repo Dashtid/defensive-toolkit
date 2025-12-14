@@ -4,11 +4,11 @@ SIEM Integration Router Tests (v1.7.5)
 Comprehensive tests for SIEM connection management, querying, and health checks.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from fastapi.testclient import TestClient
 
+import pytest
 from api.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

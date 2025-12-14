@@ -6,9 +6,9 @@ Unit tests for forensics/disk/extract-mft.py
 import csv
 import json
 import sys
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 import pytest
 

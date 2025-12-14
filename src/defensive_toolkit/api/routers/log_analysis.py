@@ -1,10 +1,10 @@
 """Log Analysis API Router"""
 
-from fastapi import APIRouter, Depends
-from api.models import LogAnalysisRequest, LogAnalysisResult, APIResponse, StatusEnum
-from api.dependencies import get_current_active_user
-from datetime import datetime
 import uuid
+
+from api.dependencies import get_current_active_user
+from api.models import LogAnalysisRequest, LogAnalysisResult
+from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/log-analysis", tags=["Log Analysis"])
 

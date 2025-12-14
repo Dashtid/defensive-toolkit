@@ -5,7 +5,7 @@ Unit tests for automation/actions/containment.py
 
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock, call
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -13,11 +13,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from automation.actions.containment import (
-    isolate_host,
     block_ip,
+    disable_user_account,
+    isolate_host,
     quarantine_file,
     terminate_process,
-    disable_user_account
 )
 
 

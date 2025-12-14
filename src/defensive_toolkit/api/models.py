@@ -7,10 +7,10 @@ Following FastAPI best practices for 2025.
 
 import uuid
 from datetime import datetime
-from typing import Optional, List, Dict, Any
 from enum import Enum
-from pydantic import BaseModel, Field, validator
+from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel, Field
 
 # ============================================================================
 # Authentication Models

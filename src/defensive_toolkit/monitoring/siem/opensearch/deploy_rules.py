@@ -16,9 +16,10 @@ import argparse
 import logging
 import os
 import sys
-import yaml
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict
+
+import yaml
 from opensearchpy import OpenSearch
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(message)s')

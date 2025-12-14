@@ -5,11 +5,10 @@ Comprehensive tests for asset CRUD, search, relationships, groups,
 discovery scans, topology, CMDB sync, import/export, and bulk operations.
 """
 
-import pytest
-from datetime import datetime
-from fastapi.testclient import TestClient
 
+import pytest
 from api.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

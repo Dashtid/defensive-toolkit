@@ -6,14 +6,13 @@ Unit tests for log-analysis/parsers/log-parser.py
 import json
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from log_analysis.parsers.log_parser import LogParser, LogEntry
+from log_analysis.parsers.log_parser import LogEntry, LogParser
 
 
 class TestLogEntry:

@@ -30,14 +30,13 @@ import json
 import logging
 import os
 import platform
-import shutil
 import subprocess
 import sys
 import uuid
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 try:
     import yaml
@@ -532,7 +531,7 @@ class RunbookEngine:
 
         return ActionResult(
             success=True,
-            message=f"Analyst input received",
+            message="Analyst input received",
             data={"value": value}
         )
 

@@ -18,12 +18,10 @@ Usage:
 """
 
 import argparse
-import json
 import logging
-import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 try:
     import splunklib.client as client
@@ -305,7 +303,7 @@ def main():
 
         if stats['deployed'] > 0:
             logger.info(f"\n[OK] Successfully deployed {stats['deployed']} rules to Splunk")
-            logger.info(f"[i] View in Splunk: Settings > Searches, reports, and alerts")
+            logger.info("[i] View in Splunk: Settings > Searches, reports, and alerts")
 
     else:
         logger.info("[i] Dry run mode - rules will be converted but not deployed")

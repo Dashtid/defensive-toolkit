@@ -10,7 +10,6 @@ Author: Defensive Toolkit
 
 import asyncio
 import base64
-import hashlib
 import ipaddress
 import logging
 import os
@@ -20,23 +19,16 @@ import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
-
+from api.dependencies import get_current_active_user, require_write_scope
 from api.models import (
     APIResponse,
     BulkEnrichmentResponse,
     GeoIPData,
     IOCEnrichmentRequest,
     IOCEnrichmentResult,
-    IOCSearchRequest,
-    IOCSearchResponse,
-    IOCSearchResult,
     IOCTypeEnum,
-    PassiveDNSRecord,
-    RelatedSample,
     ReputationScoreEnum,
     SourceResult,
     StatusEnum,
@@ -47,9 +39,8 @@ from api.models import (
     ThreatIntelSourceEnum,
     ThreatIntelSourceStatus,
     ThreatIntelStats,
-    WhoisData,
 )
-from api.dependencies import get_current_active_user, require_write_scope
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
 # Configure logging
 logger = logging.getLogger(__name__)

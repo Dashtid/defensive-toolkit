@@ -17,87 +17,69 @@ Endpoints:
 - Bulk operations
 """
 
-import uuid
-import math
 import logging
+import math
+import uuid
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
-
-from fastapi import APIRouter, HTTPException, Query, Body, UploadFile, File
-from fastapi.responses import StreamingResponse
+from typing import Any, Dict, List, Optional
 
 from api.models import (
-    StatusEnum,
-    # Asset Enums
-    AssetTypeEnum,
-    AssetStatusEnum,
-    AssetCriticalityEnum,
-    AssetEnvironmentEnum,
-    AssetOwnershipEnum,
-    DiscoveryMethodEnum,
-    ComplianceStatusEnum,
-    RelationshipTypeEnum,
-    ScanTypeEnum,
-    # Asset Config Models
-    NetworkInterface,
-    HardwareInfo,
-    OperatingSystem,
-    InstalledSoftware,
-    CloudMetadata,
-    AssetLocation,
-    AssetOwner,
-    AssetRiskScore,
-    VulnerabilitySummary,
-    SecurityControls,
-    # Asset CRUD Models
-    AssetCreate,
     Asset,
-    AssetUpdate,
-    AssetListResponse,
-    AssetSearchQuery,
-    # Relationship Models
-    AssetRelationshipCreate,
-    AssetRelationship,
-    AssetRelationshipListResponse,
-    # Group Models
-    AssetGroupCreate,
-    AssetGroup,
-    AssetGroupUpdate,
-    AssetGroupListResponse,
-    # Discovery Scan Models
-    DiscoveryScanConfig,
-    DiscoveryScan,
-    DiscoveryScanCreate,
-    DiscoveryScanListResponse,
-    DiscoveryScanResult,
-    # Topology Models
-    TopologyNode,
-    TopologyEdge,
-    NetworkTopology,
-    TopologyQuery,
-    # CMDB Models
-    CMDBSyncConfig,
-    CMDBSyncResult,
-    # Import/Export Models
-    AssetImportConfig,
-    AssetImportResult,
-    AssetExportConfig,
-    AssetExportResult,
-    # Statistics Models
-    AssetStatistics,
-    AssetTrendData,
     # Activity Models
     AssetActivity,
     AssetActivityListResponse,
+    # Asset CRUD Models
+    AssetCreate,
+    AssetCriticalityEnum,
+    AssetEnvironmentEnum,
+    AssetExportConfig,
+    AssetExportResult,
+    AssetGroup,
+    # Group Models
+    AssetGroupCreate,
+    AssetGroupListResponse,
+    AssetGroupUpdate,
+    # Health Check
+    AssetHealthCheck,
+    # Import/Export Models
+    AssetImportConfig,
+    AssetImportResult,
+    AssetListResponse,
+    AssetRelationship,
+    # Relationship Models
+    AssetRelationshipCreate,
+    AssetRelationshipListResponse,
+    AssetRiskScore,
+    AssetSearchQuery,
+    # Statistics Models
+    AssetStatistics,
+    AssetStatusEnum,
+    AssetTrendData,
+    # Asset Enums
+    AssetTypeEnum,
+    AssetUpdate,
+    BulkAssetDelete,
+    BulkAssetTag,
     # Bulk Models
     BulkAssetUpdate,
     BulkAssetUpdateResult,
-    BulkAssetTag,
-    BulkAssetDelete,
     BulkOperationResult,
-    # Health Check
-    AssetHealthCheck,
+    CMDBSyncConfig,
+    CMDBSyncResult,
+    DiscoveryScan,
+    # Discovery Scan Models
+    DiscoveryScanCreate,
+    DiscoveryScanListResponse,
+    DiscoveryScanResult,
+    NetworkTopology,
+    RelationshipTypeEnum,
+    StatusEnum,
+    TopologyEdge,
+    # Topology Models
+    TopologyNode,
+    TopologyQuery,
 )
+from fastapi import APIRouter, Body, File, HTTPException, Query, UploadFile
 
 logger = logging.getLogger(__name__)
 
@@ -441,7 +423,7 @@ async def update_asset(asset_id: str, update: AssetUpdate):
 
     # Log activity
     if changes:
-        log_activity(asset_id, "updated", f"Asset updated", {"changes": changes})
+        log_activity(asset_id, "updated", "Asset updated", {"changes": changes})
 
     logger.info(f"Updated asset: {asset_id}")
     return Asset(**asset)

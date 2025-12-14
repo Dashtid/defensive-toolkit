@@ -5,9 +5,8 @@ Mock implementations of external services for testing without dependencies.
 Includes mocks for SIEM platforms, vulnerability scanners, ticketing systems, etc.
 """
 
-from typing import Dict, List, Optional
-from unittest.mock import Mock
 from datetime import datetime
+from typing import Dict, List, Optional
 from uuid import uuid4
 
 

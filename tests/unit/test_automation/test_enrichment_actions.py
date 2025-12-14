@@ -5,7 +5,7 @@ Unit tests for automation/actions/enrichment.py
 
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -13,11 +13,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from automation.actions.enrichment import (
-    enrich_ioc,
-    lookup_domain,
-    geolocate_ip,
+    _check_abuseipdb,
     _check_virustotal,
-    _check_abuseipdb
+    enrich_ioc,
+    geolocate_ip,
+    lookup_domain,
 )
 
 

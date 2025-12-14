@@ -10,74 +10,67 @@ Provides endpoints for:
 - Statistics and health monitoring
 """
 
-import uuid
 import asyncio
 import logging
+import uuid
+from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
-from collections import defaultdict
 
-from fastapi import APIRouter, HTTPException, Query, Depends, status, BackgroundTasks
-from fastapi.responses import StreamingResponse
-
+from api.auth import get_current_active_user
 from api.models import (
-    # Enums
-    StatusEnum,
-    WidgetTypeEnum,
-    WidgetCategoryEnum,
-    DashboardLayoutTypeEnum,
-    RefreshIntervalEnum,
-    TimeRangePresetEnum,
-    AggregationTypeEnum,
-    # Configuration Models
-    WidgetThreshold,
-    WidgetDataSource,
-    WidgetPosition,
+    APIResponse,
+    BulkWidgetPositionResponse,
+    # Bulk Operations
+    BulkWidgetPositionUpdate,
     ChartConfig,
     ChartSeriesConfig,
-    TableConfig,
-    TableColumnConfig,
     CounterConfig,
-    GaugeConfig,
-    MapConfig,
-    HeatmapConfig,
-    TimelineConfig,
-    WidgetConfigUnion,
-    # Widget Models
-    WidgetCreate,
-    Widget,
-    WidgetUpdate,
-    WidgetDataResponse,
-    WidgetListResponse,
-    # Dashboard Models
-    DashboardVariable,
-    DashboardCreate,
     Dashboard,
-    DashboardUpdate,
-    DashboardListResponse,
-    # Template Models
-    WidgetTemplate,
-    WidgetTemplateListResponse,
+    DashboardCreate,
     # Export/Import Models
     DashboardExport,
+    DashboardHealthCheck,
     DashboardImportRequest,
     DashboardImportResponse,
-    # Real-time Models
-    WidgetDataSubscription,
-    WidgetDataEvent,
+    DashboardListResponse,
     # Statistics Models
     DashboardStats,
-    DashboardHealthCheck,
+    DashboardUpdate,
+    # Dashboard Models
+    GaugeConfig,
+    HeatmapConfig,
     # Layout Models
     LayoutSnapshot,
     LayoutSnapshotListResponse,
-    # Bulk Operations
-    BulkWidgetPositionUpdate,
-    BulkWidgetPositionResponse,
-    # Common Models
-    APIResponse,
+    MapConfig,
+    RefreshIntervalEnum,
+    # Enums
+    StatusEnum,
+    TableColumnConfig,
+    TableConfig,
+    TimeRangePresetEnum,
+    Widget,
+    WidgetCategoryEnum,
+    WidgetConfigUnion,
+    # Widget Models
+    WidgetCreate,
+    WidgetDataEvent,
+    WidgetDataResponse,
+    WidgetDataSource,
+    # Real-time Models
+    WidgetListResponse,
+    WidgetPosition,
+    # Template Models
+    WidgetTemplate,
+    WidgetTemplateListResponse,
+    # Configuration Models
+    WidgetThreshold,
+    WidgetTypeEnum,
+    WidgetUpdate,
 )
-from api.auth import get_current_active_user
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
 

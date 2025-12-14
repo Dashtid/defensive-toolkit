@@ -1,10 +1,12 @@
 """SIEM Integration Tests with Mocked Responses"""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import Mock, patch
-from fastapi.testclient import TestClient
 from api.main import app
-from tests.mocks.external_services import MockWazuhClient, MockElasticClient
+from fastapi.testclient import TestClient
+
+from tests.mocks.external_services import MockElasticClient, MockWazuhClient
 
 client = TestClient(app)
 

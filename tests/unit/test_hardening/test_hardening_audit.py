@@ -8,11 +8,10 @@ Tests the audit-security-posture.sh script including:
 - Check coverage
 """
 
-import pytest
 import subprocess
-import re
 from pathlib import Path
 
+import pytest
 
 # Path to hardening scripts
 HARDENING_DIR = Path(__file__).parent.parent.parent.parent / "hardening" / "linux"

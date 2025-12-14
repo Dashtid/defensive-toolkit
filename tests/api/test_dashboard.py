@@ -5,11 +5,10 @@ Comprehensive tests for dashboard management, widgets, templates,
 export/import, snapshots, and real-time streaming.
 """
 
-import pytest
-from datetime import datetime
-from fastapi.testclient import TestClient
 
+import pytest
 from api.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

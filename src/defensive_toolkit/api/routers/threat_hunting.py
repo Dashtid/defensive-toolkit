@@ -1,10 +1,9 @@
 """Threat Hunting API Router"""
 
-from fastapi import APIRouter, Depends
-from api.models import ThreatHuntQuery, ThreatHuntResult, APIResponse, StatusEnum
+
 from api.dependencies import get_current_active_user
-from datetime import datetime
-import uuid
+from api.models import ThreatHuntQuery, ThreatHuntResult
+from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/threat-hunting", tags=["Threat Hunting"])
 

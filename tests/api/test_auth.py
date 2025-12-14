@@ -5,9 +5,9 @@ Tests for JWT authentication, token refresh, and API key authentication.
 """
 
 import pytest
-from fastapi.testclient import TestClient
-from api.main import app
 from api.auth import create_token_pair, get_password_hash
+from api.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 
@@ -116,7 +116,7 @@ class TestPasswordSecurity:
 
     def test_password_hashing(self):
         """Test that passwords are hashed correctly"""
-        from api.auth import get_password_hash, verify_password
+        from api.auth import verify_password
 
         password = "testpassword123"
         hashed = get_password_hash(password)
@@ -130,7 +130,7 @@ class TestPasswordSecurity:
 
     def test_password_verification_fails_wrong_password(self):
         """Test that wrong password fails verification"""
-        from api.auth import get_password_hash, verify_password
+        from api.auth import verify_password
 
         password = "correctpassword"
         hashed = get_password_hash(password)

@@ -9,19 +9,15 @@ Author: Defensive Toolkit
 """
 
 import asyncio
-import glob
 import json
 import logging
-import os
 import platform
 import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
-from fastapi.responses import FileResponse, JSONResponse
-
+from api.dependencies import get_current_active_user, require_write_scope
 from api.models import (
     APIResponse,
     ApprovalDecision,
@@ -42,10 +38,10 @@ from api.models import (
     RunbookStepResult,
     RunbookStepStatusEnum,
     RunbookSummary,
-    SeverityEnum,
     StatusEnum,
 )
-from api.dependencies import get_current_active_user, require_write_scope
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi.responses import FileResponse
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -548,7 +544,7 @@ async def execute_runbook(
     if not runbook_data:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to parse runbook"
+            detail="Failed to parse runbook"
         )
 
     # Generate execution and incident IDs
