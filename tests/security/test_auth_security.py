@@ -3,8 +3,9 @@
 import time
 
 import pytest
-from defensive_toolkit.api.main import app
 from fastapi.testclient import TestClient
+
+from defensive_toolkit.api.main import app
 
 client = TestClient(app)
 

@@ -3,9 +3,9 @@
 from unittest.mock import patch
 
 import pytest
-from defensive_toolkit.api.main import app
 from fastapi.testclient import TestClient
 
+from defensive_toolkit.api.main import app
 from tests.mocks.external_services import MockElasticClient, MockWazuhClient
 
 client = TestClient(app)

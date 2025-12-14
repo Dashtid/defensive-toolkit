@@ -5,9 +5,9 @@ End-to-end tests for complete security workflows.
 """
 
 import pytest
-from defensive_toolkit.api.main import app
 from fastapi.testclient import TestClient
 
+from defensive_toolkit.api.main import app
 from tests.fixtures.factories import DetectionRuleFactory, IncidentFactory
 
 client = TestClient(app)
