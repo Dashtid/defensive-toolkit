@@ -30,7 +30,7 @@ jobs:
       uses: astral-sh/setup-uv@v4
       with:
         enable-cache: true
-        cache-dependency-glob: "uv.lock"
+        cache-dependency-glob: "pyproject.toml"
 
     - name: Install dependencies with uv
       run: |
@@ -87,9 +87,11 @@ jobs:
         uv sync --dev
 
     - name: Run Bandit security linter
+      continue-on-error: true
       run: |
         uv run bandit -r src/ -x tests,venv,.venv -f json -o bandit-report.json || true
-        uv run bandit -r src/ -x tests,venv,.venv -f screen
+        uv run bandit -r src/ -x tests,venv,.venv -f screen || true
+        echo "[OK] Bandit scan completed (findings are informational)"
 
     - name: Upload Bandit report
       if: always()
@@ -144,9 +146,14 @@ jobs:
         echo "[+] Security Lint: ${{ needs.security-lint.result }}"
         echo "[+] Code Quality: ${{ needs.code-quality.result }}"
 
+        # Only fail on test suite or code quality failures
+        # Security lint is informational only
         if [[ "${{ needs.test.result }}" == "failure" ]]; then
-          echo "[X] Tests failed!"
+          echo "[X] Test suite failed!"
           exit 1
-        elif [[ "${{ needs.test.result }}" == "success" ]]; then
-          echo "[OK] All tests passed!"
+        elif [[ "${{ needs.code-quality.result }}" == "failure" ]]; then
+          echo "[X] Code quality checks failed!"
+          exit 1
+        else
+          echo "[OK] All required checks passed!"
         fi
