@@ -50,12 +50,12 @@ class TestMFTAnalyzerInit:
 class TestMFTParsing:
     """Test MFT parsing functionality"""
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_parse_mft_success(self, mock_run, tmp_path):
         """Test successful MFT parsing"""
         # Create mock MFT file
         mft_file = tmp_path / "$MFT"
-        mft_file.write_bytes(b'\x00' * 1024)  # Mock MFT data
+        mft_file.write_bytes(b"\x00" * 1024)  # Mock MFT data
 
         output_dir = tmp_path / "analysis"
 
@@ -73,7 +73,7 @@ class TestMFTParsing:
         assert result == expected_output or result is None
         mock_run.assert_called_once()
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_parse_mft_failure(self, mock_run, tmp_path):
         """Test MFT parsing failure"""
         mft_file = tmp_path / "$MFT"
@@ -82,18 +82,14 @@ class TestMFTParsing:
         output_dir = tmp_path / "analysis"
 
         # Mock subprocess failure
-        mock_run.return_value = Mock(
-            returncode=1,
-            stdout="",
-            stderr="Parse error"
-        )
+        mock_run.return_value = Mock(returncode=1, stdout="", stderr="Parse error")
 
         analyzer = MFTAnalyzer(mft_file, output_dir)
         result = analyzer.parse_mft()
 
         assert result is None
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_parse_mft_tool_not_found(self, mock_run, tmp_path):
         """Test when analyzeMFT tool is not found"""
         mft_file = tmp_path / "$MFT"
@@ -122,11 +118,29 @@ class TestSuspiciousFileAnalysis:
 
         # Create mock parsed CSV
         parsed_csv = tmp_path / "mft_parsed.csv"
-        with open(parsed_csv, 'w', newline='') as f:
+        with open(parsed_csv, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(['Filename', 'Path', 'Extension', 'Size', 'Created', 'Modified'])
-            writer.writerow(['malware.exe', 'C:\\Temp\\malware.exe', '.exe', '102400', '2025-10-18', '2025-10-18'])
-            writer.writerow(['normal.txt', 'C:\\Users\\Documents\\normal.txt', '.txt', '1024', '2025-10-18', '2025-10-18'])
+            writer.writerow(["Filename", "Path", "Extension", "Size", "Created", "Modified"])
+            writer.writerow(
+                [
+                    "malware.exe",
+                    "C:\\Temp\\malware.exe",
+                    ".exe",
+                    "102400",
+                    "2025-10-18",
+                    "2025-10-18",
+                ]
+            )
+            writer.writerow(
+                [
+                    "normal.txt",
+                    "C:\\Users\\Documents\\normal.txt",
+                    ".txt",
+                    "1024",
+                    "2025-10-18",
+                    "2025-10-18",
+                ]
+            )
 
         analyzer = MFTAnalyzer(mft_file, output_dir)
         analyzer.analyze_suspicious_files(parsed_csv)
@@ -146,7 +160,7 @@ class TestSuspiciousFileAnalysis:
             "C:\\Windows\\Temp\\evil.exe",
             "C:\\Users\\Public\\backdoor.dll",
             "C:\\ProgramData\\malware.bat",
-            "C:\\$Recycle.Bin\\payload.exe"
+            "C:\\$Recycle.Bin\\payload.exe",
         ]
 
         analyzer = MFTAnalyzer(mft_file, output_dir)
@@ -154,7 +168,9 @@ class TestSuspiciousFileAnalysis:
         # Check if paths are recognized as suspicious
         for path in suspicious_paths:
             # Would be detected in real analysis
-            assert any(keyword in path.lower() for keyword in ['temp', 'public', 'programdata', 'recycle'])
+            assert any(
+                keyword in path.lower() for keyword in ["temp", "public", "programdata", "recycle"]
+            )
 
     def test_detect_suspicious_extensions(self, tmp_path):
         """Test detection of suspicious file extensions"""
@@ -165,15 +181,22 @@ class TestSuspiciousFileAnalysis:
 
         # Extensions that should be flagged
         suspicious_extensions = [
-            '.exe', '.dll', '.ps1', '.bat', '.cmd',
-            '.vbs', '.js', '.hta', '.scr'
+            ".exe",
+            ".dll",
+            ".ps1",
+            ".bat",
+            ".cmd",
+            ".vbs",
+            ".js",
+            ".hta",
+            ".scr",
         ]
 
         analyzer = MFTAnalyzer(mft_file, output_dir)
 
         # All should be in suspicious extensions list
         for ext in suspicious_extensions:
-            assert ext.lower() in ['.exe', '.dll', '.ps1', '.bat', '.cmd', '.vbs', '.js', '.hta']
+            assert ext.lower() in [".exe", ".dll", ".ps1", ".bat", ".cmd", ".vbs", ".js", ".hta"]
 
     def test_detect_timestomping(self, tmp_path):
         """Test detection of timestamp manipulation"""
@@ -184,11 +207,22 @@ class TestSuspiciousFileAnalysis:
 
         # Create CSV with timestomp indicators
         parsed_csv = tmp_path / "mft_parsed.csv"
-        with open(parsed_csv, 'w', newline='') as f:
+        with open(parsed_csv, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(['Filename', 'Created', 'Modified', 'Accessed', 'FN_Created', 'FN_Modified'])
+            writer.writerow(
+                ["Filename", "Created", "Modified", "Accessed", "FN_Created", "FN_Modified"]
+            )
             # File with mismatched timestamps (potential timestomping)
-            writer.writerow(['suspicious.exe', '2010-01-01 00:00:00', '2025-10-18 10:00:00', '2025-10-18 10:00:00', '2025-10-18 09:00:00', '2025-10-18 09:00:00'])
+            writer.writerow(
+                [
+                    "suspicious.exe",
+                    "2010-01-01 00:00:00",
+                    "2025-10-18 10:00:00",
+                    "2025-10-18 10:00:00",
+                    "2025-10-18 09:00:00",
+                    "2025-10-18 09:00:00",
+                ]
+            )
 
         analyzer = MFTAnalyzer(mft_file, output_dir)
         analyzer.analyze_suspicious_files(parsed_csv)
@@ -209,11 +243,27 @@ class TestTimelineGeneration:
 
         # Create mock parsed MFT data
         parsed_csv = tmp_path / "mft_parsed.csv"
-        with open(parsed_csv, 'w', newline='') as f:
+        with open(parsed_csv, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(['Filename', 'Path', 'Created', 'Modified', 'Accessed'])
-            writer.writerow(['file1.exe', 'C:\\Temp\\file1.exe', '2025-10-18 10:00:00', '2025-10-18 10:05:00', '2025-10-18 10:10:00'])
-            writer.writerow(['file2.dll', 'C:\\Windows\\file2.dll', '2025-10-18 09:00:00', '2025-10-18 09:01:00', '2025-10-18 09:02:00'])
+            writer.writerow(["Filename", "Path", "Created", "Modified", "Accessed"])
+            writer.writerow(
+                [
+                    "file1.exe",
+                    "C:\\Temp\\file1.exe",
+                    "2025-10-18 10:00:00",
+                    "2025-10-18 10:05:00",
+                    "2025-10-18 10:10:00",
+                ]
+            )
+            writer.writerow(
+                [
+                    "file2.dll",
+                    "C:\\Windows\\file2.dll",
+                    "2025-10-18 09:00:00",
+                    "2025-10-18 09:01:00",
+                    "2025-10-18 09:02:00",
+                ]
+            )
 
         analyzer = MFTAnalyzer(mft_file, output_dir)
         timeline_file = output_dir / "timeline.csv"
@@ -233,16 +283,16 @@ class TestTimelineGeneration:
 
         # Events should be sorted by timestamp
         events = [
-            {'time': '2025-10-18 10:00:00', 'event': 'File created'},
-            {'time': '2025-10-18 09:00:00', 'event': 'File created'},
-            {'time': '2025-10-18 11:00:00', 'event': 'File modified'}
+            {"time": "2025-10-18 10:00:00", "event": "File created"},
+            {"time": "2025-10-18 09:00:00", "event": "File created"},
+            {"time": "2025-10-18 11:00:00", "event": "File modified"},
         ]
 
         # Sort by timestamp
-        sorted_events = sorted(events, key=lambda x: x['time'])
+        sorted_events = sorted(events, key=lambda x: x["time"])
 
-        assert sorted_events[0]['time'] == '2025-10-18 09:00:00'
-        assert sorted_events[-1]['time'] == '2025-10-18 11:00:00'
+        assert sorted_events[0]["time"] == "2025-10-18 09:00:00"
+        assert sorted_events[-1]["time"] == "2025-10-18 11:00:00"
 
     def test_timeline_filtering(self, tmp_path):
         """Test timeline filtering by date range"""
@@ -273,19 +323,19 @@ class TestFileMetadataExtraction:
 
         # Sample file metadata
         metadata = {
-            'filename': 'test.exe',
-            'path': 'C:\\Temp\\test.exe',
-            'size': 102400,
-            'created': '2025-10-18 10:00:00',
-            'modified': '2025-10-18 10:05:00',
-            'accessed': '2025-10-18 10:10:00',
-            'attributes': 'ARCHIVE'
+            "filename": "test.exe",
+            "path": "C:\\Temp\\test.exe",
+            "size": 102400,
+            "created": "2025-10-18 10:00:00",
+            "modified": "2025-10-18 10:05:00",
+            "accessed": "2025-10-18 10:10:00",
+            "attributes": "ARCHIVE",
         }
 
         # All fields should be present
-        assert 'filename' in metadata
-        assert 'size' in metadata
-        assert 'created' in metadata
+        assert "filename" in metadata
+        assert "size" in metadata
+        assert "created" in metadata
 
     def test_extract_ads_alternate_data_streams(self, tmp_path):
         """Test detection of Alternate Data Streams (ADS)"""
@@ -295,15 +345,11 @@ class TestFileMetadataExtraction:
         output_dir = tmp_path / "analysis"
 
         # ADS indicators (file:stream format)
-        ads_files = [
-            "test.txt:hidden.exe",
-            "document.doc:malware.dll",
-            "normal.txt:payload:$DATA"
-        ]
+        ads_files = ["test.txt:hidden.exe", "document.doc:malware.dll", "normal.txt:payload:$DATA"]
 
         # Should detect ADS
         for ads in ads_files:
-            assert ':' in ads  # ADS indicator
+            assert ":" in ads  # ADS indicator
 
 
 class TestMFTReporting:
@@ -318,28 +364,28 @@ class TestMFTReporting:
 
         analyzer = MFTAnalyzer(mft_file, output_dir)
         analyzer.suspicious_findings = [
-            {'file': 'malware.exe', 'reason': 'Suspicious path'},
-            {'file': 'backdoor.dll', 'reason': 'Hidden in system directory'}
+            {"file": "malware.exe", "reason": "Suspicious path"},
+            {"file": "backdoor.dll", "reason": "Hidden in system directory"},
         ]
 
         report_file = output_dir / "mft_analysis_report.json"
         report_data = {
-            'timestamp': datetime.now().isoformat(),
-            'mft_file': str(mft_file),
-            'suspicious_files': len(analyzer.suspicious_findings),
-            'findings': analyzer.suspicious_findings
+            "timestamp": datetime.now().isoformat(),
+            "mft_file": str(mft_file),
+            "suspicious_files": len(analyzer.suspicious_findings),
+            "findings": analyzer.suspicious_findings,
         }
 
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump(report_data, f, indent=2)
 
         assert report_file.exists()
 
-        with open(report_file, 'r') as f:
+        with open(report_file, "r") as f:
             report = json.load(f)
 
-        assert 'findings' in report
-        assert report['suspicious_files'] == 2
+        assert "findings" in report
+        assert report["suspicious_files"] == 2
 
     def test_generate_summary_statistics(self, tmp_path):
         """Test summary statistics generation"""
@@ -350,19 +396,15 @@ class TestMFTReporting:
 
         # Sample statistics
         stats = {
-            'total_files': 10000,
-            'total_directories': 500,
-            'suspicious_files': 15,
-            'file_types': {
-                '.exe': 100,
-                '.dll': 200,
-                '.txt': 5000
-            },
-            'largest_file_size': 104857600  # 100MB
+            "total_files": 10000,
+            "total_directories": 500,
+            "suspicious_files": 15,
+            "file_types": {".exe": 100, ".dll": 200, ".txt": 5000},
+            "largest_file_size": 104857600,  # 100MB
         }
 
-        assert stats['total_files'] > stats['suspicious_files']
-        assert '.exe' in stats['file_types']
+        assert stats["total_files"] > stats["suspicious_files"]
+        assert ".exe" in stats["file_types"]
 
 
 # [+] Integration tests
@@ -370,12 +412,12 @@ class TestMFTReporting:
 class TestMFTAnalysisIntegration:
     """Integration tests for MFT analysis"""
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_complete_mft_analysis_workflow(self, mock_run, tmp_path):
         """Test complete MFT analysis workflow"""
         # Create mock MFT
         mft_file = tmp_path / "$MFT"
-        mft_file.write_bytes(b'\x00' * 1024)
+        mft_file.write_bytes(b"\x00" * 1024)
 
         output_dir = tmp_path / "analysis"
 
@@ -385,10 +427,10 @@ class TestMFTAnalysisIntegration:
         # Create mock parsed CSV
         parsed_csv = output_dir / "mft_parsed.csv"
         output_dir.mkdir()
-        with open(parsed_csv, 'w', newline='') as f:
+        with open(parsed_csv, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(['Filename', 'Path', 'Extension'])
-            writer.writerow(['malware.exe', 'C:\\Temp\\malware.exe', '.exe'])
+            writer.writerow(["Filename", "Path", "Extension"])
+            writer.writerow(["malware.exe", "C:\\Temp\\malware.exe", ".exe"])
 
         # Execute workflow
         analyzer = MFTAnalyzer(mft_file, output_dir)
@@ -410,24 +452,27 @@ class TestMFTAnalysisIntegration:
 
 
 # [+] Parametrized tests
-@pytest.mark.parametrize("suspicious_path", [
-    "C:\\Windows\\Temp\\evil.exe",
-    "C:\\Users\\Public\\backdoor.dll",
-    "C:\\ProgramData\\malware.bat",
-    "C:\\$Recycle.Bin\\payload.ps1"
-])
+@pytest.mark.parametrize(
+    "suspicious_path",
+    [
+        "C:\\Windows\\Temp\\evil.exe",
+        "C:\\Users\\Public\\backdoor.dll",
+        "C:\\ProgramData\\malware.bat",
+        "C:\\$Recycle.Bin\\payload.ps1",
+    ],
+)
 def test_suspicious_path_detection(suspicious_path):
     """Test detection of various suspicious paths"""
-    suspicious_keywords = ['temp', 'public', 'programdata', 'recycle']
+    suspicious_keywords = ["temp", "public", "programdata", "recycle"]
     assert any(keyword in suspicious_path.lower() for keyword in suspicious_keywords)
 
 
-@pytest.mark.parametrize("extension", [
-    '.exe', '.dll', '.ps1', '.bat', '.cmd', '.vbs', '.js', '.hta', '.scr'
-])
+@pytest.mark.parametrize(
+    "extension", [".exe", ".dll", ".ps1", ".bat", ".cmd", ".vbs", ".js", ".hta", ".scr"]
+)
 def test_suspicious_extensions(extension):
     """Test suspicious file extensions"""
-    dangerous_extensions = ['.exe', '.dll', '.ps1', '.bat', '.cmd', '.vbs', '.js', '.hta', '.scr']
+    dangerous_extensions = [".exe", ".dll", ".ps1", ".bat", ".cmd", ".vbs", ".js", ".hta", ".scr"]
     assert extension in dangerous_extensions
 
 
@@ -439,7 +484,7 @@ def test_large_mft_parsing_performance(tmp_path):
 
     mft_file = tmp_path / "$MFT"
     # Create large mock MFT (1MB)
-    mft_file.write_bytes(b'\x00' * (1024 * 1024))
+    mft_file.write_bytes(b"\x00" * (1024 * 1024))
 
     output_dir = tmp_path / "analysis"
 

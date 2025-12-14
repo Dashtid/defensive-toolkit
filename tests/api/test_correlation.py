@@ -25,7 +25,7 @@ def sample_correlation_rule():
         "rule_type": "threshold",
         "conditions": [
             {"field": "event_type", "operator": "eq", "value": "authentication_failure"},
-            {"field": "source_ip", "operator": "ne", "value": "127.0.0.1"}
+            {"field": "source_ip", "operator": "ne", "value": "127.0.0.1"},
         ],
         "time_window_seconds": 300,
         "threshold": 5,
@@ -34,11 +34,11 @@ def sample_correlation_rule():
         "mitre_mapping": {
             "technique_ids": ["T1110"],
             "tactic_ids": ["TA0006"],
-            "kill_chain_phases": ["exploitation"]
+            "kill_chain_phases": ["exploitation"],
         },
         "tags": ["authentication", "brute-force"],
         "enabled": True,
-        "actions": []
+        "actions": [],
     }
 
 
@@ -50,7 +50,11 @@ def sample_sequence_rule():
         "description": "Detect credential compromise followed by privilege escalation",
         "rule_type": "sequence",
         "conditions": [
-            {"field": "event_type", "operator": "in", "value": ["credential_dump", "privilege_escalation"]}
+            {
+                "field": "event_type",
+                "operator": "in",
+                "value": ["credential_dump", "privilege_escalation"],
+            }
         ],
         "time_window_seconds": 3600,
         "threshold": 2,
@@ -59,11 +63,11 @@ def sample_sequence_rule():
         "mitre_mapping": {
             "technique_ids": ["T1078", "T1547"],
             "tactic_ids": ["TA0006", "TA0004"],
-            "kill_chain_phases": ["exploitation", "installation"]
+            "kill_chain_phases": ["exploitation", "installation"],
         },
         "tags": ["credential", "privilege-escalation"],
         "enabled": True,
-        "actions": []
+        "actions": [],
     }
 
 
@@ -82,7 +86,7 @@ def sample_test_alerts():
             "destination_ip": "10.0.0.1",
             "user": "admin",
             "host": "server-01",
-            "raw_data": {"attempt_count": 1}
+            "raw_data": {"attempt_count": 1},
         },
         {
             "source": "siem",
@@ -94,7 +98,7 @@ def sample_test_alerts():
             "destination_ip": "10.0.0.1",
             "user": "admin",
             "host": "server-01",
-            "raw_data": {"attempt_count": 2}
+            "raw_data": {"attempt_count": 2},
         },
         {
             "source": "siem",
@@ -106,8 +110,8 @@ def sample_test_alerts():
             "destination_ip": "10.0.0.1",
             "user": "admin",
             "host": "server-01",
-            "raw_data": {"attempt_count": 5}
-        }
+            "raw_data": {"attempt_count": 5},
+        },
     ]
 
 
@@ -125,7 +129,9 @@ def sample_attack_pattern():
                 "kill_chain_phase": "delivery",
                 "required": True,
                 "timeout_hours": 48,
-                "conditions": [{"field": "event_type", "operator": "eq", "value": "phishing_detected"}]
+                "conditions": [
+                    {"field": "event_type", "operator": "eq", "value": "phishing_detected"}
+                ],
             },
             {
                 "stage_number": 2,
@@ -134,15 +140,17 @@ def sample_attack_pattern():
                 "kill_chain_phase": "exploitation",
                 "required": True,
                 "timeout_hours": 24,
-                "conditions": [{"field": "event_type", "operator": "eq", "value": "malware_execution"}]
-            }
+                "conditions": [
+                    {"field": "event_type", "operator": "eq", "value": "malware_execution"}
+                ],
+            },
         ],
         "severity": "critical",
         "mitre_mapping": {
             "technique_ids": ["T1566.001", "T1059.001"],
-            "tactic_ids": ["TA0001", "TA0002"]
+            "tactic_ids": ["TA0001", "TA0002"],
         },
-        "tags": ["ransomware", "apt"]
+        "tags": ["ransomware", "apt"],
     }
 
 
@@ -153,11 +161,9 @@ def sample_suppression():
     return {
         "name": "Maintenance Window Suppression",
         "description": "Suppress alerts during scheduled maintenance",
-        "conditions": [
-            {"field": "host", "operator": "in", "value": ["server-01", "server-02"]}
-        ],
+        "conditions": [{"field": "host", "operator": "in", "value": ["server-01", "server-02"]}],
         "suppress_duration_minutes": 60,
-        "expires_at": expires.isoformat()
+        "expires_at": expires.isoformat(),
     }
 
 
@@ -177,9 +183,7 @@ class TestCorrelationRules:
     def test_create_threshold_rule(self, auth_headers, sample_correlation_rule):
         """Test creating a threshold correlation rule"""
         response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         assert response.status_code == 201
         data = response.json()
@@ -191,9 +195,7 @@ class TestCorrelationRules:
     def test_create_sequence_rule(self, auth_headers, sample_sequence_rule):
         """Test creating a sequence correlation rule"""
         response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_sequence_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_sequence_rule, headers=auth_headers
         )
         assert response.status_code == 201
         data = response.json()
@@ -204,36 +206,26 @@ class TestCorrelationRules:
         """Test getting a specific rule"""
         # Create rule
         create_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = create_response.json()["id"]
 
         # Get rule
-        response = client.get(
-            f"/api/v1/correlation/rules/{rule_id}",
-            headers=auth_headers
-        )
+        response = client.get(f"/api/v1/correlation/rules/{rule_id}", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == rule_id
 
     def test_get_nonexistent_rule(self, auth_headers):
         """Test getting a rule that doesn't exist"""
-        response = client.get(
-            "/api/v1/correlation/rules/nonexistent-id",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/correlation/rules/nonexistent-id", headers=auth_headers)
         assert response.status_code == 404
 
     def test_update_rule(self, auth_headers, sample_correlation_rule):
         """Test updating a rule"""
         # Create rule
         create_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = create_response.json()["id"]
 
@@ -241,12 +233,10 @@ class TestCorrelationRules:
         update_data = {
             "name": "Updated Brute Force Detection",
             "threshold": 10,
-            "severity": "critical"
+            "severity": "critical",
         }
         response = client.patch(
-            f"/api/v1/correlation/rules/{rule_id}",
-            json=update_data,
-            headers=auth_headers
+            f"/api/v1/correlation/rules/{rule_id}", json=update_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -258,25 +248,17 @@ class TestCorrelationRules:
         """Test deleting a rule"""
         # Create rule
         create_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = create_response.json()["id"]
 
         # Delete rule
-        response = client.delete(
-            f"/api/v1/correlation/rules/{rule_id}",
-            headers=auth_headers
-        )
+        response = client.delete(f"/api/v1/correlation/rules/{rule_id}", headers=auth_headers)
         assert response.status_code == 200
         assert response.json()["status"] == "success"
 
         # Verify deletion
-        get_response = client.get(
-            f"/api/v1/correlation/rules/{rule_id}",
-            headers=auth_headers
-        )
+        get_response = client.get(f"/api/v1/correlation/rules/{rule_id}", headers=auth_headers)
         assert get_response.status_code == 404
 
     def test_enable_rule(self, auth_headers, sample_correlation_rule):
@@ -284,17 +266,12 @@ class TestCorrelationRules:
         # Create disabled rule
         sample_correlation_rule["enabled"] = False
         create_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = create_response.json()["id"]
 
         # Enable rule
-        response = client.post(
-            f"/api/v1/correlation/rules/{rule_id}/enable",
-            headers=auth_headers
-        )
+        response = client.post(f"/api/v1/correlation/rules/{rule_id}/enable", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["enabled"] is True
@@ -304,33 +281,27 @@ class TestCorrelationRules:
         """Test disabling a rule"""
         # Create rule
         create_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = create_response.json()["id"]
 
         # Disable rule
-        response = client.post(
-            f"/api/v1/correlation/rules/{rule_id}/disable",
-            headers=auth_headers
-        )
+        response = client.post(f"/api/v1/correlation/rules/{rule_id}/disable", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["enabled"] is False
         assert data["status"] == "disabled"
 
-    def test_list_rules_with_filters(self, auth_headers, sample_correlation_rule, sample_sequence_rule):
+    def test_list_rules_with_filters(
+        self, auth_headers, sample_correlation_rule, sample_sequence_rule
+    ):
         """Test listing rules with filters"""
         # Create multiple rules
         client.post("/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers)
         client.post("/api/v1/correlation/rules", json=sample_sequence_rule, headers=auth_headers)
 
         # Filter by rule type
-        response = client.get(
-            "/api/v1/correlation/rules?rule_type=threshold",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/correlation/rules?rule_type=threshold", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         for rule in data["rules"]:
@@ -340,25 +311,20 @@ class TestCorrelationRules:
 class TestRuleTesting:
     """Test correlation rule testing functionality"""
 
-    def test_test_rule_with_matching_alerts(self, auth_headers, sample_correlation_rule, sample_test_alerts):
+    def test_test_rule_with_matching_alerts(
+        self, auth_headers, sample_correlation_rule, sample_test_alerts
+    ):
         """Test a rule that matches test alerts"""
         # Create rule
         create_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = create_response.json()["id"]
 
         # Test rule
-        test_request = {
-            "rule_id": rule_id,
-            "test_alerts": sample_test_alerts
-        }
+        test_request = {"rule_id": rule_id, "test_alerts": sample_test_alerts}
         response = client.post(
-            "/api/v1/correlation/rules/test",
-            json=test_request,
-            headers=auth_headers
+            "/api/v1/correlation/rules/test", json=test_request, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -373,22 +339,15 @@ class TestRuleTesting:
         rule_def = {
             "name": "Inline Test Rule",
             "rule_type": "threshold",
-            "conditions": [
-                {"field": "source", "operator": "eq", "value": "siem"}
-            ],
+            "conditions": [{"field": "source", "operator": "eq", "value": "siem"}],
             "time_window_seconds": 600,
             "threshold": 2,
-            "severity": "medium"
+            "severity": "medium",
         }
 
-        test_request = {
-            "rule": rule_def,
-            "test_alerts": sample_test_alerts
-        }
+        test_request = {"rule": rule_def, "test_alerts": sample_test_alerts}
         response = client.post(
-            "/api/v1/correlation/rules/test",
-            json=test_request,
-            headers=auth_headers
+            "/api/v1/correlation/rules/test", json=test_request, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -412,9 +371,7 @@ class TestCorrelatedAlerts:
         """Test manually creating a correlated alert"""
         # Create rule first
         rule_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = rule_response.json()["id"]
 
@@ -429,7 +386,7 @@ class TestCorrelatedAlerts:
                     "event_type": "authentication_failure",
                     "severity": "medium",
                     "summary": "Failed login",
-                    "raw_data": {}
+                    "raw_data": {},
                 },
                 {
                     "alert_id": "alert-002",
@@ -438,16 +395,14 @@ class TestCorrelatedAlerts:
                     "event_type": "authentication_failure",
                     "severity": "medium",
                     "summary": "Failed login",
-                    "raw_data": {}
-                }
+                    "raw_data": {},
+                },
             ],
-            "summary": "Multiple failed logins detected"
+            "summary": "Multiple failed logins detected",
         }
 
         response = client.post(
-            "/api/v1/correlation/alerts",
-            json=correlated_alert,
-            headers=auth_headers
+            "/api/v1/correlation/alerts", json=correlated_alert, headers=auth_headers
         )
         assert response.status_code == 201
         data = response.json()
@@ -459,9 +414,7 @@ class TestCorrelatedAlerts:
         """Test getting a specific correlated alert"""
         # Create rule and correlated alert
         rule_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = rule_response.json()["id"]
 
@@ -476,22 +429,17 @@ class TestCorrelatedAlerts:
                     "event_type": "authentication_failure",
                     "severity": "medium",
                     "summary": "Test alert",
-                    "raw_data": {}
+                    "raw_data": {},
                 }
-            ]
+            ],
         }
         create_response = client.post(
-            "/api/v1/correlation/alerts",
-            json=correlated_alert,
-            headers=auth_headers
+            "/api/v1/correlation/alerts", json=correlated_alert, headers=auth_headers
         )
         alert_id = create_response.json()["id"]
 
         # Get alert
-        response = client.get(
-            f"/api/v1/correlation/alerts/{alert_id}",
-            headers=auth_headers
-        )
+        response = client.get(f"/api/v1/correlation/alerts/{alert_id}", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == alert_id
@@ -500,9 +448,7 @@ class TestCorrelatedAlerts:
         """Test updating a correlated alert"""
         # Create rule and correlated alert
         rule_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = rule_response.json()["id"]
 
@@ -517,14 +463,12 @@ class TestCorrelatedAlerts:
                     "event_type": "test",
                     "severity": "medium",
                     "summary": "Test",
-                    "raw_data": {}
+                    "raw_data": {},
                 }
-            ]
+            ],
         }
         create_response = client.post(
-            "/api/v1/correlation/alerts",
-            json=correlated_alert,
-            headers=auth_headers
+            "/api/v1/correlation/alerts", json=correlated_alert, headers=auth_headers
         )
         alert_id = create_response.json()["id"]
 
@@ -532,12 +476,10 @@ class TestCorrelatedAlerts:
         update_data = {
             "status": "investigating",
             "assigned_to": "analyst@example.com",
-            "notes": "Under investigation"
+            "notes": "Under investigation",
         }
         response = client.patch(
-            f"/api/v1/correlation/alerts/{alert_id}",
-            json=update_data,
-            headers=auth_headers
+            f"/api/v1/correlation/alerts/{alert_id}", json=update_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -548,9 +490,7 @@ class TestCorrelatedAlerts:
         """Test resolving a correlated alert"""
         # Create rule and correlated alert
         rule_response = client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
+            "/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers
         )
         rule_id = rule_response.json()["id"]
 
@@ -565,21 +505,19 @@ class TestCorrelatedAlerts:
                     "event_type": "test",
                     "severity": "low",
                     "summary": "Test",
-                    "raw_data": {}
+                    "raw_data": {},
                 }
-            ]
+            ],
         }
         create_response = client.post(
-            "/api/v1/correlation/alerts",
-            json=correlated_alert,
-            headers=auth_headers
+            "/api/v1/correlation/alerts", json=correlated_alert, headers=auth_headers
         )
         alert_id = create_response.json()["id"]
 
         # Resolve alert
         response = client.post(
             f"/api/v1/correlation/alerts/{alert_id}/resolve?resolution_notes=False%20positive",
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -593,19 +531,11 @@ class TestAlertIngestion:
     def test_ingest_alerts(self, auth_headers, sample_correlation_rule, sample_test_alerts):
         """Test ingesting alerts for correlation"""
         # Create rule first
-        client.post(
-            "/api/v1/correlation/rules",
-            json=sample_correlation_rule,
-            headers=auth_headers
-        )
+        client.post("/api/v1/correlation/rules", json=sample_correlation_rule, headers=auth_headers)
 
         # Ingest alerts
         batch = {"alerts": sample_test_alerts}
-        response = client.post(
-            "/api/v1/correlation/ingest",
-            json=batch,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/correlation/ingest", json=batch, headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
@@ -632,13 +562,11 @@ class TestAlertClustering:
                 "features": ["source", "event_type", "source_ip"],
                 "min_cluster_size": 2,
                 "max_cluster_size": 50,
-                "algorithm": "similarity"
-            }
+                "algorithm": "similarity",
+            },
         }
         response = client.post(
-            "/api/v1/correlation/cluster",
-            json=cluster_request,
-            headers=auth_headers
+            "/api/v1/correlation/cluster", json=cluster_request, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -673,9 +601,7 @@ class TestAttackPatterns:
     def test_create_attack_pattern(self, auth_headers, sample_attack_pattern):
         """Test creating an attack pattern"""
         response = client.post(
-            "/api/v1/correlation/patterns",
-            json=sample_attack_pattern,
-            headers=auth_headers
+            "/api/v1/correlation/patterns", json=sample_attack_pattern, headers=auth_headers
         )
         assert response.status_code == 201
         data = response.json()
@@ -687,17 +613,12 @@ class TestAttackPatterns:
         """Test getting a specific attack pattern"""
         # Create pattern
         create_response = client.post(
-            "/api/v1/correlation/patterns",
-            json=sample_attack_pattern,
-            headers=auth_headers
+            "/api/v1/correlation/patterns", json=sample_attack_pattern, headers=auth_headers
         )
         pattern_id = create_response.json()["id"]
 
         # Get pattern
-        response = client.get(
-            f"/api/v1/correlation/patterns/{pattern_id}",
-            headers=auth_headers
-        )
+        response = client.get(f"/api/v1/correlation/patterns/{pattern_id}", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == pattern_id
@@ -706,21 +627,14 @@ class TestAttackPatterns:
         """Test updating an attack pattern"""
         # Create pattern
         create_response = client.post(
-            "/api/v1/correlation/patterns",
-            json=sample_attack_pattern,
-            headers=auth_headers
+            "/api/v1/correlation/patterns", json=sample_attack_pattern, headers=auth_headers
         )
         pattern_id = create_response.json()["id"]
 
         # Update pattern
-        update_data = {
-            "status": "confirmed",
-            "confidence": 0.85
-        }
+        update_data = {"status": "confirmed", "confidence": 0.85}
         response = client.patch(
-            f"/api/v1/correlation/patterns/{pattern_id}",
-            json=update_data,
-            headers=auth_headers
+            f"/api/v1/correlation/patterns/{pattern_id}", json=update_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -770,8 +684,7 @@ class TestMitreAttack:
     def test_list_techniques_by_tactic(self, auth_headers):
         """Test filtering techniques by tactic"""
         response = client.get(
-            "/api/v1/correlation/mitre/techniques?tactic_id=TA0001",
-            headers=auth_headers
+            "/api/v1/correlation/mitre/techniques?tactic_id=TA0001", headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -781,8 +694,7 @@ class TestMitreAttack:
     def test_list_techniques_exclude_subtechniques(self, auth_headers):
         """Test excluding subtechniques"""
         response = client.get(
-            "/api/v1/correlation/mitre/techniques?subtechniques=false",
-            headers=auth_headers
+            "/api/v1/correlation/mitre/techniques?subtechniques=false", headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -806,12 +718,10 @@ class TestKillChainAnalysis:
         analysis_request = {
             "source_ip": "192.168.1.100",
             "time_range_hours": 24,
-            "include_all_severities": True
+            "include_all_severities": True,
         }
         response = client.post(
-            "/api/v1/correlation/killchain/analyze",
-            json=analysis_request,
-            headers=auth_headers
+            "/api/v1/correlation/killchain/analyze", json=analysis_request, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -848,9 +758,7 @@ class TestSuppressions:
     def test_create_suppression(self, auth_headers, sample_suppression):
         """Test creating a suppression rule"""
         response = client.post(
-            "/api/v1/correlation/suppressions",
-            json=sample_suppression,
-            headers=auth_headers
+            "/api/v1/correlation/suppressions", json=sample_suppression, headers=auth_headers
         )
         assert response.status_code == 201
         data = response.json()
@@ -862,16 +770,13 @@ class TestSuppressions:
         """Test deleting a suppression rule"""
         # Create suppression
         create_response = client.post(
-            "/api/v1/correlation/suppressions",
-            json=sample_suppression,
-            headers=auth_headers
+            "/api/v1/correlation/suppressions", json=sample_suppression, headers=auth_headers
         )
         suppression_id = create_response.json()["id"]
 
         # Delete suppression
         response = client.delete(
-            f"/api/v1/correlation/suppressions/{suppression_id}",
-            headers=auth_headers
+            f"/api/v1/correlation/suppressions/{suppression_id}", headers=auth_headers
         )
         assert response.status_code == 200
         assert response.json()["status"] == "success"
@@ -944,13 +849,9 @@ class TestCorrelationValidation:
             "conditions": [],
             "time_window_seconds": 300,
             "threshold": 1,
-            "severity": "high"
+            "severity": "high",
         }
-        response = client.post(
-            "/api/v1/correlation/rules",
-            json=invalid_rule,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/correlation/rules", json=invalid_rule, headers=auth_headers)
         assert response.status_code == 422
 
     def test_create_rule_invalid_severity(self, auth_headers):
@@ -961,27 +862,17 @@ class TestCorrelationValidation:
             "conditions": [],
             "time_window_seconds": 300,
             "threshold": 1,
-            "severity": "invalid_severity"
+            "severity": "invalid_severity",
         }
-        response = client.post(
-            "/api/v1/correlation/rules",
-            json=invalid_rule,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/correlation/rules", json=invalid_rule, headers=auth_headers)
         assert response.status_code == 422
 
     def test_list_rules_invalid_limit(self, auth_headers):
         """Test listing rules with invalid limit"""
-        response = client.get(
-            "/api/v1/correlation/rules?limit=500",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/correlation/rules?limit=500", headers=auth_headers)
         assert response.status_code == 422
 
     def test_list_alerts_invalid_hours(self, auth_headers):
         """Test listing alerts with invalid hours parameter"""
-        response = client.get(
-            "/api/v1/correlation/alerts?hours=500",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/correlation/alerts?hours=500", headers=auth_headers)
         assert response.status_code == 422

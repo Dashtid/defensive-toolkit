@@ -16,10 +16,7 @@ import yaml
 @pytest.fixture(scope="session", autouse=True)
 def configure_logging():
     """Configure logging for tests"""
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='[%(levelname)s] %(name)s - %(message)s'
-    )
+    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(name)s - %(message)s")
 
 
 # [+] Temporary Directory Fixtures
@@ -52,13 +49,15 @@ def sample_apache_log_line():
 @pytest.fixture
 def sample_json_log_line():
     """Sample JSON log line"""
-    return json.dumps({
-        "timestamp": "2025-10-15T14:30:22Z",
-        "severity": "ERROR",
-        "message": "Authentication failed",
-        "user": "admin",
-        "source_ip": "192.168.1.100"
-    })
+    return json.dumps(
+        {
+            "timestamp": "2025-10-15T14:30:22Z",
+            "severity": "ERROR",
+            "message": "Authentication failed",
+            "user": "admin",
+            "source_ip": "192.168.1.100",
+        }
+    )
 
 
 @pytest.fixture
@@ -70,10 +69,7 @@ def sample_windows_event_log():
         "Computer": "DC01.corp.local",
         "Level": "Information",
         "Message": "An account failed to log on",
-        "EventData": {
-            "TargetUserName": "admin",
-            "IpAddress": "192.168.1.100"
-        }
+        "EventData": {"TargetUserName": "admin", "IpAddress": "192.168.1.100"},
     }
 
 
@@ -90,18 +86,11 @@ def sample_security_policy():
                 "require_uppercase": True,
                 "require_lowercase": True,
                 "require_numbers": True,
-                "require_special": True
+                "require_special": True,
             },
-            "account_lockout": {
-                "enabled": True,
-                "threshold": 5,
-                "duration_minutes": 30
-            },
-            "audit_policy": {
-                "log_failed_logins": True,
-                "log_privilege_use": True
-            }
-        }
+            "account_lockout": {"enabled": True, "threshold": 5, "duration_minutes": 30},
+            "audit_policy": {"log_failed_logins": True, "log_privilege_use": True},
+        },
     }
 
 
@@ -114,8 +103,8 @@ def sample_compliance_config():
         "controls": [
             {"id": "1.1", "name": "Inventory of Authorized Devices", "implemented": True},
             {"id": "2.1", "name": "Inventory of Authorized Software", "implemented": True},
-            {"id": "4.1", "name": "Secure Configuration", "implemented": False}
-        ]
+            {"id": "4.1", "name": "Secure Configuration", "implemented": False},
+        ],
     }
 
 
@@ -131,20 +120,14 @@ def sample_playbook_dict():
             {
                 "name": "Log test message",
                 "action": "log",
-                "parameters": {
-                    "message": "Test message",
-                    "level": "info"
-                }
+                "parameters": {"message": "Test message", "level": "info"},
             },
             {
                 "name": "Set variable",
                 "action": "set_variable",
-                "parameters": {
-                    "name": "test_var",
-                    "value": "test_value"
-                }
-            }
-        ]
+                "parameters": {"name": "test_var", "value": "test_value"},
+            },
+        ],
     }
 
 
@@ -152,7 +135,7 @@ def sample_playbook_dict():
 def sample_playbook_file(tmp_path, sample_playbook_dict):
     """Sample playbook YAML file"""
     playbook_file = tmp_path / "test_playbook.yaml"
-    with open(playbook_file, 'w') as f:
+    with open(playbook_file, "w") as f:
         yaml.dump(sample_playbook_dict, f)
     return playbook_file
 
@@ -170,7 +153,7 @@ def sample_vulnerability():
         "affected_package": "test-package",
         "affected_version": "1.0.0",
         "fixed_version": "1.0.1",
-        "published_date": "2025-10-15T00:00:00Z"
+        "published_date": "2025-10-15T00:00:00Z",
     }
 
 
@@ -188,23 +171,17 @@ def sample_vulnerability_scan_result():
                 "severity": "HIGH",
                 "cvss_score": 7.5,
                 "port": 443,
-                "service": "https"
+                "service": "https",
             },
             {
                 "id": "CVE-2025-67890",
                 "severity": "MEDIUM",
                 "cvss_score": 5.0,
                 "port": 22,
-                "service": "ssh"
-            }
+                "service": "ssh",
+            },
         ],
-        "summary": {
-            "total": 2,
-            "critical": 0,
-            "high": 1,
-            "medium": 1,
-            "low": 0
-        }
+        "summary": {"total": 2, "critical": 0, "high": 1, "medium": 1, "low": 0},
     }
 
 
@@ -218,26 +195,22 @@ def sample_sbom():
         "version": 1,
         "metadata": {
             "timestamp": "2025-10-15T14:30:22Z",
-            "component": {
-                "type": "application",
-                "name": "test-app",
-                "version": "1.0.0"
-            }
+            "component": {"type": "application", "name": "test-app", "version": "1.0.0"},
         },
         "components": [
             {
                 "type": "library",
                 "name": "requests",
                 "version": "2.31.0",
-                "purl": "pkg:pypi/requests@2.31.0"
+                "purl": "pkg:pypi/requests@2.31.0",
             },
             {
                 "type": "library",
                 "name": "PyYAML",
                 "version": "6.0.1",
-                "purl": "pkg:pypi/pyyaml@6.0.1"
-            }
-        ]
+                "purl": "pkg:pypi/pyyaml@6.0.1",
+            },
+        ],
     }
 
 
@@ -251,7 +224,7 @@ def sample_memory_dump_metadata():
         "acquired_date": "2025-10-15T14:30:22Z",
         "profile": "Win10x64_19041",
         "hostname": "WORKSTATION01",
-        "case_id": "CASE-2025-001"
+        "case_id": "CASE-2025-001",
     }
 
 
@@ -266,7 +239,7 @@ def sample_forensic_timeline_entry():
         "size": 102400,
         "md5": "d41d8cd98f00b204e9800998ecf8427e",
         "suspicious": True,
-        "reason": "Created in suspicious location"
+        "reason": "Created in suspicious location",
     }
 
 
@@ -282,26 +255,23 @@ def sample_sigma_rule():
         "author": "Test Author",
         "date": "2025-10-15",
         "tags": ["attack.execution", "attack.t1059.001"],
-        "logsource": {
-            "category": "process_creation",
-            "product": "windows"
-        },
+        "logsource": {"category": "process_creation", "product": "windows"},
         "detection": {
             "selection": {
                 "Image|endswith": "\\powershell.exe",
-                "CommandLine|contains": ["-enc", "-encodedcommand", "-nop"]
+                "CommandLine|contains": ["-enc", "-encodedcommand", "-nop"],
             },
-            "condition": "selection"
+            "condition": "selection",
         },
         "falsepositives": ["Administrative scripts"],
-        "level": "high"
+        "level": "high",
     }
 
 
 @pytest.fixture
 def sample_yara_rule():
     """Sample YARA rule content"""
-    return '''rule test_webshell {
+    return """rule test_webshell {
     meta:
         description = "Test webshell detection"
         author = "Test Author"
@@ -314,7 +284,7 @@ def sample_yara_rule():
 
     condition:
         $php_tag and ($eval or $base64)
-}'''
+}"""
 
 
 # [+] Mock Network Data Fixtures
@@ -330,7 +300,7 @@ def sample_network_flow():
         "protocol": "TCP",
         "bytes": 1024,
         "packets": 10,
-        "duration_seconds": 5.2
+        "duration_seconds": 5.2,
     }
 
 
@@ -338,23 +308,23 @@ def sample_network_flow():
 @pytest.fixture
 def sample_kql_query():
     """Sample KQL (Kusto Query Language) query"""
-    return '''
+    return """
 SecurityEvent
 | where EventID == 4625
 | where TimeGenerated > ago(1h)
 | summarize FailedAttempts=count() by Account, Computer
 | where FailedAttempts > 5
-'''
+"""
 
 
 @pytest.fixture
 def sample_spl_query():
     """Sample SPL (Splunk Processing Language) query"""
-    return '''
+    return """
 index=windows EventCode=4625
 | stats count by Account_Name, Computer_Name
 | where count > 5
-'''
+"""
 
 
 # [+] Parametrized Test Data
@@ -380,34 +350,40 @@ def compliance_framework(request):
 @pytest.fixture
 def write_json_file(tmp_path):
     """Utility to write JSON files"""
+
     def _write(filename: str, data: Dict) -> Path:
         file_path = tmp_path / filename
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(data, f, indent=2)
         return file_path
+
     return _write
 
 
 @pytest.fixture
 def write_yaml_file(tmp_path):
     """Utility to write YAML files"""
+
     def _write(filename: str, data: Dict) -> Path:
         file_path = tmp_path / filename
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             yaml.dump(data, f)
         return file_path
+
     return _write
 
 
 @pytest.fixture
 def create_sample_log_file(tmp_path):
     """Utility to create sample log files"""
+
     def _create(filename: str, lines: List[str]) -> Path:
         file_path = tmp_path / filename
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             for line in lines:
-                f.write(line + '\n')
+                f.write(line + "\n")
         return file_path
+
     return _create
 
 
@@ -419,7 +395,7 @@ def mock_env_vars(monkeypatch):
         "DEFENSIVE_TOOLKIT_HOME": "/tmp/defensive-toolkit",
         "LOG_LEVEL": "DEBUG",
         "SIEM_HOST": "localhost",
-        "SIEM_PORT": "514"
+        "SIEM_PORT": "514",
     }
     for key, value in test_vars.items():
         monkeypatch.setenv(key, value)
@@ -429,21 +405,13 @@ def mock_env_vars(monkeypatch):
 # [+] Skip Markers Based on Platform
 def pytest_configure(config):
     """Register custom markers"""
-    config.addinivalue_line(
-        "markers", "windows: mark test to run only on Windows"
-    )
-    config.addinivalue_line(
-        "markers", "linux: mark test to run only on Linux"
-    )
+    config.addinivalue_line("markers", "windows: mark test to run only on Windows")
+    config.addinivalue_line("markers", "linux: mark test to run only on Linux")
     config.addinivalue_line(
         "markers", "requires_root: mark test as requiring root/admin privileges"
     )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test"
-    )
+    config.addinivalue_line("markers", "slow: mark test as slow running")
+    config.addinivalue_line("markers", "integration: mark test as integration test")
 
 
 # [+] Test Summary

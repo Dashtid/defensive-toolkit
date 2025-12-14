@@ -46,17 +46,19 @@ async def list_rules(
         sigma_files = glob.glob(f"{rules_dir}/sigma/*.yml")
         for file_path in sigma_files:
             try:
-                with open(file_path, 'r') as f:
+                with open(file_path, "r") as f:
                     content = f.read()
-                    rules.append(DetectionRule(
-                        id=str(uuid.uuid4()),
-                        name=os.path.basename(file_path),
-                        description=f"Sigma rule from {file_path}",
-                        rule_type="sigma",
-                        content=content,
-                        severity="medium",
-                        created_at=datetime.utcnow()
-                    ))
+                    rules.append(
+                        DetectionRule(
+                            id=str(uuid.uuid4()),
+                            name=os.path.basename(file_path),
+                            description=f"Sigma rule from {file_path}",
+                            rule_type="sigma",
+                            content=content,
+                            severity="medium",
+                            created_at=datetime.utcnow(),
+                        )
+                    )
             except Exception:
                 # Skip files that can't be read
                 pass
@@ -65,17 +67,19 @@ async def list_rules(
         yara_files = glob.glob(f"{rules_dir}/yara/*.yar")
         for file_path in yara_files:
             try:
-                with open(file_path, 'r') as f:
+                with open(file_path, "r") as f:
                     content = f.read()
-                    rules.append(DetectionRule(
-                        id=str(uuid.uuid4()),
-                        name=os.path.basename(file_path),
-                        description=f"YARA rule from {file_path}",
-                        rule_type="yara",
-                        content=content,
-                        severity="high",
-                        created_at=datetime.utcnow()
-                    ))
+                    rules.append(
+                        DetectionRule(
+                            id=str(uuid.uuid4()),
+                            name=os.path.basename(file_path),
+                            description=f"YARA rule from {file_path}",
+                            rule_type="yara",
+                            content=content,
+                            severity="high",
+                            created_at=datetime.utcnow(),
+                        )
+                    )
             except Exception:
                 pass
 
@@ -109,8 +113,7 @@ async def get_rule(
     """
     if rule_id not in rules_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Rule {rule_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule {rule_id} not found"
         )
 
     return rules_db[rule_id]
@@ -140,7 +143,7 @@ async def create_rule(
     return APIResponse(
         status=StatusEnum.SUCCESS,
         message="Detection rule created successfully",
-        data={"rule_id": rule.id}
+        data={"rule_id": rule.id},
     )
 
 
@@ -166,18 +169,14 @@ async def update_rule(
     """
     if rule_id not in rules_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Rule {rule_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule {rule_id} not found"
         )
 
     rule.id = rule_id
     rule.updated_at = datetime.utcnow()
     rules_db[rule_id] = rule
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Detection rule updated successfully"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Detection rule updated successfully")
 
 
 @router.delete("/rules/{rule_id}", response_model=APIResponse)
@@ -200,16 +199,12 @@ async def delete_rule(
     """
     if rule_id not in rules_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Rule {rule_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule {rule_id} not found"
         )
 
     del rules_db[rule_id]
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Detection rule deleted successfully"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Detection rule deleted successfully")
 
 
 @router.post("/rules/{rule_id}/deploy", response_model=APIResponse)
@@ -234,8 +229,7 @@ async def deploy_rule(
     """
     if rule_id not in rules_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Rule {rule_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule {rule_id} not found"
         )
 
     rule = rules_db[rule_id]
@@ -251,8 +245,8 @@ async def deploy_rule(
             "deployment_id": deployment_id,
             "siem_platform": request.siem_platform,
             "rule_id": rule_id,
-            "rule_name": rule.name
-        }
+            "rule_name": rule.name,
+        },
     )
 
 
@@ -291,8 +285,5 @@ async def validate_rule(
     return APIResponse(
         status=StatusEnum.SUCCESS if is_valid else StatusEnum.FAILED,
         message="Rule validation completed",
-        data={
-            "valid": is_valid,
-            "errors": errors
-        }
+        data={"valid": is_valid, "errors": errors},
     )

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/log-analysis", tags=["Log Analysis"])
 
+
 @router.post("/analyze", response_model=LogAnalysisResult)
 async def analyze_logs(
     request: LogAnalysisRequest,
@@ -21,8 +22,9 @@ async def analyze_logs(
         entries_processed=0,
         anomalies_detected=0,
         parsed_entries=[],
-        anomalies=[]
+        anomalies=[],
     )
+
 
 @router.get("/sources", response_model=list)
 async def list_log_sources(current_user: str = Depends(get_current_active_user)):

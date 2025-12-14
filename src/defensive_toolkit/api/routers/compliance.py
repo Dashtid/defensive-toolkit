@@ -1,11 +1,11 @@
 """Compliance API Router"""
 
-
 from api.dependencies import get_current_active_user
 from api.models import ComplianceCheckRequest, ComplianceReport
 from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/compliance", tags=["Compliance"])
+
 
 @router.post("/check", response_model=ComplianceReport)
 async def check_compliance(
@@ -21,8 +21,9 @@ async def check_compliance(
         failed=10,
         not_applicable=5,
         compliance_percentage=85.0,
-        controls=[]
+        controls=[],
     )
+
 
 @router.get("/frameworks", response_model=list)
 async def list_frameworks(current_user: str = Depends(get_current_active_user)):

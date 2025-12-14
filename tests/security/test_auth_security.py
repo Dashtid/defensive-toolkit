@@ -16,8 +16,7 @@ class TestAuthenticationSecurity:
     def test_login_with_sql_injection_attempt(self):
         """Test that SQL injection in login is prevented"""
         response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "admin' OR '1'='1", "password": "anything"}
+            "/api/v1/auth/token", data={"username": "admin' OR '1'='1", "password": "anything"}
         )
         assert response.status_code == 401
 
@@ -25,7 +24,7 @@ class TestAuthenticationSecurity:
         """Test that XSS in credentials is handled"""
         response = client.post(
             "/api/v1/auth/token",
-            data={"username": "<script>alert('xss')</script>", "password": "test"}
+            data={"username": "<script>alert('xss')</script>", "password": "test"},
         )
         assert response.status_code == 401
 
@@ -34,8 +33,7 @@ class TestAuthenticationSecurity:
         failed_attempts = 0
         for i in range(10):
             response = client.post(
-                "/api/v1/auth/token",
-                data={"username": "admin", "password": f"wrong-pass-{i}"}
+                "/api/v1/auth/token", data={"username": "admin", "password": f"wrong-pass-{i}"}
             )
             if response.status_code == 429:  # Rate limited
                 break
@@ -49,16 +47,12 @@ class TestAuthenticationSecurity:
         """Test that expired tokens are rejected"""
         # Login
         login_response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "admin", "password": "changeme123"}
+            "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
         )
         token = login_response.json()["access_token"]
 
         # Token should work immediately
-        response = client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {token}"}
-        )
+        response = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 200
 
         # Note: Testing actual expiry would require time manipulation
@@ -72,18 +66,10 @@ class TestAuthenticationSecurity:
 
     def test_invalid_token_format(self):
         """Test that invalid token formats are rejected"""
-        invalid_tokens = [
-            "invalid-token",
-            "Bearer invalid",
-            "malformed.jwt.token",
-            ""
-        ]
+        invalid_tokens = ["invalid-token", "Bearer invalid", "malformed.jwt.token", ""]
 
         for token in invalid_tokens:
-            response = client.get(
-                "/api/v1/auth/me",
-                headers={"Authorization": f"Bearer {token}"}
-            )
+            response = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 401
 
 
@@ -96,8 +82,7 @@ class TestTokenSecurity:
         import jwt
 
         response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "admin", "password": "changeme123"}
+            "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
         )
         token = response.json()["access_token"]
 
@@ -112,22 +97,19 @@ class TestTokenSecurity:
         """Test that refresh tokens can't be reused"""
         # Login
         login_response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "admin", "password": "changeme123"}
+            "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
         )
         refresh_token = login_response.json()["refresh_token"]
 
         # Use refresh token first time
         refresh_response1 = client.post(
-            "/api/v1/auth/refresh",
-            json={"refresh_token": refresh_token}
+            "/api/v1/auth/refresh", json={"refresh_token": refresh_token}
         )
         assert refresh_response1.status_code == 200
 
         # Try to use same refresh token again (should fail in secure implementation)
         # Note: Implementation may vary - document actual behavior
         refresh_response2 = client.post(
-            "/api/v1/auth/refresh",
-            json={"refresh_token": refresh_token}
+            "/api/v1/auth/refresh", json={"refresh_token": refresh_token}
         )
         # May be 401 if implementing token rotation

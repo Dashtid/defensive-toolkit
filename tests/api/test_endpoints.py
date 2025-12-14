@@ -15,8 +15,7 @@ client = TestClient(app)
 def auth_token():
     """Fixture to get authentication token"""
     response = client.post(
-        "/api/v1/auth/token",
-        data={"username": "admin", "password": "changeme123"}
+        "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
     )
     return response.json()["access_token"]
 
@@ -66,13 +65,9 @@ class TestDetectionRulesEndpoints:
             "rule_type": "sigma",
             "content": "detection:\n  selection:\n    test: value",
             "severity": "medium",
-            "tags": ["test"]
+            "tags": ["test"],
         }
-        response = client.post(
-            "/api/v1/detection/rules",
-            json=rule_data,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/detection/rules", json=rule_data, headers=auth_headers)
         assert response.status_code == 201
 
 
@@ -90,12 +85,10 @@ class TestIncidentResponseEndpoints:
         incident_data = {
             "title": "Test Incident",
             "description": "Test description",
-            "severity": "high"
+            "severity": "high",
         }
         response = client.post(
-            "/api/v1/incident-response/incidents",
-            json=incident_data,
-            headers=auth_headers
+            "/api/v1/incident-response/incidents", json=incident_data, headers=auth_headers
         )
         assert response.status_code == 201
 
@@ -121,16 +114,8 @@ class TestHardeningEndpoints:
 
     def test_scan_system(self, auth_headers):
         """Test hardening scan"""
-        scan_data = {
-            "target": "localhost",
-            "os_type": "linux",
-            "cis_level": "level_1"
-        }
-        response = client.post(
-            "/api/v1/hardening/scan",
-            json=scan_data,
-            headers=auth_headers
-        )
+        scan_data = {"target": "localhost", "os_type": "linux", "cis_level": "level_1"}
+        response = client.post("/api/v1/hardening/scan", json=scan_data, headers=auth_headers)
         assert response.status_code == 200
 
 
@@ -149,15 +134,8 @@ class TestVulnerabilityEndpoints:
 
     def test_scan_target(self, auth_headers):
         """Test vulnerability scan"""
-        scan_data = {
-            "target": "192.168.1.1",
-            "scan_type": "quick"
-        }
-        response = client.post(
-            "/api/v1/vulnerability/scan",
-            json=scan_data,
-            headers=auth_headers
-        )
+        scan_data = {"target": "192.168.1.1", "scan_type": "quick"}
+        response = client.post("/api/v1/vulnerability/scan", json=scan_data, headers=auth_headers)
         assert response.status_code == 200
 
 
@@ -181,15 +159,8 @@ class TestComplianceEndpoints:
 
     def test_check_compliance(self, auth_headers):
         """Test compliance check"""
-        check_data = {
-            "framework": "cis",
-            "target": "localhost"
-        }
-        response = client.post(
-            "/api/v1/compliance/check",
-            json=check_data,
-            headers=auth_headers
-        )
+        check_data = {"framework": "cis", "target": "localhost"}
+        response = client.post("/api/v1/compliance/check", json=check_data, headers=auth_headers)
         assert response.status_code == 200
 
 

@@ -35,9 +35,15 @@ from urllib.request import Request, urlopen
 try:
     from ..runbook_engine import ActionResult
 except ImportError:
+
     class ActionResult:
-        def __init__(self, success: bool, message: str, data: Optional[Dict] = None,
-                     rollback_info: Optional[Dict] = None):
+        def __init__(
+            self,
+            success: bool,
+            message: str,
+            data: Optional[Dict] = None,
+            rollback_info: Optional[Dict] = None,
+        ):
             self.success = success
             self.message = message
             self.data = data or {}
@@ -50,8 +56,9 @@ except ImportError:
                 "message": self.message,
                 "data": self.data,
                 "rollback_info": self.rollback_info,
-                "timestamp": self.timestamp
+                "timestamp": self.timestamp,
             }
+
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +70,7 @@ def send_alert(
     message: str,
     severity: str = "medium",
     incident_id: Optional[str] = None,
-    config: Optional[Dict] = None
+    config: Optional[Dict] = None,
 ) -> ActionResult:
     """
     Send alert notification via specified method.
@@ -94,21 +101,13 @@ def send_alert(
 
     handler = alert_handlers.get(method.lower())
     if not handler:
-        return ActionResult(
-            success=False,
-            message=f"Unknown alert method: {method}"
-        )
+        return ActionResult(success=False, message=f"Unknown alert method: {method}")
 
     return handler(recipients, subject, message, severity, incident_id, config)
 
 
 def _send_email_alert(
-    recipients: List[str],
-    subject: str,
-    message: str,
-    severity: str,
-    incident_id: str,
-    config: Dict
+    recipients: List[str], subject: str, message: str, severity: str, incident_id: str, config: Dict
 ) -> ActionResult:
     """Send email alert via SMTP"""
     # Get SMTP config from environment or config dict
@@ -122,7 +121,7 @@ def _send_email_alert(
     if not smtp_server:
         return ActionResult(
             success=False,
-            message="SMTP server not configured. Set SMTP_SERVER environment variable or provide in config."
+            message="SMTP server not configured. Set SMTP_SERVER environment variable or provide in config.",
         )
 
     try:
@@ -152,7 +151,7 @@ This is an automated alert from the Defensive Toolkit IR system.
             "low": "#28a745",
             "medium": "#ffc107",
             "high": "#fd7e14",
-            "critical": "#dc3545"
+            "critical": "#dc3545",
         }
         color = severity_colors.get(severity.lower(), "#6c757d")
 
@@ -210,7 +209,7 @@ This is an automated alert from the Defensive Toolkit IR system.
         return ActionResult(
             success=True,
             message=f"Email alert sent to {len(recipients)} recipient(s)",
-            data={"recipients": recipients, "subject": subject}
+            data={"recipients": recipients, "subject": subject},
         )
 
     except Exception as e:
@@ -218,12 +217,7 @@ This is an automated alert from the Defensive Toolkit IR system.
 
 
 def _send_slack_alert(
-    recipients: List[str],
-    subject: str,
-    message: str,
-    severity: str,
-    incident_id: str,
-    config: Dict
+    recipients: List[str], subject: str, message: str, severity: str, incident_id: str, config: Dict
 ) -> ActionResult:
     """Send Slack alert via webhook"""
     webhook_url = config.get("webhook_url") or os.getenv("SLACK_WEBHOOK_URL")
@@ -231,14 +225,14 @@ def _send_slack_alert(
     if not webhook_url:
         return ActionResult(
             success=False,
-            message="Slack webhook URL not configured. Set SLACK_WEBHOOK_URL environment variable."
+            message="Slack webhook URL not configured. Set SLACK_WEBHOOK_URL environment variable.",
         )
 
     severity_emojis = {
         "low": ":large_blue_circle:",
         "medium": ":large_yellow_circle:",
         "high": ":large_orange_circle:",
-        "critical": ":red_circle:"
+        "critical": ":red_circle:",
     }
     emoji = severity_emojis.get(severity.lower(), ":warning:")
 
@@ -249,23 +243,23 @@ def _send_slack_alert(
                 "type": "header",
                 "text": {
                     "type": "plain_text",
-                    "text": f"[{severity.upper()}] Incident Response Alert"
-                }
+                    "text": f"[{severity.upper()}] Incident Response Alert",
+                },
             },
             {
                 "type": "section",
                 "fields": [
                     {"type": "mrkdwn", "text": f"*Incident ID:*\n{incident_id}"},
                     {"type": "mrkdwn", "text": f"*Severity:*\n{severity.upper()}"},
-                    {"type": "mrkdwn", "text": f"*Time:*\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"},
-                    {"type": "mrkdwn", "text": f"*Source:*\n{platform.node()}"}
-                ]
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*Time:*\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                    },
+                    {"type": "mrkdwn", "text": f"*Source:*\n{platform.node()}"},
+                ],
             },
-            {
-                "type": "section",
-                "text": {"type": "mrkdwn", "text": f"*{subject}*\n{message}"}
-            }
-        ]
+            {"type": "section", "text": {"type": "mrkdwn", "text": f"*{subject}*\n{message}"}},
+        ],
     }
 
     # Add channel mentions if specified
@@ -281,12 +275,11 @@ def _send_slack_alert(
             return ActionResult(
                 success=True,
                 message="Slack alert sent successfully",
-                data={"channel": recipients[0] if recipients else "default"}
+                data={"channel": recipients[0] if recipients else "default"},
             )
         else:
             return ActionResult(
-                success=False,
-                message=f"Slack API returned status {response.status}"
+                success=False, message=f"Slack API returned status {response.status}"
             )
 
     except (HTTPError, URLError) as e:
@@ -294,12 +287,7 @@ def _send_slack_alert(
 
 
 def _send_teams_alert(
-    recipients: List[str],
-    subject: str,
-    message: str,
-    severity: str,
-    incident_id: str,
-    config: Dict
+    recipients: List[str], subject: str, message: str, severity: str, incident_id: str, config: Dict
 ) -> ActionResult:
     """Send Microsoft Teams alert via webhook"""
     webhook_url = config.get("webhook_url") or os.getenv("TEAMS_WEBHOOK_URL")
@@ -307,15 +295,10 @@ def _send_teams_alert(
     if not webhook_url:
         return ActionResult(
             success=False,
-            message="Teams webhook URL not configured. Set TEAMS_WEBHOOK_URL environment variable."
+            message="Teams webhook URL not configured. Set TEAMS_WEBHOOK_URL environment variable.",
         )
 
-    severity_colors = {
-        "low": "28a745",
-        "medium": "ffc107",
-        "high": "fd7e14",
-        "critical": "dc3545"
-    }
+    severity_colors = {"low": "28a745", "medium": "ffc107", "high": "fd7e14", "critical": "dc3545"}
     color = severity_colors.get(severity.lower(), "6c757d")
 
     payload = {
@@ -323,16 +306,18 @@ def _send_teams_alert(
         "@context": "http://schema.org/extensions",
         "themeColor": color,
         "summary": f"[{severity.upper()}] {subject}",
-        "sections": [{
-            "activityTitle": f"[{severity.upper()}] Incident Response Alert",
-            "facts": [
-                {"name": "Incident ID", "value": incident_id},
-                {"name": "Severity", "value": severity.upper()},
-                {"name": "Time", "value": datetime.now().strftime('%Y-%m-%d %H:%M:%S')},
-                {"name": "Source", "value": platform.node()}
-            ],
-            "text": f"**{subject}**\n\n{message}"
-        }]
+        "sections": [
+            {
+                "activityTitle": f"[{severity.upper()}] Incident Response Alert",
+                "facts": [
+                    {"name": "Incident ID", "value": incident_id},
+                    {"name": "Severity", "value": severity.upper()},
+                    {"name": "Time", "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+                    {"name": "Source", "value": platform.node()},
+                ],
+                "text": f"**{subject}**\n\n{message}",
+            }
+        ],
     }
 
     try:
@@ -341,14 +326,10 @@ def _send_teams_alert(
         response = urlopen(req, timeout=30)
 
         if response.status == 200:
-            return ActionResult(
-                success=True,
-                message="Teams alert sent successfully"
-            )
+            return ActionResult(success=True, message="Teams alert sent successfully")
         else:
             return ActionResult(
-                success=False,
-                message=f"Teams API returned status {response.status}"
+                success=False, message=f"Teams API returned status {response.status}"
             )
 
     except (HTTPError, URLError) as e:
@@ -356,12 +337,7 @@ def _send_teams_alert(
 
 
 def _send_pagerduty_alert(
-    recipients: List[str],
-    subject: str,
-    message: str,
-    severity: str,
-    incident_id: str,
-    config: Dict
+    recipients: List[str], subject: str, message: str, severity: str, incident_id: str, config: Dict
 ) -> ActionResult:
     """Send PagerDuty alert via Events API"""
     routing_key = config.get("routing_key") or os.getenv("PAGERDUTY_ROUTING_KEY")
@@ -369,15 +345,10 @@ def _send_pagerduty_alert(
     if not routing_key:
         return ActionResult(
             success=False,
-            message="PagerDuty routing key not configured. Set PAGERDUTY_ROUTING_KEY environment variable."
+            message="PagerDuty routing key not configured. Set PAGERDUTY_ROUTING_KEY environment variable.",
         )
 
-    severity_map = {
-        "low": "info",
-        "medium": "warning",
-        "high": "error",
-        "critical": "critical"
-    }
+    severity_map = {"low": "info", "medium": "warning", "high": "error", "critical": "critical"}
 
     payload = {
         "routing_key": routing_key,
@@ -388,11 +359,8 @@ def _send_pagerduty_alert(
             "severity": severity_map.get(severity.lower(), "warning"),
             "source": platform.node(),
             "timestamp": datetime.now().isoformat(),
-            "custom_details": {
-                "incident_id": incident_id,
-                "message": message
-            }
-        }
+            "custom_details": {"incident_id": incident_id, "message": message},
+        },
     }
 
     try:
@@ -407,12 +375,11 @@ def _send_pagerduty_alert(
             return ActionResult(
                 success=True,
                 message="PagerDuty alert created",
-                data={"dedup_key": result.get("dedup_key")}
+                data={"dedup_key": result.get("dedup_key")},
             )
         else:
             return ActionResult(
-                success=False,
-                message=f"PagerDuty API error: {result.get('message')}"
+                success=False, message=f"PagerDuty API error: {result.get('message')}"
             )
 
     except (HTTPError, URLError) as e:
@@ -426,7 +393,7 @@ def create_ticket(
     priority: str = "medium",
     incident_id: Optional[str] = None,
     assignee: Optional[str] = None,
-    config: Optional[Dict] = None
+    config: Optional[Dict] = None,
 ) -> ActionResult:
     """
     Create incident ticket in ticketing system.
@@ -455,10 +422,7 @@ def create_ticket(
 
     handler = ticket_handlers.get(system.lower())
     if not handler:
-        return ActionResult(
-            success=False,
-            message=f"Unknown ticketing system: {system}"
-        )
+        return ActionResult(success=False, message=f"Unknown ticketing system: {system}")
 
     return handler(title, description, priority, incident_id, assignee, config)
 
@@ -469,7 +433,7 @@ def _create_jira_ticket(
     priority: str,
     incident_id: str,
     assignee: Optional[str],
-    config: Dict
+    config: Dict,
 ) -> ActionResult:
     """Create Jira ticket"""
     jira_url = config.get("url") or os.getenv("JIRA_URL")
@@ -481,15 +445,10 @@ def _create_jira_ticket(
     if not all([jira_url, jira_user, jira_token, project_key]):
         return ActionResult(
             success=False,
-            message="Jira configuration incomplete. Set JIRA_URL, JIRA_USER, JIRA_API_TOKEN, JIRA_PROJECT_KEY."
+            message="Jira configuration incomplete. Set JIRA_URL, JIRA_USER, JIRA_API_TOKEN, JIRA_PROJECT_KEY.",
         )
 
-    priority_map = {
-        "low": "Low",
-        "medium": "Medium",
-        "high": "High",
-        "critical": "Highest"
-    }
+    priority_map = {"low": "Low", "medium": "Medium", "high": "High", "critical": "Highest"}
 
     payload = {
         "fields": {
@@ -497,7 +456,7 @@ def _create_jira_ticket(
             "summary": f"[{incident_id}] {title}",
             "description": f"Incident ID: {incident_id}\n\n{description}\n\nCreated by: Defensive Toolkit IR",
             "issuetype": {"name": issue_type},
-            "priority": {"name": priority_map.get(priority.lower(), "Medium")}
+            "priority": {"name": priority_map.get(priority.lower(), "Medium")},
         }
     }
 
@@ -506,14 +465,16 @@ def _create_jira_ticket(
 
     try:
         import base64
+
         auth = base64.b64encode(f"{jira_user}:{jira_token}".encode()).decode()
 
         url = f"{jira_url.rstrip('/')}/rest/api/2/issue"
         data = json.dumps(payload).encode("utf-8")
-        req = Request(url, data=data, headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Basic {auth}"
-        })
+        req = Request(
+            url,
+            data=data,
+            headers={"Content-Type": "application/json", "Authorization": f"Basic {auth}"},
+        )
         response = urlopen(req, timeout=30)
 
         result = json.loads(response.read().decode("utf-8"))
@@ -524,8 +485,8 @@ def _create_jira_ticket(
             data={
                 "ticket_key": result.get("key"),
                 "ticket_id": result.get("id"),
-                "url": f"{jira_url}/browse/{result.get('key')}"
-            }
+                "url": f"{jira_url}/browse/{result.get('key')}",
+            },
         )
 
     except (HTTPError, URLError) as e:
@@ -538,7 +499,7 @@ def _create_servicenow_ticket(
     priority: str,
     incident_id: str,
     assignee: Optional[str],
-    config: Dict
+    config: Dict,
 ) -> ActionResult:
     """Create ServiceNow incident"""
     snow_url = config.get("url") or os.getenv("SERVICENOW_URL")
@@ -548,23 +509,18 @@ def _create_servicenow_ticket(
     if not all([snow_url, snow_user, snow_password]):
         return ActionResult(
             success=False,
-            message="ServiceNow configuration incomplete. Set SERVICENOW_URL, SERVICENOW_USER, SERVICENOW_PASSWORD."
+            message="ServiceNow configuration incomplete. Set SERVICENOW_URL, SERVICENOW_USER, SERVICENOW_PASSWORD.",
         )
 
     # ServiceNow priority: 1=Critical, 2=High, 3=Moderate, 4=Low, 5=Planning
-    priority_map = {
-        "critical": "1",
-        "high": "2",
-        "medium": "3",
-        "low": "4"
-    }
+    priority_map = {"critical": "1", "high": "2", "medium": "3", "low": "4"}
 
     payload = {
         "short_description": f"[{incident_id}] {title}",
         "description": f"Incident ID: {incident_id}\n\n{description}\n\nCreated by: Defensive Toolkit IR",
         "priority": priority_map.get(priority.lower(), "3"),
         "urgency": priority_map.get(priority.lower(), "3"),
-        "impact": priority_map.get(priority.lower(), "3")
+        "impact": priority_map.get(priority.lower(), "3"),
     }
 
     if assignee:
@@ -572,15 +528,20 @@ def _create_servicenow_ticket(
 
     try:
         import base64
+
         auth = base64.b64encode(f"{snow_user}:{snow_password}".encode()).decode()
 
         url = f"{snow_url.rstrip('/')}/api/now/table/incident"
         data = json.dumps(payload).encode("utf-8")
-        req = Request(url, data=data, headers={
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": f"Basic {auth}"
-        })
+        req = Request(
+            url,
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": f"Basic {auth}",
+            },
+        )
         response = urlopen(req, timeout=30)
 
         result = json.loads(response.read().decode("utf-8"))
@@ -592,8 +553,8 @@ def _create_servicenow_ticket(
             data={
                 "incident_number": incident.get("number"),
                 "sys_id": incident.get("sys_id"),
-                "url": f"{snow_url}/nav_to.do?uri=incident.do?sys_id={incident.get('sys_id')}"
-            }
+                "url": f"{snow_url}/nav_to.do?uri=incident.do?sys_id={incident.get('sys_id')}",
+            },
         )
 
     except (HTTPError, URLError) as e:
@@ -605,7 +566,7 @@ def update_severity(
     new_severity: str,
     reason: str,
     notify: bool = True,
-    config: Optional[Dict] = None
+    config: Optional[Dict] = None,
 ) -> ActionResult:
     """
     Update incident severity level.
@@ -626,7 +587,7 @@ def update_severity(
     if new_severity.lower() not in valid_severities:
         return ActionResult(
             success=False,
-            message=f"Invalid severity: {new_severity}. Must be one of: {valid_severities}"
+            message=f"Invalid severity: {new_severity}. Must be one of: {valid_severities}",
         )
 
     # Log the severity change
@@ -636,7 +597,7 @@ def update_severity(
         "reason": reason,
         "changed_at": datetime.now().isoformat(),
         "changed_by": os.getenv("USERNAME", os.getenv("USER", "unknown")),
-        "hostname": platform.node()
+        "hostname": platform.node(),
     }
 
     # If notification is requested
@@ -653,13 +614,11 @@ def update_severity(
                 message=f"Incident severity changed to {new_severity.upper()}\n\nReason: {reason}",
                 severity=new_severity,
                 incident_id=incident_id,
-                config=config
+                config=config,
             )
 
     return ActionResult(
-        success=True,
-        message=f"Severity updated to {new_severity}",
-        data=change_record
+        success=True, message=f"Severity updated to {new_severity}", data=change_record
     )
 
 
@@ -668,7 +627,7 @@ def notify_oncall(
     message: str,
     severity: str = "high",
     incident_id: Optional[str] = None,
-    config: Optional[Dict] = None
+    config: Optional[Dict] = None,
 ) -> ActionResult:
     """
     Notify on-call personnel.
@@ -698,7 +657,7 @@ def notify_oncall(
             message=message,
             severity=severity,
             incident_id=incident_id,
-            config={"routing_key": pagerduty_key}
+            config={"routing_key": pagerduty_key},
         )
 
     # Fallback to email if configured
@@ -711,12 +670,11 @@ def notify_oncall(
             message=message,
             severity=severity,
             incident_id=incident_id,
-            config=config
+            config=config,
         )
 
     return ActionResult(
-        success=False,
-        message=f"No on-call notification method configured for team: {team}"
+        success=False, message=f"No on-call notification method configured for team: {team}"
     )
 
 

@@ -27,15 +27,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 scheme for JWT token
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.api_prefix}/auth/token",
-    auto_error=False  # Allow API key auth as fallback
+    tokenUrl=f"{settings.api_prefix}/auth/token", auto_error=False  # Allow API key auth as fallback
 )
 
 # API Key header scheme
-api_key_header = APIKeyHeader(
-    name="X-API-Key",
-    auto_error=False
-)
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 # In-memory token blacklist (use Redis in production)
 # Format: {token: expiry_timestamp}
@@ -85,21 +81,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(
-            minutes=settings.access_token_expire_minutes
-        )
+        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
 
-    to_encode.update({
-        "exp": expire,
-        "iat": datetime.utcnow(),
-        "type": "access"
-    })
+    to_encode.update({"exp": expire, "iat": datetime.utcnow(), "type": "access"})
 
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.secret_key,
-        algorithm=settings.algorithm
-    )
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
     return encoded_jwt
 
@@ -117,17 +103,9 @@ def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
 
-    to_encode.update({
-        "exp": expire,
-        "iat": datetime.utcnow(),
-        "type": "refresh"
-    })
+    to_encode.update({"exp": expire, "iat": datetime.utcnow(), "type": "refresh"})
 
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.secret_key,
-        algorithm=settings.algorithm
-    )
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
     return encoded_jwt
 
@@ -146,18 +124,14 @@ def create_token_pair(username: str, scopes: List[str] = None) -> Token:
     if scopes is None:
         scopes = []
 
-    access_token = create_access_token(
-        data={"sub": username, "scopes": scopes}
-    )
-    refresh_token = create_refresh_token(
-        data={"sub": username}
-    )
+    access_token = create_access_token(data={"sub": username, "scopes": scopes})
+    refresh_token = create_refresh_token(data={"sub": username})
 
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
-        expires_in=settings.access_token_expire_minutes * 60
+        expires_in=settings.access_token_expire_minutes * 60,
     )
 
 
@@ -194,11 +168,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[TokenData]:
             del token_blacklist[token]
 
     try:
-        payload = jwt.decode(
-            token,
-            settings.secret_key,
-            algorithms=[settings.algorithm]
-        )
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
 
         username: str = payload.get("sub")
         token_type_claim: str = payload.get("type")
@@ -269,6 +239,7 @@ def generate_api_key() -> str:
 # ============================================================================
 # FastAPI Dependencies
 # ============================================================================
+
 
 async def get_current_user(
     token: Optional[str] = Depends(oauth2_scheme),
@@ -353,7 +324,7 @@ FAKE_USERS_DB = {
         "hashed_password": "$2b$12$RGr69ZJ7OCu4A56VJXGEjOQtCuEXRWOtFiOSpEVu6gHLjQY1uRaO6",
         "disabled": False,
         "scopes": ["read"],
-    }
+    },
 }
 
 

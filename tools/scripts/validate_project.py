@@ -202,13 +202,9 @@ class ProjectValidator:
                 self.log(f"Valid syntax: {py_file.relative_to(self.root)}", "INFO")
             except SyntaxError as e:
                 syntax_errors.append((py_file, str(e)))
-                self.log(
-                    f"Syntax error in {py_file.relative_to(self.root)}: {e}", "ERROR"
-                )
+                self.log(f"Syntax error in {py_file.relative_to(self.root)}: {e}", "ERROR")
             except Exception as e:
-                self.log(
-                    f"Error reading {py_file.relative_to(self.root)}: {e}", "WARN"
-                )
+                self.log(f"Error reading {py_file.relative_to(self.root)}: {e}", "WARN")
 
         if not syntax_errors:
             print(f"[OK] All {len(python_files)} Python files have valid syntax\n")
@@ -281,9 +277,7 @@ class ProjectValidator:
             if test_path.exists():
                 test_files = list(test_path.rglob("test_*.py"))
                 test_files_found += len(test_files)
-                self.log(
-                    f"Found {len(test_files)} test files in {test_dir}", "INFO"
-                )
+                self.log(f"Found {len(test_files)} test files in {test_dir}", "INFO")
 
         if test_files_found > 0:
             print(f"[OK] Found {test_files_found} test files\n")
@@ -321,26 +315,16 @@ class ProjectValidator:
 
 def main():
     """Main entry point"""
-    parser = argparse.ArgumentParser(
-        description="Validate defensive-toolkit project structure"
-    )
+    parser = argparse.ArgumentParser(description="Validate defensive-toolkit project structure")
     parser.add_argument(
         "--check-structure",
         action="store_true",
         help="Only check directory structure",
     )
-    parser.add_argument(
-        "--check-imports", action="store_true", help="Only check Python imports"
-    )
-    parser.add_argument(
-        "--check-tests", action="store_true", help="Only check test structure"
-    )
-    parser.add_argument(
-        "--check-docs", action="store_true", help="Only check documentation"
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Verbose output"
-    )
+    parser.add_argument("--check-imports", action="store_true", help="Only check Python imports")
+    parser.add_argument("--check-tests", action="store_true", help="Only check test structure")
+    parser.add_argument("--check-docs", action="store_true", help="Only check documentation")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 

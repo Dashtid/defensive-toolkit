@@ -19,8 +19,7 @@ def auth_headers(auth_token):
 @pytest.fixture
 def auth_token():
     response = client.post(
-        "/api/v1/auth/token",
-        data={"username": "admin", "password": "changeme123"}
+        "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
     )
     return response.json()["access_token"]
 
@@ -34,13 +33,9 @@ class TestHardeningEndpoints:
             "target": "192.168.1.100",
             "scan_type": "full",
             "os_type": "linux",
-            "compliance_frameworks": ["cis", "stig"]
+            "compliance_frameworks": ["cis", "stig"],
         }
-        response = client.post(
-            "/api/v1/hardening/scan",
-            json=scan_data,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/hardening/scan", json=scan_data, headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert "scan_id" in data
@@ -51,21 +46,14 @@ class TestHardeningEndpoints:
             "target": "192.168.1.101",
             "scan_type": "quick",
             "os_type": "windows",
-            "compliance_frameworks": ["cis"]
+            "compliance_frameworks": ["cis"],
         }
-        response = client.post(
-            "/api/v1/hardening/scan",
-            json=scan_data,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/hardening/scan", json=scan_data, headers=auth_headers)
         assert response.status_code == 200
 
     def test_list_hardening_scripts(self, auth_headers):
         """Test listing available hardening scripts"""
-        response = client.get(
-            "/api/v1/hardening/scripts?os=linux",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/hardening/scripts?os=linux", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -76,28 +64,18 @@ class TestHardeningEndpoints:
             "target": "192.168.1.100",
             "script_id": "linux-cis-level1",
             "dry_run": True,
-            "backup": True
+            "backup": True,
         }
-        response = client.post(
-            "/api/v1/hardening/apply",
-            json=apply_data,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/hardening/apply", json=apply_data, headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert "changes" in data or "preview" in data
 
     def test_check_compliance_cis(self, auth_headers):
         """Test CIS compliance check"""
-        check_data = {
-            "target": "192.168.1.100",
-            "framework": "cis",
-            "level": "level1"
-        }
+        check_data = {"target": "192.168.1.100", "framework": "cis", "level": "level1"}
         response = client.post(
-            "/api/v1/hardening/compliance",
-            json=check_data,
-            headers=auth_headers
+            "/api/v1/hardening/compliance", json=check_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -105,8 +83,5 @@ class TestHardeningEndpoints:
 
     def test_get_hardening_status(self, auth_headers):
         """Test getting hardening status for a target"""
-        response = client.get(
-            "/api/v1/hardening/status?target=192.168.1.100",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/hardening/status?target=192.168.1.100", headers=auth_headers)
         assert response.status_code == 200

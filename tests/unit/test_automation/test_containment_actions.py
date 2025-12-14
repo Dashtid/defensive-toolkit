@@ -44,7 +44,7 @@ class TestIsolateHost:
         result = isolate_host("workstation01", method="vlan", dry_run=True)
         assert result is True
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_isolate_host_with_subprocess(self, mock_run):
         """Test host isolation with actual command execution"""
         mock_run.return_value = Mock(returncode=0, stdout="", stderr="")
@@ -111,11 +111,14 @@ class TestBlockIP:
         results = [block_ip(ip, dry_run=True) for ip in ips]
         assert all(results)
 
-    @pytest.mark.parametrize("ip,direction", [
-        ("192.168.1.100", "inbound"),
-        ("10.0.0.50", "outbound"),
-        ("172.16.0.1", "both"),
-    ])
+    @pytest.mark.parametrize(
+        "ip,direction",
+        [
+            ("192.168.1.100", "inbound"),
+            ("10.0.0.50", "outbound"),
+            ("172.16.0.1", "both"),
+        ],
+    )
     def test_block_ip_parametrized(self, ip, direction):
         """Test IP blocking with various parameters"""
         result = block_ip(ip, direction=direction, dry_run=True)
@@ -140,11 +143,7 @@ class TestQuarantineFile:
 
         quarantine_dir = tmp_path / "quarantine"
 
-        result = quarantine_file(
-            str(test_file),
-            quarantine_dir=str(quarantine_dir),
-            dry_run=True
-        )
+        result = quarantine_file(str(test_file), quarantine_dir=str(quarantine_dir), dry_run=True)
         assert result is True
 
     def test_quarantine_file_nonexistent(self):
@@ -162,12 +161,15 @@ class TestQuarantineFile:
         result = quarantine_file(str(test_file), dry_run=True)
         assert result is True
 
-    @pytest.mark.parametrize("filename", [
-        "malware.exe",
-        "trojan.dll",
-        "ransomware.bin",
-        "backdoor.sh",
-    ])
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "malware.exe",
+            "trojan.dll",
+            "ransomware.bin",
+            "backdoor.sh",
+        ],
+    )
     def test_quarantine_different_filetypes(self, tmp_path, filename):
         """Test quarantining different file types"""
         test_file = tmp_path / filename
@@ -200,7 +202,7 @@ class TestTerminateProcess:
         result = terminate_process(pid=1234, force=False, dry_run=True)
         assert result is True
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_terminate_process_subprocess_call(self, mock_run):
         """Test process termination subprocess call"""
         mock_run.return_value = Mock(returncode=0)
@@ -225,36 +227,27 @@ class TestDisableUserAccount:
 
     def test_disable_user_account_with_reason(self):
         """Test disabling with reason"""
-        result = disable_user_account(
-            "test_user",
-            reason="Security incident",
-            dry_run=True
-        )
+        result = disable_user_account("test_user", reason="Security incident", dry_run=True)
         assert result is True
 
     def test_disable_user_account_temporary(self):
         """Test temporary account disable"""
-        result = disable_user_account(
-            "test_user",
-            duration_hours=24,
-            dry_run=True
-        )
+        result = disable_user_account("test_user", duration_hours=24, dry_run=True)
         assert result is True
 
     def test_disable_user_account_permanent(self):
         """Test permanent account disable"""
-        result = disable_user_account(
-            "malicious_user",
-            duration_hours=None,
-            dry_run=True
-        )
+        result = disable_user_account("malicious_user", duration_hours=None, dry_run=True)
         assert result is True
 
-    @pytest.mark.parametrize("username", [
-        "user1",
-        "admin_compromised",
-        "service_account",
-    ])
+    @pytest.mark.parametrize(
+        "username",
+        [
+            "user1",
+            "admin_compromised",
+            "service_account",
+        ],
+    )
     def test_disable_different_users(self, username):
         """Test disabling different user types"""
         result = disable_user_account(username, dry_run=True)
@@ -291,24 +284,17 @@ class TestContainmentIntegration:
         assert disable_result is True
 
         # All containment actions successful
-        assert all([
-            isolate_result,
-            block_result,
-            quarantine_result,
-            terminate_result,
-            disable_result
-        ])
+        assert all(
+            [isolate_result, block_result, quarantine_result, terminate_result, disable_result]
+        )
 
     def test_ransomware_containment(self):
         """Test ransomware-specific containment"""
         actions = {
             "isolate_hosts": isolate_host("file-server", dry_run=True),
             "block_c2": block_ip("192.168.1.100", dry_run=True),
-            "terminate_ransomware": terminate_process(
-                process_name="ransomware.exe",
-                dry_run=True
-            ),
-            "disable_accounts": disable_user_account("victim_user", dry_run=True)
+            "terminate_ransomware": terminate_process(process_name="ransomware.exe", dry_run=True),
+            "disable_accounts": disable_user_account("victim_user", dry_run=True),
         }
 
         assert all(actions.values())
@@ -317,18 +303,14 @@ class TestContainmentIntegration:
         """Test lateral movement containment"""
         # Multiple hosts involved
         hosts = ["host1", "host2", "host3"]
-        isolation_results = [
-            isolate_host(host, dry_run=True) for host in hosts
-        ]
+        isolation_results = [isolate_host(host, dry_run=True) for host in hosts]
 
         # Block attacker IP
         block_result = block_ip("10.0.0.50", dry_run=True)
 
         # Disable compromised accounts
         accounts = ["admin1", "service_account"]
-        disable_results = [
-            disable_user_account(acc, dry_run=True) for acc in accounts
-        ]
+        disable_results = [disable_user_account(acc, dry_run=True) for acc in accounts]
 
         assert all(isolation_results)
         assert block_result is True

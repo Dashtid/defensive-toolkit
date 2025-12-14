@@ -39,7 +39,7 @@ class TestBackupScript:
 
     def test_script_structure(self, script_path: Path):
         """Test that script has proper structure."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should have shebang
@@ -50,7 +50,7 @@ class TestBackupScript:
 
     def test_creates_timestamped_backup(self, script_path: Path):
         """Test that backup uses timestamps."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should use date command for timestamps
@@ -61,7 +61,7 @@ class TestBackupScript:
 
     def test_backup_directory_defined(self, script_path: Path):
         """Test that backup directory is defined."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should define backup directory
@@ -72,7 +72,7 @@ class TestBackupScript:
 
     def test_backs_up_ssh_config(self, script_path: Path):
         """Test that SSH configuration is backed up."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should backup SSH config
@@ -80,7 +80,7 @@ class TestBackupScript:
 
     def test_backs_up_sysctl_config(self, script_path: Path):
         """Test that sysctl configuration is backed up."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should backup sysctl config
@@ -88,7 +88,7 @@ class TestBackupScript:
 
     def test_backs_up_pam_config(self, script_path: Path):
         """Test that PAM configuration is backed up."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should backup PAM config
@@ -96,7 +96,7 @@ class TestBackupScript:
 
     def test_backs_up_firewall_rules(self, script_path: Path):
         """Test that firewall rules are backed up."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should backup firewall rules (UFW or firewalld)
@@ -107,7 +107,7 @@ class TestBackupScript:
 
     def test_backs_up_login_defs(self, script_path: Path):
         """Test that login.defs is backed up."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should backup login.defs
@@ -115,7 +115,7 @@ class TestBackupScript:
 
     def test_creates_manifest(self, script_path: Path):
         """Test that backup creates a manifest file."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should create manifest with backup info
@@ -126,7 +126,7 @@ class TestBackupScript:
 
     def test_provides_feedback(self, script_path: Path):
         """Test that backup provides user feedback."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should echo status messages
@@ -134,7 +134,7 @@ class TestBackupScript:
 
     def test_handles_errors(self, script_path: Path):
         """Test that backup has error handling."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should have error handling
@@ -145,7 +145,7 @@ class TestBackupScript:
 
     def test_checks_for_root(self, script_path: Path):
         """Test that backup checks for root privileges."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should check for root
@@ -153,11 +153,7 @@ class TestBackupScript:
 
     def test_bash_syntax_valid(self, script_path: Path):
         """Test that script has valid bash syntax."""
-        result = subprocess.run(
-            ["bash", "-n", str(script_path)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", "-n", str(script_path)], capture_output=True, text=True)
 
         assert result.returncode == 0, f"Syntax error: {result.stderr}"
 
@@ -180,7 +176,7 @@ class TestRestoreScript:
 
     def test_script_structure(self, script_path: Path):
         """Test that script has proper structure."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should have shebang
@@ -191,7 +187,7 @@ class TestRestoreScript:
 
     def test_lists_available_backups(self, script_path: Path):
         """Test that restore can list available backups."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should list backups when run without arguments
@@ -202,7 +198,7 @@ class TestRestoreScript:
 
     def test_accepts_timestamp_argument(self, script_path: Path):
         """Test that restore accepts timestamp argument."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should accept timestamp as argument
@@ -213,7 +209,7 @@ class TestRestoreScript:
 
     def test_validates_backup_exists(self, script_path: Path):
         """Test that restore validates backup exists."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should check if backup exists
@@ -224,7 +220,7 @@ class TestRestoreScript:
 
     def test_confirms_before_restore(self, script_path: Path):
         """Test that restore asks for confirmation."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should ask for confirmation
@@ -235,7 +231,7 @@ class TestRestoreScript:
 
     def test_restores_ssh_config(self, script_path: Path):
         """Test that SSH config is restored."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should restore SSH config
@@ -243,7 +239,7 @@ class TestRestoreScript:
 
     def test_restores_sysctl_config(self, script_path: Path):
         """Test that sysctl config is restored."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should restore sysctl config
@@ -251,7 +247,7 @@ class TestRestoreScript:
 
     def test_restores_pam_config(self, script_path: Path):
         """Test that PAM config is restored."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should restore PAM config
@@ -259,7 +255,7 @@ class TestRestoreScript:
 
     def test_restores_login_defs(self, script_path: Path):
         """Test that login.defs is restored."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should restore login.defs
@@ -267,7 +263,7 @@ class TestRestoreScript:
 
     def test_uses_safe_copy(self, script_path: Path):
         """Test that restore uses safe copy operations."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should use cp with -p to preserve permissions
@@ -275,7 +271,7 @@ class TestRestoreScript:
 
     def test_provides_service_restart_instructions(self, script_path: Path):
         """Test that restore provides service restart instructions."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should mention restarting services
@@ -286,7 +282,7 @@ class TestRestoreScript:
 
     def test_checks_for_root(self, script_path: Path):
         """Test that restore checks for root privileges."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should check for root
@@ -294,11 +290,7 @@ class TestRestoreScript:
 
     def test_bash_syntax_valid(self, script_path: Path):
         """Test that script has valid bash syntax."""
-        result = subprocess.run(
-            ["bash", "-n", str(script_path)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", "-n", str(script_path)], capture_output=True, text=True)
 
         assert result.returncode == 0, f"Syntax error: {result.stderr}"
 
@@ -318,10 +310,10 @@ class TestBackupRestoreIntegration:
 
     def test_use_same_backup_directory(self):
         """Test that backup and restore use the same backup directory."""
-        with open(BACKUP_SCRIPT, 'r') as f:
+        with open(BACKUP_SCRIPT, "r") as f:
             backup_content = f.read()
 
-        with open(RESTORE_SCRIPT, 'r') as f:
+        with open(RESTORE_SCRIPT, "r") as f:
             restore_content = f.read()
 
         # Both should reference the same backup location
@@ -333,7 +325,7 @@ class TestBackupRestoreIntegration:
         readme = HARDENING_DIR / "README.md"
         assert readme.exists()
 
-        with open(readme, 'r') as f:
+        with open(readme, "r") as f:
             content = f.read()
 
         assert "backup-security-settings.sh" in content
@@ -341,10 +333,10 @@ class TestBackupRestoreIntegration:
 
     def test_backup_creates_restorable_format(self):
         """Test that backup creates data in restorable format."""
-        with open(BACKUP_SCRIPT, 'r') as f:
+        with open(BACKUP_SCRIPT, "r") as f:
             backup_content = f.read()
 
-        with open(RESTORE_SCRIPT, 'r') as f:
+        with open(RESTORE_SCRIPT, "r") as f:
             restore_content = f.read()
 
         # Files backed up should match files restored
@@ -366,7 +358,7 @@ class TestBackupSafety:
 
     def test_backup_no_destructive_operations(self):
         """Test that backup script doesn't perform destructive operations."""
-        with open(BACKUP_SCRIPT, 'r') as f:
+        with open(BACKUP_SCRIPT, "r") as f:
             content = f.read()
 
         # Should not remove original files (only copy)
@@ -377,7 +369,7 @@ class TestBackupSafety:
 
     def test_restore_has_confirmation(self):
         """Test that restore requires confirmation before proceeding."""
-        with open(RESTORE_SCRIPT, 'r') as f:
+        with open(RESTORE_SCRIPT, "r") as f:
             content = f.read()
 
         # Should require user confirmation
@@ -385,7 +377,7 @@ class TestBackupSafety:
 
     def test_backup_preserves_permissions(self):
         """Test that backup preserves file permissions."""
-        with open(BACKUP_SCRIPT, 'r') as f:
+        with open(BACKUP_SCRIPT, "r") as f:
             content = f.read()
 
         # Should use cp -p to preserve permissions

@@ -1,6 +1,5 @@
 """API Performance and Load Tests"""
 
-
 import pytest
 from api.main import app
 from fastapi.testclient import TestClient
@@ -10,7 +9,9 @@ client = TestClient(app)
 
 @pytest.fixture
 def auth_token():
-    response = client.post("/api/v1/auth/token", data={"username": "admin", "password": "changeme123"})
+    response = client.post(
+        "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
+    )
     return response.json()["access_token"]
 
 
@@ -26,6 +27,7 @@ class TestAPIPerformance:
 
     def test_health_endpoint_performance(self, benchmark):
         """Benchmark health endpoint response time"""
+
         def health_check():
             return client.get("/health")
 
@@ -35,10 +37,10 @@ class TestAPIPerformance:
 
     def test_auth_endpoint_performance(self, benchmark):
         """Benchmark authentication performance"""
+
         def login():
             return client.post(
-                "/api/v1/auth/token",
-                data={"username": "admin", "password": "changeme123"}
+                "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
             )
 
         result = benchmark(login)
@@ -46,6 +48,7 @@ class TestAPIPerformance:
 
     def test_list_rules_performance(self, benchmark, auth_headers):
         """Benchmark listing detection rules"""
+
         def list_rules():
             return client.get("/api/v1/detection/rules", headers=auth_headers)
 
@@ -64,8 +67,7 @@ class TestConcurrentRequests:
 
         def login():
             return client.post(
-                "/api/v1/auth/token",
-                data={"username": "admin", "password": "changeme123"}
+                "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
             )
 
         # Run 10 concurrent logins
@@ -100,10 +102,7 @@ class TestMemoryUsage:
     def test_large_response_handling(self, auth_headers):
         """Test handling of large responses"""
         # Request many items
-        response = client.get(
-            "/api/v1/detection/rules?limit=1000",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/detection/rules?limit=1000", headers=auth_headers)
 
         # Should complete without memory issues
         assert response.status_code == 200
@@ -116,14 +115,10 @@ class TestMemoryUsage:
             "name": "Large Rule",
             "rule_type": "sigma",
             "content": large_content,
-            "severity": "low"
+            "severity": "low",
         }
 
-        response = client.post(
-            "/api/v1/detection/rules",
-            json=rule_data,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/detection/rules", json=rule_data, headers=auth_headers)
 
         # Should handle large payload
         assert response.status_code in [201, 413]  # Created or payload too large

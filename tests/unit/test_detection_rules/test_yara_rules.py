@@ -125,9 +125,9 @@ class TestYaraRuleStructure:
         rules = extract_rules(content)
         for rule_name in rules:
             rule_content = extract_rule_content(content, rule_name)
-            assert "meta:" in rule_content, (
-                f"Rule '{rule_name}' in {yara_file.name} missing meta section"
-            )
+            assert (
+                "meta:" in rule_content
+            ), f"Rule '{rule_name}' in {yara_file.name} missing meta section"
 
     @pytest.mark.parametrize("yara_file", yara_files, ids=lambda x: x.name)
     def test_rules_have_condition(self, yara_file: Path):
@@ -136,9 +136,9 @@ class TestYaraRuleStructure:
         rules = extract_rules(content)
         for rule_name in rules:
             rule_content = extract_rule_content(content, rule_name)
-            assert "condition:" in rule_content, (
-                f"Rule '{rule_name}' in {yara_file.name} missing condition"
-            )
+            assert (
+                "condition:" in rule_content
+            ), f"Rule '{rule_name}' in {yara_file.name} missing condition"
 
     @pytest.mark.parametrize("yara_file", yara_files, ids=lambda x: x.name)
     def test_rules_have_strings_or_condition(self, yara_file: Path):
@@ -149,9 +149,9 @@ class TestYaraRuleStructure:
             rule_content = extract_rule_content(content, rule_name)
             has_strings = "strings:" in rule_content
             has_condition = "condition:" in rule_content
-            assert has_strings or has_condition, (
-                f"Rule '{rule_name}' in {yara_file.name} needs strings or condition"
-            )
+            assert (
+                has_strings or has_condition
+            ), f"Rule '{rule_name}' in {yara_file.name} needs strings or condition"
 
 
 class TestYaraMetadata:
@@ -167,9 +167,9 @@ class TestYaraMetadata:
         rules = extract_rules(content)
         for rule_name in rules:
             rule_content = extract_rule_content(content, rule_name)
-            assert "description" in rule_content.lower(), (
-                f"Rule '{rule_name}' in {yara_file.name} missing description"
-            )
+            assert (
+                "description" in rule_content.lower()
+            ), f"Rule '{rule_name}' in {yara_file.name} missing description"
 
     @pytest.mark.parametrize("yara_file", yara_files, ids=lambda x: x.name)
     def test_has_author(self, yara_file: Path):
@@ -178,9 +178,9 @@ class TestYaraMetadata:
         rules = extract_rules(content)
         for rule_name in rules:
             rule_content = extract_rule_content(content, rule_name)
-            assert "author" in rule_content.lower(), (
-                f"Rule '{rule_name}' in {yara_file.name} missing author"
-            )
+            assert (
+                "author" in rule_content.lower()
+            ), f"Rule '{rule_name}' in {yara_file.name} missing author"
 
     @pytest.mark.parametrize("yara_file", yara_files, ids=lambda x: x.name)
     def test_has_date(self, yara_file: Path):
@@ -189,9 +189,9 @@ class TestYaraMetadata:
         rules = extract_rules(content)
         for rule_name in rules:
             rule_content = extract_rule_content(content, rule_name)
-            assert "date" in rule_content.lower(), (
-                f"Rule '{rule_name}' in {yara_file.name} missing date"
-            )
+            assert (
+                "date" in rule_content.lower()
+            ), f"Rule '{rule_name}' in {yara_file.name} missing date"
 
 
 class TestYaraRuleNaming:
@@ -204,26 +204,56 @@ class TestYaraRuleNaming:
         rules = extract_rules(content)
         for rule_name in rules:
             # YARA rule names must be valid identifiers
-            assert re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", rule_name), (
-                f"Invalid rule name '{rule_name}' in {yara_file.name}"
-            )
+            assert re.match(
+                r"^[a-zA-Z_][a-zA-Z0-9_]*$", rule_name
+            ), f"Invalid rule name '{rule_name}' in {yara_file.name}"
 
     @pytest.mark.parametrize("yara_file", yara_files, ids=lambda x: x.name)
     def test_no_reserved_words(self, yara_file: Path):
         """Test that rule names don't use reserved words."""
         reserved = [
-            "all", "and", "any", "ascii", "at", "base64", "condition",
-            "contains", "entrypoint", "false", "filesize", "for", "global",
-            "import", "in", "include", "int16", "int32", "int8", "matches",
-            "meta", "nocase", "not", "of", "or", "private", "rule", "strings",
-            "them", "true", "uint16", "uint32", "uint8", "wide", "xor",
+            "all",
+            "and",
+            "any",
+            "ascii",
+            "at",
+            "base64",
+            "condition",
+            "contains",
+            "entrypoint",
+            "false",
+            "filesize",
+            "for",
+            "global",
+            "import",
+            "in",
+            "include",
+            "int16",
+            "int32",
+            "int8",
+            "matches",
+            "meta",
+            "nocase",
+            "not",
+            "of",
+            "or",
+            "private",
+            "rule",
+            "strings",
+            "them",
+            "true",
+            "uint16",
+            "uint32",
+            "uint8",
+            "wide",
+            "xor",
         ]
         content = load_yara_content(yara_file)
         rules = extract_rules(content)
         for rule_name in rules:
-            assert rule_name.lower() not in reserved, (
-                f"Rule name '{rule_name}' is a reserved word in {yara_file.name}"
-            )
+            assert (
+                rule_name.lower() not in reserved
+            ), f"Rule name '{rule_name}' is a reserved word in {yara_file.name}"
 
 
 class TestYaraStringPatterns:
@@ -236,9 +266,7 @@ class TestYaraStringPatterns:
         # Check for empty string definitions
         empty_pattern = r'\$\w+\s*=\s*""'
         matches = re.findall(empty_pattern, content)
-        assert len(matches) == 0, (
-            f"Empty string patterns found in {yara_file.name}: {matches}"
-        )
+        assert len(matches) == 0, f"Empty string patterns found in {yara_file.name}: {matches}"
 
     @pytest.mark.parametrize("yara_file", yara_files, ids=lambda x: x.name)
     def test_string_variable_naming(self, yara_file: Path):
@@ -247,9 +275,9 @@ class TestYaraStringPatterns:
         # Find all string variable definitions
         string_vars = re.findall(r"\$(\w+)\s*=", content)
         for var in string_vars:
-            assert re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", var), (
-                f"Invalid string variable name '${var}' in {yara_file.name}"
-            )
+            assert re.match(
+                r"^[a-zA-Z_][a-zA-Z0-9_]*$", var
+            ), f"Invalid string variable name '${var}' in {yara_file.name}"
 
 
 class TestYaraCoverage:
@@ -278,9 +306,7 @@ class TestYaraCoverage:
             rules = extract_rules(content)
             total_rules += len(rules)
 
-        assert total_rules >= 15, (
-            f"Expected at least 15 YARA rules, found {total_rules}"
-        )
+        assert total_rules >= 15, f"Expected at least 15 YARA rules, found {total_rules}"
 
     def test_threat_category_coverage(self):
         """Test coverage of major threat categories."""
@@ -302,9 +328,7 @@ class TestYaraCoverage:
 
         existing_files = [f.name for f in yara_path.rglob("*.yar")]
         for expected in expected_files:
-            assert expected in existing_files, (
-                f"Expected YARA file '{expected}' not found"
-            )
+            assert expected in existing_files, f"Expected YARA file '{expected}' not found"
 
 
 class TestYaraSeverity:
@@ -317,10 +341,8 @@ class TestYaraSeverity:
         """Test that severity values are valid."""
         content = load_yara_content(yara_file)
         # Find severity definitions
-        severity_matches = re.findall(
-            r'severity\s*=\s*["\']?(\w+)["\']?', content, re.IGNORECASE
-        )
+        severity_matches = re.findall(r'severity\s*=\s*["\']?(\w+)["\']?', content, re.IGNORECASE)
         for severity in severity_matches:
-            assert severity.lower() in self.VALID_SEVERITIES, (
-                f"Invalid severity '{severity}' in {yara_file.name}"
-            )
+            assert (
+                severity.lower() in self.VALID_SEVERITIES
+            ), f"Invalid severity '{severity}' in {yara_file.name}"

@@ -14,7 +14,9 @@ def auth_headers(auth_token):
 
 @pytest.fixture
 def auth_token():
-    response = client.post("/api/v1/auth/token", data={"username": "admin", "password": "changeme123"})
+    response = client.post(
+        "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
+    )
     return response.json()["access_token"]
 
 
@@ -30,7 +32,9 @@ class TestMonitoringEndpoints:
 
     def test_list_alerts(self, auth_headers):
         """Test listing security alerts"""
-        response = client.get("/api/v1/monitoring/alerts?severity=critical&status=active", headers=auth_headers)
+        response = client.get(
+            "/api/v1/monitoring/alerts?severity=critical&status=active", headers=auth_headers
+        )
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
@@ -44,9 +48,11 @@ class TestMonitoringEndpoints:
             "threshold": 90,
             "duration": "5m",
             "severity": "warning",
-            "action": "email"
+            "action": "email",
         }
-        response = client.post("/api/v1/monitoring/alerts/rules", json=alert_data, headers=auth_headers)
+        response = client.post(
+            "/api/v1/monitoring/alerts/rules", json=alert_data, headers=auth_headers
+        )
         assert response.status_code == 201 or response.status_code == 200
 
     def test_get_dashboard_data(self, auth_headers):

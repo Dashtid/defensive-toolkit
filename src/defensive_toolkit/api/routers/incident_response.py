@@ -60,6 +60,7 @@ IR_OUTPUT_DIR = Path(__file__).parent.parent.parent / "ir-output"
 # Try to import YAML parser
 try:
     import yaml
+
     YAML_AVAILABLE = True
 except ImportError:
     YAML_AVAILABLE = False
@@ -69,6 +70,7 @@ except ImportError:
 # ============================================================================
 # Incident Management Endpoints
 # ============================================================================
+
 
 @router.get("/incidents", response_model=List[Incident])
 async def list_incidents(
@@ -100,7 +102,7 @@ async def list_incidents(
     # Sort by created_at descending (newest first)
     incidents.sort(key=lambda x: x.created_at or datetime.min, reverse=True)
 
-    return incidents[offset:offset + limit]
+    return incidents[offset : offset + limit]
 
 
 @router.get("/incidents/{incident_id}", response_model=Incident)
@@ -122,8 +124,7 @@ async def get_incident(
     """
     if incident_id not in incidents_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Incident {incident_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Incident {incident_id} not found"
         )
     return incidents_db[incident_id]
 
@@ -154,7 +155,7 @@ async def create_incident(
     return APIResponse(
         status=StatusEnum.SUCCESS,
         message="Incident created successfully",
-        data={"incident_id": incident.id}
+        data={"incident_id": incident.id},
     )
 
 
@@ -179,8 +180,7 @@ async def update_incident(
     """
     if incident_id not in incidents_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Incident {incident_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Incident {incident_id} not found"
         )
 
     incident.id = incident_id
@@ -197,10 +197,7 @@ async def update_incident(
 
     logger.info(f"[+] Incident updated: {incident_id}")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Incident updated successfully"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Incident updated successfully")
 
 
 @router.delete("/incidents/{incident_id}", response_model=APIResponse)
@@ -222,23 +219,20 @@ async def delete_incident(
     """
     if incident_id not in incidents_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Incident {incident_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Incident {incident_id} not found"
         )
 
     del incidents_db[incident_id]
 
     logger.info(f"[+] Incident deleted: {incident_id}")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Incident deleted successfully"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Incident deleted successfully")
 
 
 # ============================================================================
 # Runbook Management Endpoints
 # ============================================================================
+
 
 def _load_runbook_yaml(file_path: Path) -> Optional[Dict[str, Any]]:
     """Load and parse a runbook YAML file."""
@@ -294,7 +288,7 @@ async def list_runbooks(
     if not YAML_AVAILABLE:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="PyYAML not installed. Install with: pip install pyyaml"
+            detail="PyYAML not installed. Install with: pip install pyyaml",
         )
 
     runbooks = []
@@ -348,8 +342,7 @@ async def get_runbook(
     """
     if not YAML_AVAILABLE:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="PyYAML not installed"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="PyYAML not installed"
         )
 
     # Try both extensions
@@ -359,15 +352,14 @@ async def get_runbook(
 
     if not yaml_file.exists():
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Runbook '{runbook_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Runbook '{runbook_id}' not found"
         )
 
     runbook_data = _load_runbook_yaml(yaml_file)
     if not runbook_data:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to parse runbook '{runbook_id}'"
+            detail=f"Failed to parse runbook '{runbook_id}'",
         )
 
     return RunbookDetail(
@@ -386,6 +378,7 @@ async def get_runbook(
 # ============================================================================
 # Runbook Execution Endpoints
 # ============================================================================
+
 
 async def _execute_runbook_background(
     execution_id: str,
@@ -440,7 +433,10 @@ async def _execute_runbook_background(
                 execution["steps_completed"] += 1
 
             # Normal or auto-approve mode
-            elif request.mode in (RunbookExecutionModeEnum.NORMAL, RunbookExecutionModeEnum.AUTO_APPROVE):
+            elif request.mode in (
+                RunbookExecutionModeEnum.NORMAL,
+                RunbookExecutionModeEnum.AUTO_APPROVE,
+            ):
                 # Check if action needs approval
                 severity_order = ["low", "medium", "high", "critical"]
                 auto_level = request.auto_approve_level or "low"
@@ -489,14 +485,16 @@ async def _execute_runbook_background(
     except Exception as e:
         logger.error(f"[-] Runbook execution failed: {e}")
         execution["status"] = StatusEnum.FAILED.value
-        execution["step_results"].append({
-            "step_name": "ERROR",
-            "action": "error",
-            "status": RunbookStepStatusEnum.FAILED.value,
-            "severity": "critical",
-            "message": str(e),
-            "executed_at": datetime.utcnow().isoformat(),
-        })
+        execution["step_results"].append(
+            {
+                "step_name": "ERROR",
+                "action": "error",
+                "status": RunbookStepStatusEnum.FAILED.value,
+                "severity": "critical",
+                "message": str(e),
+                "executed_at": datetime.utcnow().isoformat(),
+            }
+        )
 
     execution["updated_at"] = datetime.utcnow().isoformat()
 
@@ -525,8 +523,7 @@ async def execute_runbook(
     """
     if not YAML_AVAILABLE:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="PyYAML not installed"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="PyYAML not installed"
         )
 
     # Load runbook
@@ -537,18 +534,19 @@ async def execute_runbook(
     if not yaml_file.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Runbook '{request.runbook_id}' not found"
+            detail=f"Runbook '{request.runbook_id}' not found",
         )
 
     runbook_data = _load_runbook_yaml(yaml_file)
     if not runbook_data:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to parse runbook"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to parse runbook"
         )
 
     # Generate execution and incident IDs
-    execution_id = f"EXE-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8].upper()}"
+    execution_id = (
+        f"EXE-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8].upper()}"
+    )
     incident_id = request.incident_id or f"IR-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
 
     # Merge variables
@@ -634,27 +632,31 @@ async def list_executions(
     # Convert to response models
     result = []
     for exe in executions[:limit]:
-        result.append(RunbookExecutionStatus(
-            execution_id=exe["execution_id"],
-            runbook_name=exe["runbook_name"],
-            runbook_version=exe["runbook_version"],
-            incident_id=exe["incident_id"],
-            status=StatusEnum(exe["status"]),
-            mode=RunbookExecutionModeEnum(exe["mode"]),
-            started_at=datetime.fromisoformat(exe["started_at"]),
-            updated_at=datetime.fromisoformat(exe["updated_at"]),
-            completed_at=datetime.fromisoformat(exe["completed_at"]) if exe["completed_at"] else None,
-            current_step=exe["current_step"],
-            total_steps=exe["total_steps"],
-            steps_completed=exe["steps_completed"],
-            steps_failed=exe["steps_failed"],
-            steps_skipped=exe["steps_skipped"],
-            steps_awaiting=exe["steps_awaiting"],
-            step_results=[RunbookStepResult(**r) for r in exe.get("step_results", [])],
-            variables=exe["variables"],
-            analyst=exe["analyst"],
-            target_host=exe["target_host"],
-        ))
+        result.append(
+            RunbookExecutionStatus(
+                execution_id=exe["execution_id"],
+                runbook_name=exe["runbook_name"],
+                runbook_version=exe["runbook_version"],
+                incident_id=exe["incident_id"],
+                status=StatusEnum(exe["status"]),
+                mode=RunbookExecutionModeEnum(exe["mode"]),
+                started_at=datetime.fromisoformat(exe["started_at"]),
+                updated_at=datetime.fromisoformat(exe["updated_at"]),
+                completed_at=(
+                    datetime.fromisoformat(exe["completed_at"]) if exe["completed_at"] else None
+                ),
+                current_step=exe["current_step"],
+                total_steps=exe["total_steps"],
+                steps_completed=exe["steps_completed"],
+                steps_failed=exe["steps_failed"],
+                steps_skipped=exe["steps_skipped"],
+                steps_awaiting=exe["steps_awaiting"],
+                step_results=[RunbookStepResult(**r) for r in exe.get("step_results", [])],
+                variables=exe["variables"],
+                analyst=exe["analyst"],
+                target_host=exe["target_host"],
+            )
+        )
 
     return result
 
@@ -678,8 +680,7 @@ async def get_execution_status(
     """
     if execution_id not in executions_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Execution '{execution_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Execution '{execution_id}' not found"
         )
 
     exe = executions_db[execution_id]
@@ -710,6 +711,7 @@ async def get_execution_status(
 # ============================================================================
 # Approval Endpoints
 # ============================================================================
+
 
 @router.get("/approvals", response_model=List[PendingApproval])
 async def list_pending_approvals(
@@ -749,8 +751,7 @@ async def get_approval(
     """
     if approval_id not in approvals_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Approval '{approval_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Approval '{approval_id}' not found"
         )
 
     return approvals_db[approval_id]
@@ -777,8 +778,7 @@ async def decide_approval(
     """
     if approval_id not in approvals_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Approval '{approval_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Approval '{approval_id}' not found"
         )
 
     approval = approvals_db[approval_id]
@@ -804,7 +804,9 @@ async def decide_approval(
             for step_result in execution["step_results"]:
                 if step_result["step_name"] == approval.step_name:
                     step_result["status"] = RunbookStepStatusEnum.SKIPPED.value
-                    step_result["message"] = f"Denied by {current_user}: {decision.reason or 'No reason'}"
+                    step_result["message"] = (
+                        f"Denied by {current_user}: {decision.reason or 'No reason'}"
+                    )
                     break
 
             execution["steps_awaiting"] -= 1
@@ -827,13 +829,14 @@ async def decide_approval(
             "approval_id": approval_id,
             "decision": "approved" if decision.approved else "denied",
             "decided_by": current_user,
-        }
+        },
     )
 
 
 # ============================================================================
 # Evidence Endpoints
 # ============================================================================
+
 
 @router.get("/executions/{execution_id}/evidence", response_model=EvidenceChainResponse)
 async def get_evidence_chain(
@@ -854,8 +857,7 @@ async def get_evidence_chain(
     """
     if execution_id not in executions_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Execution '{execution_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Execution '{execution_id}' not found"
         )
 
     execution = executions_db[execution_id]
@@ -871,23 +873,27 @@ async def get_evidence_chain(
 
         evidence_items = []
         for item in chain_data.get("evidence", []):
-            evidence_items.append(EvidenceItem(
-                evidence_id=item.get("evidence_id", ""),
-                incident_id=item.get("incident_id", incident_id),
-                evidence_type=item.get("type", ""),
-                source=item.get("source", ""),
-                description=item.get("description", ""),
-                collected_at=datetime.fromisoformat(item["collected_at"]),
-                collected_by=item.get("collected_by", ""),
-                hostname=item.get("hostname", ""),
-                file_path=item.get("file_path"),
-                file_size=item.get("file_size"),
-                sha256=item.get("sha256"),
-            ))
+            evidence_items.append(
+                EvidenceItem(
+                    evidence_id=item.get("evidence_id", ""),
+                    incident_id=item.get("incident_id", incident_id),
+                    evidence_type=item.get("type", ""),
+                    source=item.get("source", ""),
+                    description=item.get("description", ""),
+                    collected_at=datetime.fromisoformat(item["collected_at"]),
+                    collected_by=item.get("collected_by", ""),
+                    hostname=item.get("hostname", ""),
+                    file_path=item.get("file_path"),
+                    file_size=item.get("file_size"),
+                    sha256=item.get("sha256"),
+                )
+            )
 
         return EvidenceChainResponse(
             incident_id=incident_id,
-            created_at=datetime.fromisoformat(chain_data.get("created_at", datetime.utcnow().isoformat())),
+            created_at=datetime.fromisoformat(
+                chain_data.get("created_at", datetime.utcnow().isoformat())
+            ),
             evidence_count=len(evidence_items),
             evidence=evidence_items,
         )
@@ -920,8 +926,7 @@ async def download_evidence_package(
     """
     if execution_id not in executions_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Execution '{execution_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Execution '{execution_id}' not found"
         )
 
     execution = executions_db[execution_id]
@@ -933,7 +938,7 @@ async def download_evidence_package(
     if not evidence_dir.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No evidence package available for this execution"
+            detail="No evidence package available for this execution",
         )
 
     # Find zip file
@@ -943,8 +948,7 @@ async def download_evidence_package(
 
     if not zip_files:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Forensic package not yet created"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Forensic package not yet created"
         )
 
     zip_file = zip_files[0]
@@ -961,6 +965,7 @@ async def download_evidence_package(
 # ============================================================================
 # Rollback Endpoint
 # ============================================================================
+
 
 @router.post("/executions/{execution_id}/rollback", response_model=APIResponse)
 async def rollback_execution(
@@ -987,14 +992,13 @@ async def rollback_execution(
     """
     if execution_id not in executions_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Execution '{execution_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Execution '{execution_id}' not found"
         )
 
     if not request.confirm:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rollback must be confirmed (confirm: true)"
+            detail="Rollback must be confirmed (confirm: true)",
         )
 
     execution = executions_db[execution_id]
@@ -1013,13 +1017,14 @@ async def rollback_execution(
             "execution_id": execution_id,
             "rollback_initiated_by": current_user,
             "note": "Rollback operations logged to incident output directory",
-        }
+        },
     )
 
 
 # ============================================================================
 # Legacy Playbook Endpoints (for backward compatibility)
 # ============================================================================
+
 
 @router.post("/playbooks/execute", response_model=PlaybookExecutionResponse)
 async def execute_playbook_legacy(
@@ -1046,8 +1051,8 @@ async def execute_playbook_legacy(
         results={
             "containment": "successful",
             "evidence_collected": True,
-            "notifications_sent": ["security@example.com"]
-        }
+            "notifications_sent": ["security@example.com"],
+        },
     )
 
     return execution
@@ -1068,11 +1073,13 @@ async def list_playbooks_legacy(
         for yaml_file in RUNBOOKS_DIR.glob("*.yaml"):
             runbook_data = _load_runbook_yaml(yaml_file)
             if runbook_data:
-                playbooks.append({
-                    "name": yaml_file.stem,
-                    "description": runbook_data.get("description", ""),
-                    "steps": len(runbook_data.get("steps", []))
-                })
+                playbooks.append(
+                    {
+                        "name": yaml_file.stem,
+                        "description": runbook_data.get("description", ""),
+                        "steps": len(runbook_data.get("steps", [])),
+                    }
+                )
         return playbooks
 
     # Fallback to hardcoded list
@@ -1080,16 +1087,16 @@ async def list_playbooks_legacy(
         {
             "name": "ransomware-response",
             "description": "Response playbook for ransomware incidents",
-            "steps": 8
+            "steps": 8,
         },
         {
             "name": "malware-response",
             "description": "Response playbook for malware infections",
-            "steps": 6
+            "steps": 6,
         },
         {
             "name": "credential-compromise",
             "description": "Response playbook for compromised credentials",
-            "steps": 7
-        }
+            "steps": 7,
+        },
     ]

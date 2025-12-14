@@ -29,9 +29,15 @@ from zipfile import ZipFile
 try:
     from ..runbook_engine import ActionResult
 except ImportError:
+
     class ActionResult:
-        def __init__(self, success: bool, message: str, data: Optional[Dict] = None,
-                     rollback_info: Optional[Dict] = None):
+        def __init__(
+            self,
+            success: bool,
+            message: str,
+            data: Optional[Dict] = None,
+            rollback_info: Optional[Dict] = None,
+        ):
             self.success = success
             self.message = message
             self.data = data or {}
@@ -44,8 +50,9 @@ except ImportError:
                 "message": self.message,
                 "data": self.data,
                 "rollback_info": self.rollback_info,
-                "timestamp": self.timestamp
+                "timestamp": self.timestamp,
             }
+
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +62,7 @@ def collect_evidence(
     source: str,
     output_dir: str,
     incident_id: Optional[str] = None,
-    collector: Optional[str] = None
+    collector: Optional[str] = None,
 ) -> ActionResult:
     """
     Collect evidence with chain of custody tracking.
@@ -91,10 +98,7 @@ def collect_evidence(
 
     handler = evidence_handlers.get(evidence_type)
     if not handler:
-        return ActionResult(
-            success=False,
-            message=f"Unknown evidence type: {evidence_type}"
-        )
+        return ActionResult(success=False, message=f"Unknown evidence type: {evidence_type}")
 
     try:
         result = handler(source, output_path, incident_id)
@@ -121,13 +125,10 @@ def collect_evidence(
             return ActionResult(
                 success=True,
                 message=f"Evidence collected: {result.get('output_file')}",
-                data=custody_record
+                data=custody_record,
             )
         else:
-            return ActionResult(
-                success=False,
-                message=result.get("error", "Collection failed")
-            )
+            return ActionResult(success=False, message=result.get("error", "Collection failed"))
 
     except Exception as e:
         return ActionResult(success=False, message=f"Evidence collection failed: {e}")
@@ -139,16 +140,14 @@ def _collect_logs(source: str, output_path: Path, incident_id: str) -> Dict:
     output_file = output_path / f"{incident_id}_logs.zip"
 
     try:
-        with ZipFile(output_file, 'w') as zipf:
+        with ZipFile(output_file, "w") as zipf:
             if source == "system" or source == "*":
                 if is_windows:
                     # Export Windows Event Logs
                     log_names = ["Security", "System", "Application"]
                     for log_name in log_names:
                         temp_log = output_path / f"{log_name}.evtx"
-                        cmd = [
-                            "wevtutil", "epl", log_name, str(temp_log)
-                        ]
+                        cmd = ["wevtutil", "epl", log_name, str(temp_log)]
                         subprocess.run(cmd, capture_output=True)
                         if temp_log.exists():
                             zipf.write(temp_log, f"eventlogs/{log_name}.evtx")
@@ -162,7 +161,9 @@ def _collect_logs(source: str, output_path: Path, incident_id: str) -> Dict:
                             for log_file in log_path.glob("**/*"):
                                 if log_file.is_file():
                                     try:
-                                        zipf.write(log_file, f"logs/{log_file.relative_to(log_path)}")
+                                        zipf.write(
+                                            log_file, f"logs/{log_file.relative_to(log_path)}"
+                                        )
                                     except (PermissionError, OSError):
                                         pass
             else:
@@ -183,7 +184,7 @@ def _collect_logs(source: str, output_path: Path, incident_id: str) -> Dict:
             "success": True,
             "output_file": str(output_file),
             "sha256": sha256,
-            "file_size": output_file.stat().st_size
+            "file_size": output_file.stat().st_size,
         }
 
     except Exception as e:
@@ -199,7 +200,7 @@ def _collect_files(source: str, output_path: Path, incident_id: str) -> Dict:
         return {"success": False, "error": f"Source not found: {source}"}
 
     try:
-        with ZipFile(output_file, 'w') as zipf:
+        with ZipFile(output_file, "w") as zipf:
             if source_path.is_file():
                 zipf.write(source_path, source_path.name)
             else:
@@ -216,7 +217,7 @@ def _collect_files(source: str, output_path: Path, incident_id: str) -> Dict:
             "success": True,
             "output_file": str(output_file),
             "sha256": sha256,
-            "file_size": output_file.stat().st_size
+            "file_size": output_file.stat().st_size,
         }
 
     except Exception as e:
@@ -261,7 +262,7 @@ def _collect_registry(source: str, output_path: Path, incident_id: str) -> Dict:
             "success": True,
             "output_file": str(output_file),
             "sha256": sha256,
-            "file_size": output_file.stat().st_size
+            "file_size": output_file.stat().st_size,
         }
 
     except Exception as e:
@@ -277,8 +278,11 @@ def _collect_processes(source: str, output_path: Path, incident_id: str) -> Dict
         processes = []
 
         if is_windows:
-            cmd = ["powershell.exe", "-Command",
-                   "Get-Process | Select-Object Id,ProcessName,Path,StartTime,CPU,WorkingSet | ConvertTo-Json"]
+            cmd = [
+                "powershell.exe",
+                "-Command",
+                "Get-Process | Select-Object Id,ProcessName,Path,StartTime,CPU,WorkingSet | ConvertTo-Json",
+            ]
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0:
                 processes = json.loads(result.stdout) if result.stdout.strip() else []
@@ -297,7 +301,7 @@ def _collect_processes(source: str, output_path: Path, incident_id: str) -> Dict
             "collected_at": datetime.now().isoformat(),
             "hostname": platform.node(),
             "process_count": len(processes) if isinstance(processes, list) else 1,
-            "processes": processes
+            "processes": processes,
         }
 
         with open(output_file, "w") as f:
@@ -309,7 +313,7 @@ def _collect_processes(source: str, output_path: Path, incident_id: str) -> Dict
             "success": True,
             "output_file": str(output_file),
             "sha256": sha256,
-            "file_size": output_file.stat().st_size
+            "file_size": output_file.stat().st_size,
         }
 
     except Exception as e:
@@ -327,7 +331,7 @@ def _collect_network_state(source: str, output_path: Path, incident_id: str) -> 
             "hostname": platform.node(),
             "connections": [],
             "arp_table": [],
-            "dns_cache": []
+            "dns_cache": [],
         }
 
         if is_windows:
@@ -364,7 +368,7 @@ def _collect_network_state(source: str, output_path: Path, incident_id: str) -> 
             "success": True,
             "output_file": str(output_file),
             "sha256": sha256,
-            "file_size": output_file.stat().st_size
+            "file_size": output_file.stat().st_size,
         }
 
     except Exception as e:
@@ -382,24 +386,32 @@ def _collect_user_info(source: str, output_path: Path, incident_id: str) -> Dict
             "hostname": platform.node(),
             "users": [],
             "groups": [],
-            "logged_in": []
+            "logged_in": [],
         }
 
         if is_windows:
             # Local users
             result = subprocess.run(
-                ["powershell.exe", "-Command",
-                 "Get-LocalUser | Select-Object Name,Enabled,LastLogon | ConvertTo-Json"],
-                capture_output=True, text=True
+                [
+                    "powershell.exe",
+                    "-Command",
+                    "Get-LocalUser | Select-Object Name,Enabled,LastLogon | ConvertTo-Json",
+                ],
+                capture_output=True,
+                text=True,
             )
             if result.stdout.strip():
                 user_data["users"] = json.loads(result.stdout)
 
             # Local groups
             result = subprocess.run(
-                ["powershell.exe", "-Command",
-                 "Get-LocalGroup | Select-Object Name,Description | ConvertTo-Json"],
-                capture_output=True, text=True
+                [
+                    "powershell.exe",
+                    "-Command",
+                    "Get-LocalGroup | Select-Object Name,Description | ConvertTo-Json",
+                ],
+                capture_output=True,
+                text=True,
             )
             if result.stdout.strip():
                 user_data["groups"] = json.loads(result.stdout)
@@ -413,24 +425,28 @@ def _collect_user_info(source: str, output_path: Path, incident_id: str) -> Dict
                 for line in f:
                     parts = line.strip().split(":")
                     if len(parts) >= 7:
-                        user_data["users"].append({
-                            "username": parts[0],
-                            "uid": parts[2],
-                            "gid": parts[3],
-                            "home": parts[5],
-                            "shell": parts[6]
-                        })
+                        user_data["users"].append(
+                            {
+                                "username": parts[0],
+                                "uid": parts[2],
+                                "gid": parts[3],
+                                "home": parts[5],
+                                "shell": parts[6],
+                            }
+                        )
 
             # Groups
             with open("/etc/group", "r") as f:
                 for line in f:
                     parts = line.strip().split(":")
                     if len(parts) >= 4:
-                        user_data["groups"].append({
-                            "name": parts[0],
-                            "gid": parts[2],
-                            "members": parts[3].split(",") if parts[3] else []
-                        })
+                        user_data["groups"].append(
+                            {
+                                "name": parts[0],
+                                "gid": parts[2],
+                                "members": parts[3].split(",") if parts[3] else [],
+                            }
+                        )
 
             # Logged in
             result = subprocess.run(["who"], capture_output=True, text=True)
@@ -445,7 +461,7 @@ def _collect_user_info(source: str, output_path: Path, incident_id: str) -> Dict
             "success": True,
             "output_file": str(output_file),
             "sha256": sha256,
-            "file_size": output_file.stat().st_size
+            "file_size": output_file.stat().st_size,
         }
 
     except Exception as e:
@@ -460,15 +476,20 @@ def _collect_services(source: str, output_path: Path, incident_id: str) -> Dict:
     try:
         if is_windows:
             result = subprocess.run(
-                ["powershell.exe", "-Command",
-                 "Get-Service | Select-Object Name,DisplayName,Status,StartType | ConvertTo-Json"],
-                capture_output=True, text=True
+                [
+                    "powershell.exe",
+                    "-Command",
+                    "Get-Service | Select-Object Name,DisplayName,Status,StartType | ConvertTo-Json",
+                ],
+                capture_output=True,
+                text=True,
             )
             services = json.loads(result.stdout) if result.stdout.strip() else []
         else:
             result = subprocess.run(
                 ["systemctl", "list-units", "--type=service", "--all", "--output=json"],
-                capture_output=True, text=True
+                capture_output=True,
+                text=True,
             )
             services = json.loads(result.stdout) if result.stdout.strip() else []
 
@@ -476,7 +497,7 @@ def _collect_services(source: str, output_path: Path, incident_id: str) -> Dict:
             "collected_at": datetime.now().isoformat(),
             "hostname": platform.node(),
             "service_count": len(services) if isinstance(services, list) else 1,
-            "services": services
+            "services": services,
         }
 
         with open(output_file, "w") as f:
@@ -488,7 +509,7 @@ def _collect_services(source: str, output_path: Path, incident_id: str) -> Dict:
             "success": True,
             "output_file": str(output_file),
             "sha256": sha256,
-            "file_size": output_file.stat().st_size
+            "file_size": output_file.stat().st_size,
         }
 
     except Exception as e:
@@ -503,13 +524,12 @@ def _collect_scheduled_tasks(source: str, output_path: Path, incident_id: str) -
     try:
         if is_windows:
             result = subprocess.run(
-                ["schtasks", "/query", "/fo", "CSV", "/v"],
-                capture_output=True, text=True
+                ["schtasks", "/query", "/fo", "CSV", "/v"], capture_output=True, text=True
             )
             output_data = {
                 "collected_at": datetime.now().isoformat(),
                 "hostname": platform.node(),
-                "raw_output": result.stdout
+                "raw_output": result.stdout,
             }
         else:
             cron_data = []
@@ -517,17 +537,14 @@ def _collect_scheduled_tasks(source: str, output_path: Path, incident_id: str) -
             for cron_file in Path("/etc").glob("cron*"):
                 if cron_file.is_file():
                     try:
-                        cron_data.append({
-                            "file": str(cron_file),
-                            "content": cron_file.read_text()
-                        })
+                        cron_data.append({"file": str(cron_file), "content": cron_file.read_text()})
                     except PermissionError:
                         pass
 
             output_data = {
                 "collected_at": datetime.now().isoformat(),
                 "hostname": platform.node(),
-                "cron_files": cron_data
+                "cron_files": cron_data,
             }
 
         with open(output_file, "w") as f:
@@ -539,7 +556,7 @@ def _collect_scheduled_tasks(source: str, output_path: Path, incident_id: str) -
             "success": True,
             "output_file": str(output_file),
             "sha256": sha256,
-            "file_size": output_file.stat().st_size
+            "file_size": output_file.stat().st_size,
         }
 
     except Exception as e:
@@ -550,7 +567,7 @@ def create_forensic_package(
     evidence_dir: str,
     output_file: str,
     include_chain_of_custody: bool = True,
-    password: Optional[str] = None
+    password: Optional[str] = None,
 ) -> ActionResult:
     """
     Create a forensic evidence package.
@@ -570,14 +587,11 @@ def create_forensic_package(
     output_path = Path(output_file)
 
     if not evidence_path.exists():
-        return ActionResult(
-            success=False,
-            message=f"Evidence directory not found: {evidence_dir}"
-        )
+        return ActionResult(success=False, message=f"Evidence directory not found: {evidence_dir}")
 
     try:
         # Create ZIP package
-        with ZipFile(output_path, 'w') as zipf:
+        with ZipFile(output_path, "w") as zipf:
             for item in evidence_path.glob("**/*"):
                 if item.is_file():
                     zipf.write(item, item.relative_to(evidence_path))
@@ -594,7 +608,7 @@ def create_forensic_package(
             "output_file": str(output_path),
             "sha256": sha256,
             "file_size": output_path.stat().st_size,
-            "encrypted": password is not None
+            "encrypted": password is not None,
         }
 
         manifest_file = output_path.with_suffix(".manifest.json")
@@ -602,9 +616,7 @@ def create_forensic_package(
             json.dump(manifest, f, indent=2)
 
         return ActionResult(
-            success=True,
-            message=f"Forensic package created: {output_path}",
-            data=manifest
+            success=True, message=f"Forensic package created: {output_path}", data=manifest
         )
 
     except Exception as e:
@@ -612,9 +624,7 @@ def create_forensic_package(
 
 
 def capture_memory(
-    output_dir: str,
-    tool: str = "auto",
-    incident_id: Optional[str] = None
+    output_dir: str, tool: str = "auto", incident_id: Optional[str] = None
 ) -> ActionResult:
     """
     Capture system memory dump.
@@ -650,7 +660,7 @@ def capture_memory(
             winpmem_paths = [
                 Path("C:/Tools/winpmem.exe"),
                 Path("winpmem.exe"),
-                Path.home() / "Tools" / "winpmem.exe"
+                Path.home() / "Tools" / "winpmem.exe",
             ]
 
             winpmem = None
@@ -662,7 +672,7 @@ def capture_memory(
             if not winpmem:
                 return ActionResult(
                     success=False,
-                    message="winpmem not found. Download from: https://github.com/Velocidex/WinPmem"
+                    message="winpmem not found. Download from: https://github.com/Velocidex/WinPmem",
                 )
 
             cmd = [str(winpmem), str(output_file)]
@@ -670,8 +680,7 @@ def capture_memory(
 
             if result.returncode != 0:
                 return ActionResult(
-                    success=False,
-                    message=f"Memory capture failed: {result.stderr}"
+                    success=False, message=f"Memory capture failed: {result.stderr}"
                 )
 
         elif tool == "avml":
@@ -680,7 +689,7 @@ def capture_memory(
             if not avml_path:
                 return ActionResult(
                     success=False,
-                    message="AVML not found. Install from: https://github.com/microsoft/avml"
+                    message="AVML not found. Install from: https://github.com/microsoft/avml",
                 )
 
             cmd = [avml_path, str(output_file)]
@@ -688,15 +697,11 @@ def capture_memory(
 
             if result.returncode != 0:
                 return ActionResult(
-                    success=False,
-                    message=f"Memory capture failed: {result.stderr}"
+                    success=False, message=f"Memory capture failed: {result.stderr}"
                 )
 
         else:
-            return ActionResult(
-                success=False,
-                message=f"Unknown memory capture tool: {tool}"
-            )
+            return ActionResult(success=False, message=f"Unknown memory capture tool: {tool}")
 
         if output_file.exists():
             sha256 = _calculate_file_hash(output_file)
@@ -708,14 +713,11 @@ def capture_memory(
                     "output_file": str(output_file),
                     "sha256": sha256,
                     "file_size": output_file.stat().st_size,
-                    "tool": tool
-                }
+                    "tool": tool,
+                },
             )
         else:
-            return ActionResult(
-                success=False,
-                message="Memory dump file not created"
-            )
+            return ActionResult(success=False, message="Memory dump file not created")
 
     except subprocess.TimeoutExpired:
         return ActionResult(success=False, message="Memory capture timed out")
@@ -724,10 +726,7 @@ def capture_memory(
 
 
 def snapshot_disk(
-    volume: str,
-    output_dir: str,
-    method: str = "vss",
-    incident_id: Optional[str] = None
+    volume: str, output_dir: str, method: str = "vss", incident_id: Optional[str] = None
 ) -> ActionResult:
     """
     Create disk snapshot for forensic analysis.
@@ -753,15 +752,17 @@ def snapshot_disk(
         if method == "vss" and is_windows:
             # Create VSS snapshot
             cmd = [
-                "powershell.exe", "-Command",
-                f"(Get-WmiObject -List Win32_ShadowCopy).Create('{volume}\\', 'ClientAccessible')"
+                "powershell.exe",
+                "-Command",
+                f"(Get-WmiObject -List Win32_ShadowCopy).Create('{volume}\\', 'ClientAccessible')",
             ]
             result = subprocess.run(cmd, capture_output=True, text=True)
 
             # Get shadow copy info
             cmd = [
-                "powershell.exe", "-Command",
-                "Get-WmiObject Win32_ShadowCopy | Select-Object ID,InstallDate,DeviceObject | ConvertTo-Json"
+                "powershell.exe",
+                "-Command",
+                "Get-WmiObject Win32_ShadowCopy | Select-Object ID,InstallDate,DeviceObject | ConvertTo-Json",
             ]
             result = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -769,32 +770,37 @@ def snapshot_disk(
 
             info_file = output_path / f"{incident_id}_vss_snapshot.json"
             with open(info_file, "w") as f:
-                json.dump({
-                    "created_at": datetime.now().isoformat(),
-                    "volume": volume,
-                    "method": method,
-                    "snapshots": snapshot_info
-                }, f, indent=2)
+                json.dump(
+                    {
+                        "created_at": datetime.now().isoformat(),
+                        "volume": volume,
+                        "method": method,
+                        "snapshots": snapshot_info,
+                    },
+                    f,
+                    indent=2,
+                )
 
             return ActionResult(
                 success=True,
                 message=f"VSS snapshot created for {volume}",
-                data={"info_file": str(info_file), "method": method}
+                data={"info_file": str(info_file), "method": method},
             )
 
         elif method == "dd":
             # Raw disk image (requires elevated privileges)
-            output_file = output_path / f"{incident_id}_{volume.replace('/', '_').replace(':', '')}.dd"
+            output_file = (
+                output_path / f"{incident_id}_{volume.replace('/', '_').replace(':', '')}.dd"
+            )
 
             return ActionResult(
                 success=False,
-                message="DD imaging requires manual execution with elevated privileges"
+                message="DD imaging requires manual execution with elevated privileges",
             )
 
         else:
             return ActionResult(
-                success=False,
-                message=f"Snapshot method {method} not supported on this platform"
+                success=False, message=f"Snapshot method {method} not supported on this platform"
             )
 
     except Exception as e:
@@ -821,4 +827,6 @@ if __name__ == "__main__":
     print("  - create_forensic_package(evidence_dir, output_file)")
     print("  - capture_memory(output_dir, tool)")
     print("  - snapshot_disk(volume, output_dir, method)")
-    print("\nEvidence types: logs, files, registry, processes, network, users, services, scheduled_tasks")
+    print(
+        "\nEvidence types: logs, files, registry, processes, network, users, services, scheduled_tasks"
+    )

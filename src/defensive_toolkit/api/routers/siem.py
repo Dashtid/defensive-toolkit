@@ -75,6 +75,7 @@ _http_clients: Dict[str, httpx.AsyncClient] = {}
 # Abstract SIEM Client Base Class
 # ============================================================================
 
+
 class BaseSIEMClient(ABC):
     """Abstract base class for SIEM platform clients"""
 
@@ -96,8 +97,8 @@ class BaseSIEMClient(ABC):
                 verify=self.config.verify_ssl,
                 limits=httpx.Limits(
                     max_connections=self.config.pool_connections,
-                    max_keepalive_connections=self.config.pool_connections // 2
-                )
+                    max_keepalive_connections=self.config.pool_connections // 2,
+                ),
             )
         return self.client
 
@@ -158,6 +159,7 @@ class BaseSIEMClient(ABC):
 # Wazuh Client Implementation
 # ============================================================================
 
+
 class WazuhClient(BaseSIEMClient):
     """Client for Wazuh SIEM API"""
 
@@ -187,7 +189,7 @@ class WazuhClient(BaseSIEMClient):
         try:
             response = await client.post(
                 f"{self.base_url}/security/user/authenticate",
-                headers={"Authorization": f"Basic {credentials}"}
+                headers={"Authorization": f"Basic {credentials}"},
             )
             response.raise_for_status()
             data = response.json()
@@ -200,9 +202,7 @@ class WazuhClient(BaseSIEMClient):
 
     async def _ensure_authenticated(self):
         """Ensure we have a valid JWT token"""
-        if not self._jwt_token or (
-            self._token_expiry and datetime.utcnow() >= self._token_expiry
-        ):
+        if not self._jwt_token or (self._token_expiry and datetime.utcnow() >= self._token_expiry):
             await self._authenticate()
 
     async def test_connection(self) -> SIEMConnectionStatus:
@@ -214,15 +214,13 @@ class WazuhClient(BaseSIEMClient):
 
             # Get cluster info
             response = await client.get(
-                f"{self.base_url}/cluster/status",
-                headers=self.get_auth_headers()
+                f"{self.base_url}/cluster/status", headers=self.get_auth_headers()
             )
             response.raise_for_status()
 
             # Get manager info
             info_response = await client.get(
-                f"{self.base_url}/manager/info",
-                headers=self.get_auth_headers()
+                f"{self.base_url}/manager/info", headers=self.get_auth_headers()
             )
             info_data = info_response.json().get("data", {}).get("affected_items", [{}])[0]
 
@@ -237,7 +235,7 @@ class WazuhClient(BaseSIEMClient):
                 latency_ms=latency,
                 version=info_data.get("version"),
                 cluster_name=info_data.get("cluster", {}).get("name"),
-                node_count=1  # Would need cluster/nodes endpoint for actual count
+                node_count=1,  # Would need cluster/nodes endpoint for actual count
             )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -247,7 +245,7 @@ class WazuhClient(BaseSIEMClient):
                     platform=SIEMPlatformTypeEnum.WAZUH,
                     status=SIEMConnectionStatusEnum.UNAUTHORIZED,
                     last_check=datetime.utcnow(),
-                    error_message="Authentication failed"
+                    error_message="Authentication failed",
                 )
             raise
         except Exception as e:
@@ -257,7 +255,7 @@ class WazuhClient(BaseSIEMClient):
                 platform=SIEMPlatformTypeEnum.WAZUH,
                 status=SIEMConnectionStatusEnum.ERROR,
                 last_check=datetime.utcnow(),
-                error_message=str(e)
+                error_message=str(e),
             )
 
     async def query_alerts(self, request: SIEMQueryRequest) -> SIEMQueryResponse:
@@ -271,14 +269,16 @@ class WazuhClient(BaseSIEMClient):
 
         # Time range
         time_to = request.time_to or datetime.utcnow()
-        must_clauses.append({
-            "range": {
-                request.time_field: {
-                    "gte": request.time_from.isoformat(),
-                    "lte": time_to.isoformat()
+        must_clauses.append(
+            {
+                "range": {
+                    request.time_field: {
+                        "gte": request.time_from.isoformat(),
+                        "lte": time_to.isoformat(),
+                    }
                 }
             }
-        })
+        )
 
         # Query string
         if request.query:
@@ -300,20 +300,20 @@ class WazuhClient(BaseSIEMClient):
             "query": {"bool": {"must": must_clauses}} if must_clauses else {"match_all": {}},
             "size": request.size,
             "from": request.from_offset,
-            "sort": [{request.sort_field: {"order": request.sort_order}}]
+            "sort": [{request.sort_field: {"order": request.sort_order}}],
         }
 
         if request.query_dsl:
             query_body = request.query_dsl
 
         # Query Wazuh indexer (OpenSearch/Elasticsearch)
-        indexer_url = f"{self.base_url.replace(':55000', ':9200')}/{self.config.index_pattern}/_search"
+        indexer_url = (
+            f"{self.base_url.replace(':55000', ':9200')}/{self.config.index_pattern}/_search"
+        )
 
         try:
             response = await client.post(
-                indexer_url,
-                json=query_body,
-                headers={"Content-Type": "application/json"}
+                indexer_url, json=query_body, headers={"Content-Type": "application/json"}
             )
             response.raise_for_status()
             data = response.json()
@@ -323,7 +323,7 @@ class WazuhClient(BaseSIEMClient):
             response = await client.get(
                 f"{self.base_url}/alerts",
                 params={"limit": request.size, "offset": request.from_offset},
-                headers=self.get_auth_headers()
+                headers=self.get_auth_headers(),
             )
             response.raise_for_status()
             data = {"hits": {"total": {"value": 0}, "hits": []}}
@@ -348,7 +348,7 @@ class WazuhClient(BaseSIEMClient):
             total_hits=total_hits,
             returned_count=len(alerts),
             alerts=alerts,
-            raw_response=data if request.include_raw else None
+            raw_response=data if request.include_raw else None,
         )
 
     def _parse_wazuh_alert(self, alert_id: str, source: Dict[str, Any]) -> SIEMAlert:
@@ -394,7 +394,7 @@ class WazuhClient(BaseSIEMClient):
             full_log=source.get("full_log"),
             decoder_name=source.get("decoder", {}).get("name"),
             location=source.get("location"),
-            data=data
+            data=data,
         )
 
     async def get_agents(self, limit: int = 100, offset: int = 0) -> SIEMAgentListResponse:
@@ -405,30 +405,38 @@ class WazuhClient(BaseSIEMClient):
         response = await client.get(
             f"{self.base_url}/agents",
             params={"limit": limit, "offset": offset},
-            headers=self.get_auth_headers()
+            headers=self.get_auth_headers(),
         )
         response.raise_for_status()
         data = response.json()
 
         agents = []
         for item in data.get("data", {}).get("affected_items", []):
-            agents.append(SIEMAgentInfo(
-                agent_id=item.get("id", ""),
-                name=item.get("name", ""),
-                ip=item.get("ip"),
-                os_name=item.get("os", {}).get("name"),
-                os_version=item.get("os", {}).get("version"),
-                os_platform=item.get("os", {}).get("platform"),
-                version=item.get("version"),
-                status=item.get("status", "unknown"),
-                last_keep_alive=datetime.fromisoformat(item["lastKeepAlive"].replace("Z", "+00:00"))
-                if item.get("lastKeepAlive") else None,
-                date_add=datetime.fromisoformat(item["dateAdd"].replace("Z", "+00:00"))
-                if item.get("dateAdd") else None,
-                group=item.get("group", []),
-                manager=item.get("manager"),
-                node_name=item.get("node_name")
-            ))
+            agents.append(
+                SIEMAgentInfo(
+                    agent_id=item.get("id", ""),
+                    name=item.get("name", ""),
+                    ip=item.get("ip"),
+                    os_name=item.get("os", {}).get("name"),
+                    os_version=item.get("os", {}).get("version"),
+                    os_platform=item.get("os", {}).get("platform"),
+                    version=item.get("version"),
+                    status=item.get("status", "unknown"),
+                    last_keep_alive=(
+                        datetime.fromisoformat(item["lastKeepAlive"].replace("Z", "+00:00"))
+                        if item.get("lastKeepAlive")
+                        else None
+                    ),
+                    date_add=(
+                        datetime.fromisoformat(item["dateAdd"].replace("Z", "+00:00"))
+                        if item.get("dateAdd")
+                        else None
+                    ),
+                    group=item.get("group", []),
+                    manager=item.get("manager"),
+                    node_name=item.get("node_name"),
+                )
+            )
 
         return SIEMAgentListResponse(
             connection_id=self.config.connection_id,
@@ -436,7 +444,7 @@ class WazuhClient(BaseSIEMClient):
             total_agents=data.get("data", {}).get("total_affected_items", len(agents)),
             agents=agents,
             affected_items=len(agents),
-            failed_items=data.get("data", {}).get("total_failed_items", 0)
+            failed_items=data.get("data", {}).get("total_failed_items", 0),
         )
 
     async def get_rules(self, limit: int = 100, offset: int = 0) -> SIEMRuleListResponse:
@@ -447,35 +455,37 @@ class WazuhClient(BaseSIEMClient):
         response = await client.get(
             f"{self.base_url}/rules",
             params={"limit": limit, "offset": offset},
-            headers=self.get_auth_headers()
+            headers=self.get_auth_headers(),
         )
         response.raise_for_status()
         data = response.json()
 
         rules = []
         for item in data.get("data", {}).get("affected_items", []):
-            rules.append(SIEMRuleInfo(
-                rule_id=str(item.get("id", "")),
-                level=item.get("level", 0),
-                description=item.get("description", ""),
-                groups=item.get("groups", []),
-                pci_dss=item.get("pci_dss", []),
-                gpg13=item.get("gpg13", []),
-                gdpr=item.get("gdpr", []),
-                hipaa=item.get("hipaa", []),
-                nist_800_53=item.get("nist_800_53", []),
-                tsc=item.get("tsc", []),
-                mitre=item.get("mitre", {}),
-                file=item.get("filename"),
-                path=item.get("relative_dirname"),
-                status="enabled" if item.get("status") == "enabled" else "disabled"
-            ))
+            rules.append(
+                SIEMRuleInfo(
+                    rule_id=str(item.get("id", "")),
+                    level=item.get("level", 0),
+                    description=item.get("description", ""),
+                    groups=item.get("groups", []),
+                    pci_dss=item.get("pci_dss", []),
+                    gpg13=item.get("gpg13", []),
+                    gdpr=item.get("gdpr", []),
+                    hipaa=item.get("hipaa", []),
+                    nist_800_53=item.get("nist_800_53", []),
+                    tsc=item.get("tsc", []),
+                    mitre=item.get("mitre", {}),
+                    file=item.get("filename"),
+                    path=item.get("relative_dirname"),
+                    status="enabled" if item.get("status") == "enabled" else "disabled",
+                )
+            )
 
         return SIEMRuleListResponse(
             connection_id=self.config.connection_id,
             platform=SIEMPlatformTypeEnum.WAZUH,
             total_rules=data.get("data", {}).get("total_affected_items", len(rules)),
-            rules=rules
+            rules=rules,
         )
 
     async def get_indices(self) -> SIEMIndexListResponse:
@@ -483,11 +493,16 @@ class WazuhClient(BaseSIEMClient):
         client = await self.get_client()
 
         # Query Wazuh indexer
-        indexer_url = f"{self.base_url.replace(':55000', ':9200')}/_cat/indices/{self.config.index_pattern}"
+        indexer_url = (
+            f"{self.base_url.replace(':55000', ':9200')}/_cat/indices/{self.config.index_pattern}"
+        )
 
         response = await client.get(
             indexer_url,
-            params={"format": "json", "h": "index,status,health,docs.count,store.size,pri,rep,creation.date.string"}
+            params={
+                "format": "json",
+                "h": "index,status,health,docs.count,store.size,pri,rep,creation.date.string",
+            },
         )
         response.raise_for_status()
         data = response.json()
@@ -504,16 +519,18 @@ class WazuhClient(BaseSIEMClient):
             total_docs += doc_count
             total_size += size_bytes
 
-            indices.append(SIEMIndexInfo(
-                index_name=item.get("index", ""),
-                status=item.get("status", "unknown"),
-                health=item.get("health", "unknown"),
-                doc_count=doc_count,
-                store_size_bytes=size_bytes,
-                store_size_human=store_size,
-                primary_shards=int(item.get("pri", 0) or 0),
-                replica_shards=int(item.get("rep", 0) or 0)
-            ))
+            indices.append(
+                SIEMIndexInfo(
+                    index_name=item.get("index", ""),
+                    status=item.get("status", "unknown"),
+                    health=item.get("health", "unknown"),
+                    doc_count=doc_count,
+                    store_size_bytes=size_bytes,
+                    store_size_human=store_size,
+                    primary_shards=int(item.get("pri", 0) or 0),
+                    replica_shards=int(item.get("rep", 0) or 0),
+                )
+            )
 
         return SIEMIndexListResponse(
             connection_id=self.config.connection_id,
@@ -522,7 +539,7 @@ class WazuhClient(BaseSIEMClient):
             indices=indices,
             total_docs=total_docs,
             total_size_bytes=total_size,
-            total_size_human=self._format_size(total_size)
+            total_size_human=self._format_size(total_size),
         )
 
     def _parse_size_string(self, size_str: str) -> int:
@@ -531,21 +548,19 @@ class WazuhClient(BaseSIEMClient):
             return 0
 
         size_str = size_str.lower().strip()
-        multipliers = {
-            'b': 1, 'kb': 1024, 'mb': 1024**2, 'gb': 1024**3, 'tb': 1024**4
-        }
+        multipliers = {"b": 1, "kb": 1024, "mb": 1024**2, "gb": 1024**3, "tb": 1024**4}
 
         for suffix, multiplier in multipliers.items():
             if size_str.endswith(suffix):
                 try:
-                    return int(float(size_str[:-len(suffix)]) * multiplier)
+                    return int(float(size_str[: -len(suffix)]) * multiplier)
                 except ValueError:
                     return 0
         return 0
 
     def _format_size(self, size_bytes: int) -> str:
         """Format bytes to human readable string"""
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        for unit in ["B", "KB", "MB", "GB", "TB"]:
             if size_bytes < 1024:
                 return f"{size_bytes:.1f}{unit}"
             size_bytes /= 1024
@@ -560,8 +575,7 @@ class WazuhClient(BaseSIEMClient):
 
         # Get agent stats
         agents_response = await client.get(
-            f"{self.base_url}/agents/summary/status",
-            headers=self.get_auth_headers()
+            f"{self.base_url}/agents/summary/status", headers=self.get_auth_headers()
         )
         agents_data = agents_response.json().get("data", {})
 
@@ -569,7 +583,7 @@ class WazuhClient(BaseSIEMClient):
         query_request = SIEMQueryRequest(
             connection_id=self.config.connection_id,
             time_from=time_from,
-            size=0  # Just aggregations
+            size=0,  # Just aggregations
         )
 
         # This would run actual aggregation queries in production
@@ -590,13 +604,14 @@ class WazuhClient(BaseSIEMClient):
             total_agents=agents_data.get("total", 0),
             active_agents=agents_data.get("active", 0),
             disconnected_agents=agents_data.get("disconnected", 0),
-            cluster_status="green"
+            cluster_status="green",
         )
 
 
 # ============================================================================
 # Elastic/OpenSearch Client Implementation
 # ============================================================================
+
 
 class ElasticClient(BaseSIEMClient):
     """Client for Elastic SIEM / OpenSearch Security Analytics"""
@@ -624,17 +639,13 @@ class ElasticClient(BaseSIEMClient):
         start_time = time.time()
         try:
             client = await self.get_client()
-            response = await client.get(
-                f"{self.base_url}/",
-                headers=self.get_auth_headers()
-            )
+            response = await client.get(f"{self.base_url}/", headers=self.get_auth_headers())
             response.raise_for_status()
             data = response.json()
 
             # Get cluster health
             health_response = await client.get(
-                f"{self.base_url}/_cluster/health",
-                headers=self.get_auth_headers()
+                f"{self.base_url}/_cluster/health", headers=self.get_auth_headers()
             )
             health_data = health_response.json()
 
@@ -649,7 +660,7 @@ class ElasticClient(BaseSIEMClient):
                 latency_ms=latency,
                 version=data.get("version", {}).get("number"),
                 cluster_name=data.get("cluster_name"),
-                node_count=health_data.get("number_of_nodes")
+                node_count=health_data.get("number_of_nodes"),
             )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -659,7 +670,7 @@ class ElasticClient(BaseSIEMClient):
                     platform=self.config.platform,
                     status=SIEMConnectionStatusEnum.UNAUTHORIZED,
                     last_check=datetime.utcnow(),
-                    error_message="Authentication failed"
+                    error_message="Authentication failed",
                 )
             raise
         except Exception as e:
@@ -669,7 +680,7 @@ class ElasticClient(BaseSIEMClient):
                 platform=self.config.platform,
                 status=SIEMConnectionStatusEnum.ERROR,
                 last_check=datetime.utcnow(),
-                error_message=str(e)
+                error_message=str(e),
             )
 
     async def query_alerts(self, request: SIEMQueryRequest) -> SIEMQueryResponse:
@@ -681,14 +692,16 @@ class ElasticClient(BaseSIEMClient):
         must_clauses = []
         time_to = request.time_to or datetime.utcnow()
 
-        must_clauses.append({
-            "range": {
-                request.time_field: {
-                    "gte": request.time_from.isoformat(),
-                    "lte": time_to.isoformat()
+        must_clauses.append(
+            {
+                "range": {
+                    request.time_field: {
+                        "gte": request.time_from.isoformat(),
+                        "lte": time_to.isoformat(),
+                    }
                 }
             }
-        })
+        )
 
         if request.query:
             must_clauses.append({"query_string": {"query": request.query}})
@@ -697,7 +710,7 @@ class ElasticClient(BaseSIEMClient):
             "query": {"bool": {"must": must_clauses}} if must_clauses else {"match_all": {}},
             "size": request.size,
             "from": request.from_offset,
-            "sort": [{request.sort_field: {"order": request.sort_order}}]
+            "sort": [{request.sort_field: {"order": request.sort_order}}],
         }
 
         if request.query_dsl:
@@ -706,7 +719,7 @@ class ElasticClient(BaseSIEMClient):
         response = await client.post(
             f"{self.base_url}/{self.config.index_pattern}/_search",
             json=query_body,
-            headers=self.get_auth_headers()
+            headers=self.get_auth_headers(),
         )
         response.raise_for_status()
         data = response.json()
@@ -731,7 +744,7 @@ class ElasticClient(BaseSIEMClient):
             returned_count=len(alerts),
             alerts=alerts,
             aggregations=data.get("aggregations"),
-            raw_response=data if request.include_raw else None
+            raw_response=data if request.include_raw else None,
         )
 
     def _parse_elastic_alert(self, alert_id: str, source: Dict[str, Any]) -> SIEMAlert:
@@ -762,12 +775,17 @@ class ElasticClient(BaseSIEMClient):
             command_line=source.get("process", {}).get("command_line"),
             file_path=source.get("file", {}).get("path"),
             file_hash=source.get("file", {}).get("hash", {}).get("sha256"),
-            mitre_tactics=rule.get("threat", [{}])[0].get("tactic", {}).get("name", [])
-            if rule.get("threat") else [],
-            mitre_techniques=[
-                t.get("name", "") for t in rule.get("threat", [{}])[0].get("technique", [])
-            ] if rule.get("threat") else [],
-            data=source
+            mitre_tactics=(
+                rule.get("threat", [{}])[0].get("tactic", {}).get("name", [])
+                if rule.get("threat")
+                else []
+            ),
+            mitre_techniques=(
+                [t.get("name", "") for t in rule.get("threat", [{}])[0].get("technique", [])]
+                if rule.get("threat")
+                else []
+            ),
+            data=source,
         )
 
     async def get_agents(self, limit: int = 100, offset: int = 0) -> SIEMAgentListResponse:
@@ -779,7 +797,7 @@ class ElasticClient(BaseSIEMClient):
             total_agents=0,
             agents=[],
             affected_items=0,
-            failed_items=0
+            failed_items=0,
         )
 
     async def get_rules(self, limit: int = 100, offset: int = 0) -> SIEMRuleListResponse:
@@ -790,7 +808,7 @@ class ElasticClient(BaseSIEMClient):
         response = await client.get(
             f"{self.base_url}/api/detection_engine/rules/_find",
             params={"per_page": limit, "page": offset // limit + 1},
-            headers=self.get_auth_headers()
+            headers=self.get_auth_headers(),
         )
 
         if response.status_code == 404:
@@ -798,7 +816,7 @@ class ElasticClient(BaseSIEMClient):
                 connection_id=self.config.connection_id,
                 platform=self.config.platform,
                 total_rules=0,
-                rules=[]
+                rules=[],
             )
 
         response.raise_for_status()
@@ -806,27 +824,31 @@ class ElasticClient(BaseSIEMClient):
 
         rules = []
         for item in data.get("data", []):
-            rules.append(SIEMRuleInfo(
-                rule_id=item.get("id", ""),
-                level=item.get("risk_score", 50),
-                description=item.get("description", ""),
-                groups=item.get("tags", []),
-                mitre={
-                    "tactic": [t.get("tactic", {}).get("name", "") for t in item.get("threat", [])],
-                    "technique": [
-                        tech.get("name", "")
-                        for t in item.get("threat", [])
-                        for tech in t.get("technique", [])
-                    ]
-                },
-                status="enabled" if item.get("enabled") else "disabled"
-            ))
+            rules.append(
+                SIEMRuleInfo(
+                    rule_id=item.get("id", ""),
+                    level=item.get("risk_score", 50),
+                    description=item.get("description", ""),
+                    groups=item.get("tags", []),
+                    mitre={
+                        "tactic": [
+                            t.get("tactic", {}).get("name", "") for t in item.get("threat", [])
+                        ],
+                        "technique": [
+                            tech.get("name", "")
+                            for t in item.get("threat", [])
+                            for tech in t.get("technique", [])
+                        ],
+                    },
+                    status="enabled" if item.get("enabled") else "disabled",
+                )
+            )
 
         return SIEMRuleListResponse(
             connection_id=self.config.connection_id,
             platform=self.config.platform,
             total_rules=data.get("total", len(rules)),
-            rules=rules
+            rules=rules,
         )
 
     async def get_indices(self) -> SIEMIndexListResponse:
@@ -836,7 +858,7 @@ class ElasticClient(BaseSIEMClient):
         response = await client.get(
             f"{self.base_url}/_cat/indices/{self.config.index_pattern}",
             params={"format": "json", "h": "index,status,health,docs.count,store.size,pri,rep"},
-            headers=self.get_auth_headers()
+            headers=self.get_auth_headers(),
         )
         response.raise_for_status()
         data = response.json()
@@ -853,16 +875,18 @@ class ElasticClient(BaseSIEMClient):
             total_docs += doc_count
             total_size += size_bytes
 
-            indices.append(SIEMIndexInfo(
-                index_name=item.get("index", ""),
-                status=item.get("status", "unknown"),
-                health=item.get("health", "unknown"),
-                doc_count=doc_count,
-                store_size_bytes=size_bytes,
-                store_size_human=store_size,
-                primary_shards=int(item.get("pri", 0) or 0),
-                replica_shards=int(item.get("rep", 0) or 0)
-            ))
+            indices.append(
+                SIEMIndexInfo(
+                    index_name=item.get("index", ""),
+                    status=item.get("status", "unknown"),
+                    health=item.get("health", "unknown"),
+                    doc_count=doc_count,
+                    store_size_bytes=size_bytes,
+                    store_size_human=store_size,
+                    primary_shards=int(item.get("pri", 0) or 0),
+                    replica_shards=int(item.get("rep", 0) or 0),
+                )
+            )
 
         return SIEMIndexListResponse(
             connection_id=self.config.connection_id,
@@ -871,7 +895,7 @@ class ElasticClient(BaseSIEMClient):
             indices=indices,
             total_docs=total_docs,
             total_size_bytes=total_size,
-            total_size_human=self._format_size(total_size)
+            total_size_human=self._format_size(total_size),
         )
 
     def _parse_size_string(self, size_str: str) -> int:
@@ -879,18 +903,18 @@ class ElasticClient(BaseSIEMClient):
         if not size_str:
             return 0
         size_str = size_str.lower().strip()
-        multipliers = {'b': 1, 'kb': 1024, 'mb': 1024**2, 'gb': 1024**3, 'tb': 1024**4}
+        multipliers = {"b": 1, "kb": 1024, "mb": 1024**2, "gb": 1024**3, "tb": 1024**4}
         for suffix, mult in multipliers.items():
             if size_str.endswith(suffix):
                 try:
-                    return int(float(size_str[:-len(suffix)]) * mult)
+                    return int(float(size_str[: -len(suffix)]) * mult)
                 except ValueError:
                     return 0
         return 0
 
     def _format_size(self, size_bytes: int) -> str:
         """Format bytes to human readable"""
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        for unit in ["B", "KB", "MB", "GB", "TB"]:
             if size_bytes < 1024:
                 return f"{size_bytes:.1f}{unit}"
             size_bytes /= 1024
@@ -914,13 +938,14 @@ class ElasticClient(BaseSIEMClient):
             top_mitre_techniques=[],
             total_agents=0,
             active_agents=0,
-            disconnected_agents=0
+            disconnected_agents=0,
         )
 
 
 # ============================================================================
 # Client Factory
 # ============================================================================
+
 
 def get_siem_client(config: SIEMConnectionConfig) -> BaseSIEMClient:
     """Factory function to get appropriate SIEM client"""
@@ -941,10 +966,9 @@ def get_siem_client(config: SIEMConnectionConfig) -> BaseSIEMClient:
 # API Endpoints
 # ============================================================================
 
+
 @router.get("/connections", response_model=SIEMConnectionConfigList)
-async def list_connections(
-    current_user: str = Depends(get_current_active_user)
-):
+async def list_connections(current_user: str = Depends(get_current_active_user)):
     """
     List all configured SIEM connections.
 
@@ -959,23 +983,14 @@ async def list_connections(
         config_dict["token"] = "***" if conn.token else None
         sanitized.append(SIEMConnectionConfig(**config_dict))
 
-    return SIEMConnectionConfigList(
-        connections=sanitized,
-        total=len(sanitized)
-    )
+    return SIEMConnectionConfigList(connections=sanitized, total=len(sanitized))
 
 
 @router.get("/connections/{connection_id}", response_model=SIEMConnectionConfig)
-async def get_connection(
-    connection_id: str,
-    current_user: str = Depends(get_current_active_user)
-):
+async def get_connection(connection_id: str, current_user: str = Depends(get_current_active_user)):
     """Get details of a specific SIEM connection."""
     if connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     conn = _siem_connections[connection_id]
     config_dict = conn.model_dump()
@@ -988,8 +1003,7 @@ async def get_connection(
 
 @router.post("/connections", response_model=SIEMConnectionConfig)
 async def create_connection(
-    config: SIEMConnectionConfig,
-    current_user: str = Depends(get_current_active_user)
+    config: SIEMConnectionConfig, current_user: str = Depends(get_current_active_user)
 ):
     """
     Create a new SIEM connection configuration.
@@ -1019,14 +1033,11 @@ async def create_connection(
 async def update_connection(
     connection_id: str,
     config: SIEMConnectionConfig,
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """Update an existing SIEM connection configuration."""
     if connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     existing = _siem_connections[connection_id]
     config.connection_id = connection_id
@@ -1057,15 +1068,11 @@ async def update_connection(
 
 @router.delete("/connections/{connection_id}", response_model=APIResponse)
 async def delete_connection(
-    connection_id: str,
-    current_user: str = Depends(get_current_active_user)
+    connection_id: str, current_user: str = Depends(get_current_active_user)
 ):
     """Delete a SIEM connection configuration."""
     if connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     del _siem_connections[connection_id]
 
@@ -1076,16 +1083,12 @@ async def delete_connection(
 
     logger.info(f"Deleted SIEM connection: {connection_id}")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message=f"Connection {connection_id} deleted"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message=f"Connection {connection_id} deleted")
 
 
 @router.get("/connections/{connection_id}/status", response_model=SIEMConnectionStatus)
 async def get_connection_status(
-    connection_id: str,
-    current_user: str = Depends(get_current_active_user)
+    connection_id: str, current_user: str = Depends(get_current_active_user)
 ):
     """
     Test connection and get current status of a SIEM platform.
@@ -1093,10 +1096,7 @@ async def get_connection_status(
     Performs connectivity test, authentication check, and retrieves basic info.
     """
     if connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     config = _siem_connections[connection_id]
     client = get_siem_client(config)
@@ -1110,9 +1110,7 @@ async def get_connection_status(
 
 
 @router.get("/health", response_model=SIEMBulkHealthCheck)
-async def health_check_all(
-    current_user: str = Depends(get_current_active_user)
-):
+async def health_check_all(current_user: str = Depends(get_current_active_user)):
     """
     Health check for all configured SIEM connections.
 
@@ -1133,13 +1131,13 @@ async def health_check_all(
                 healthy=status_result.status == SIEMConnectionStatusEnum.CONNECTED,
                 checks={
                     "connectivity": status_result.status != SIEMConnectionStatusEnum.ERROR,
-                    "authentication": status_result.status != SIEMConnectionStatusEnum.UNAUTHORIZED
+                    "authentication": status_result.status != SIEMConnectionStatusEnum.UNAUTHORIZED,
                 },
                 latency_ms=status_result.latency_ms or 0,
                 version=status_result.version,
                 cluster_health=status_result.cluster_name,
                 error_message=status_result.error_message,
-                checked_at=datetime.utcnow()
+                checked_at=datetime.utcnow(),
             )
 
             if health.healthy:
@@ -1147,16 +1145,18 @@ async def health_check_all(
 
             results.append(health)
         except Exception as e:
-            results.append(SIEMHealthCheck(
-                connection_id=conn_id,
-                name=config.name,
-                platform=config.platform,
-                healthy=False,
-                checks={"connectivity": False, "authentication": False},
-                latency_ms=0,
-                error_message=str(e),
-                checked_at=datetime.utcnow()
-            ))
+            results.append(
+                SIEMHealthCheck(
+                    connection_id=conn_id,
+                    name=config.name,
+                    platform=config.platform,
+                    healthy=False,
+                    checks={"connectivity": False, "authentication": False},
+                    latency_ms=0,
+                    error_message=str(e),
+                    checked_at=datetime.utcnow(),
+                )
+            )
         finally:
             await client.close()
 
@@ -1165,14 +1165,13 @@ async def health_check_all(
         healthy_count=healthy_count,
         unhealthy_count=len(_siem_connections) - healthy_count,
         results=results,
-        checked_at=datetime.utcnow()
+        checked_at=datetime.utcnow(),
     )
 
 
 @router.post("/query", response_model=SIEMQueryResponse)
 async def query_alerts(
-    request: SIEMQueryRequest,
-    current_user: str = Depends(get_current_active_user)
+    request: SIEMQueryRequest, current_user: str = Depends(get_current_active_user)
 ):
     """
     Query alerts from a SIEM platform.
@@ -1181,10 +1180,7 @@ async def query_alerts(
     Results are normalized to a common format across all SIEM platforms.
     """
     if request.connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     config = _siem_connections[request.connection_id]
     client = get_siem_client(config)
@@ -1197,8 +1193,7 @@ async def query_alerts(
 
 @router.post("/aggregate", response_model=SIEMAggregationResponse)
 async def aggregate_alerts(
-    request: SIEMAggregationRequest,
-    current_user: str = Depends(get_current_active_user)
+    request: SIEMAggregationRequest, current_user: str = Depends(get_current_active_user)
 ):
     """
     Run aggregation query on SIEM data.
@@ -1206,10 +1201,7 @@ async def aggregate_alerts(
     Supports: terms, date_histogram, histogram, stats, cardinality.
     """
     if request.connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     config = _siem_connections[request.connection_id]
     client = get_siem_client(config)
@@ -1219,18 +1211,13 @@ async def aggregate_alerts(
         http_client = await client.get_client()
         time_to = request.time_to or datetime.utcnow()
 
-        agg_body = {
-            request.aggregation_type: {
-                "field": request.field,
-                "size": request.size
-            }
-        }
+        agg_body = {request.aggregation_type: {"field": request.field, "size": request.size}}
 
         if request.aggregation_type == "date_histogram":
             agg_body["date_histogram"] = {
                 "field": request.field,
                 "fixed_interval": request.interval or "1h",
-                "min_doc_count": request.min_doc_count
+                "min_doc_count": request.min_doc_count,
             }
             del agg_body["date_histogram"]["size"]
 
@@ -1242,7 +1229,7 @@ async def aggregate_alerts(
                             "range": {
                                 request.time_field: {
                                     "gte": request.time_from.isoformat(),
-                                    "lte": time_to.isoformat()
+                                    "lte": time_to.isoformat(),
                                 }
                             }
                         }
@@ -1250,19 +1237,17 @@ async def aggregate_alerts(
                 }
             },
             "size": 0,
-            "aggs": {"result": agg_body}
+            "aggs": {"result": agg_body},
         }
 
         if request.query:
-            query_body["query"]["bool"]["must"].append({
-                "query_string": {"query": request.query}
-            })
+            query_body["query"]["bool"]["must"].append({"query_string": {"query": request.query}})
 
         start_time = time.time()
         response = await http_client.post(
             f"{client.base_url}/{config.index_pattern}/_search",
             json=query_body,
-            headers=client.get_auth_headers()
+            headers=client.get_auth_headers(),
         )
         response.raise_for_status()
         data = response.json()
@@ -1274,7 +1259,7 @@ async def aggregate_alerts(
             SIEMAggregationBucket(
                 key=b.get("key"),
                 key_as_string=b.get("key_as_string"),
-                doc_count=b.get("doc_count", 0)
+                doc_count=b.get("doc_count", 0),
             )
             for b in agg_result.get("buckets", [])
         ]
@@ -1286,7 +1271,7 @@ async def aggregate_alerts(
             aggregation_type=request.aggregation_type,
             field=request.field,
             total_docs=data.get("hits", {}).get("total", {}).get("value", 0),
-            buckets=buckets
+            buckets=buckets,
         )
     finally:
         await client.close()
@@ -1297,7 +1282,7 @@ async def list_agents(
     connection_id: str,
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     List agents/hosts from a SIEM platform.
@@ -1306,10 +1291,7 @@ async def list_agents(
     For Elastic: Returns Fleet agents.
     """
     if connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     config = _siem_connections[connection_id]
     client = get_siem_client(config)
@@ -1325,7 +1307,7 @@ async def list_rules(
     connection_id: str,
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     List detection rules from a SIEM platform.
@@ -1333,10 +1315,7 @@ async def list_rules(
     Returns normalized rule information including MITRE ATT&CK mappings.
     """
     if connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     config = _siem_connections[connection_id]
     client = get_siem_client(config)
@@ -1348,20 +1327,14 @@ async def list_rules(
 
 
 @router.get("/connections/{connection_id}/indices", response_model=SIEMIndexListResponse)
-async def list_indices(
-    connection_id: str,
-    current_user: str = Depends(get_current_active_user)
-):
+async def list_indices(connection_id: str, current_user: str = Depends(get_current_active_user)):
     """
     List indices for a SIEM connection.
 
     Shows index health, document counts, and storage usage.
     """
     if connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     config = _siem_connections[connection_id]
     client = get_siem_client(config)
@@ -1376,7 +1349,7 @@ async def list_indices(
 async def get_dashboard_stats(
     connection_id: str,
     hours: int = Query(24, ge=1, le=720, description="Time range in hours"),
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     Get dashboard statistics from a SIEM platform.
@@ -1384,10 +1357,7 @@ async def get_dashboard_stats(
     Includes: alert counts, top rules, top agents, MITRE tactics, etc.
     """
     if connection_id not in _siem_connections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     config = _siem_connections[connection_id]
     client = get_siem_client(config)
@@ -1399,9 +1369,7 @@ async def get_dashboard_stats(
 
 
 @router.get("/platforms", response_model=List[Dict[str, Any]])
-async def list_supported_platforms(
-    current_user: str = Depends(get_current_active_user)
-):
+async def list_supported_platforms(current_user: str = Depends(get_current_active_user)):
     """
     List supported SIEM platforms and their default configurations.
 
@@ -1415,7 +1383,7 @@ async def list_supported_platforms(
             "default_port": 55000,
             "default_index_pattern": "wazuh-alerts-*",
             "auth_types": ["basic", "token"],
-            "features": ["agents", "rules", "compliance", "file_integrity", "vulnerability"]
+            "features": ["agents", "rules", "compliance", "file_integrity", "vulnerability"],
         },
         {
             "platform": SIEMPlatformTypeEnum.ELASTIC.value,
@@ -1424,7 +1392,7 @@ async def list_supported_platforms(
             "default_port": 9200,
             "default_index_pattern": ".siem-signals-*",
             "auth_types": ["basic", "api_key"],
-            "features": ["rules", "timeline", "cases", "network", "endpoint"]
+            "features": ["rules", "timeline", "cases", "network", "endpoint"],
         },
         {
             "platform": SIEMPlatformTypeEnum.OPENSEARCH.value,
@@ -1433,7 +1401,7 @@ async def list_supported_platforms(
             "default_port": 9200,
             "default_index_pattern": "security-*",
             "auth_types": ["basic", "api_key"],
-            "features": ["detectors", "findings", "rules", "alerts"]
+            "features": ["detectors", "findings", "rules", "alerts"],
         },
         {
             "platform": SIEMPlatformTypeEnum.GRAYLOG.value,
@@ -1442,7 +1410,7 @@ async def list_supported_platforms(
             "default_port": 9000,
             "default_index_pattern": "graylog_*",
             "auth_types": ["basic", "token"],
-            "features": ["streams", "alerts", "dashboards", "extractors"]
+            "features": ["streams", "alerts", "dashboards", "extractors"],
         },
         {
             "platform": SIEMPlatformTypeEnum.SPLUNK.value,
@@ -1451,6 +1419,6 @@ async def list_supported_platforms(
             "default_port": 8089,
             "default_index_pattern": "main",
             "auth_types": ["basic", "token"],
-            "features": ["search", "alerts", "dashboards", "reports"]
-        }
+            "features": ["search", "alerts", "dashboards", "reports"],
+        },
     ]

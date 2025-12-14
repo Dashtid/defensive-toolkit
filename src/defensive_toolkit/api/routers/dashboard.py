@@ -104,6 +104,7 @@ dashboard_stats = {
 # Helper Functions
 # =============================================================================
 
+
 def generate_id() -> str:
     """Generate a unique ID"""
     return str(uuid.uuid4())
@@ -112,7 +113,7 @@ def generate_id() -> str:
 def get_time_range_dates(
     time_range: TimeRangePresetEnum,
     custom_start: Optional[datetime] = None,
-    custom_end: Optional[datetime] = None
+    custom_end: Optional[datetime] = None,
 ) -> tuple:
     """Convert time range preset to actual datetime range"""
     now = datetime.utcnow()
@@ -137,6 +138,7 @@ def get_time_range_dates(
 async def fetch_widget_data(widget: Widget) -> Dict[str, Any]:
     """Fetch data for a widget from its configured data source"""
     import time
+
     start_time = time.time()
 
     # Check cache first
@@ -193,21 +195,20 @@ def generate_mock_widget_data(widget: Widget) -> Any:
         # Time series data
         points = []
         for i in range(24):
-            points.append({
-                "timestamp": (now - timedelta(hours=23-i)).isoformat(),
-                "value": random.randint(50, 500),
-                "series": "main",
-            })
+            points.append(
+                {
+                    "timestamp": (now - timedelta(hours=23 - i)).isoformat(),
+                    "value": random.randint(50, 500),
+                    "series": "main",
+                }
+            )
         return {"series": [{"name": "Events", "data": points}]}
 
     elif widget.widget_type == WidgetTypeEnum.CHART_BAR:
         categories = ["Critical", "High", "Medium", "Low", "Info"]
         return {
             "categories": categories,
-            "series": [{
-                "name": "Count",
-                "data": [random.randint(5, 50) for _ in categories]
-            }]
+            "series": [{"name": "Count", "data": [random.randint(5, 50) for _ in categories]}],
         }
 
     elif widget.widget_type == WidgetTypeEnum.CHART_PIE:
@@ -219,13 +220,15 @@ def generate_mock_widget_data(widget: Widget) -> Any:
     elif widget.widget_type == WidgetTypeEnum.TABLE:
         rows = []
         for i in range(10):
-            rows.append({
-                "id": f"INC-{1000+i}",
-                "title": f"Security Incident {i+1}",
-                "severity": random.choice(["Critical", "High", "Medium", "Low"]),
-                "status": random.choice(["Open", "In Progress", "Resolved"]),
-                "created_at": (now - timedelta(hours=random.randint(1, 72))).isoformat(),
-            })
+            rows.append(
+                {
+                    "id": f"INC-{1000+i}",
+                    "title": f"Security Incident {i+1}",
+                    "severity": random.choice(["Critical", "High", "Medium", "Low"]),
+                    "status": random.choice(["Open", "In Progress", "Resolved"]),
+                    "created_at": (now - timedelta(hours=random.randint(1, 72))).isoformat(),
+                }
+            )
         return {"rows": rows, "total": 156}
 
     elif widget.widget_type == WidgetTypeEnum.HEATMAP:
@@ -233,11 +236,13 @@ def generate_mock_widget_data(widget: Widget) -> Any:
         data = []
         for day in range(7):
             for hour in range(24):
-                data.append({
-                    "x": hour,
-                    "y": day,
-                    "value": random.randint(0, 100),
-                })
+                data.append(
+                    {
+                        "x": hour,
+                        "y": day,
+                        "value": random.randint(0, 100),
+                    }
+                )
         return {"data": data}
 
     elif widget.widget_type == WidgetTypeEnum.GAUGE:
@@ -250,24 +255,28 @@ def generate_mock_widget_data(widget: Widget) -> Any:
     elif widget.widget_type == WidgetTypeEnum.MAP:
         points = []
         for _ in range(20):
-            points.append({
-                "lat": random.uniform(-60, 70),
-                "lon": random.uniform(-180, 180),
-                "label": f"Event {random.randint(1000, 9999)}",
-                "value": random.randint(1, 50),
-            })
+            points.append(
+                {
+                    "lat": random.uniform(-60, 70),
+                    "lon": random.uniform(-180, 180),
+                    "label": f"Event {random.randint(1000, 9999)}",
+                    "value": random.randint(1, 50),
+                }
+            )
         return {"points": points}
 
     elif widget.widget_type == WidgetTypeEnum.TIMELINE:
         events = []
         for i in range(10):
-            events.append({
-                "timestamp": (now - timedelta(hours=i*2)).isoformat(),
-                "title": f"Event {10-i}",
-                "description": f"Security event description {10-i}",
-                "category": random.choice(["alert", "incident", "change"]),
-                "severity": random.choice(["critical", "high", "medium", "low"]),
-            })
+            events.append(
+                {
+                    "timestamp": (now - timedelta(hours=i * 2)).isoformat(),
+                    "title": f"Event {10-i}",
+                    "description": f"Security event description {10-i}",
+                    "category": random.choice(["alert", "incident", "change"]),
+                    "severity": random.choice(["critical", "high", "medium", "low"]),
+                }
+            )
         return {"events": events}
 
     elif widget.widget_type == WidgetTypeEnum.STATUS:
@@ -280,11 +289,13 @@ def generate_mock_widget_data(widget: Widget) -> Any:
     elif widget.widget_type == WidgetTypeEnum.LIST:
         items = []
         for i in range(5):
-            items.append({
-                "title": f"Top Threat {i+1}",
-                "value": random.randint(100, 1000),
-                "change": random.uniform(-10, 20),
-            })
+            items.append(
+                {
+                    "title": f"Top Threat {i+1}",
+                    "value": random.randint(100, 1000),
+                    "change": random.uniform(-10, 20),
+                }
+            )
         return {"items": items}
 
     else:
@@ -294,6 +305,7 @@ def generate_mock_widget_data(widget: Widget) -> Any:
 # =============================================================================
 # Initialize Built-in Templates
 # =============================================================================
+
 
 def initialize_templates():
     """Initialize built-in widget templates"""
@@ -313,7 +325,9 @@ def initialize_templates():
                     show_trend=True,
                     trend_field="trend_percent",
                     thresholds=[
-                        WidgetThreshold(operator="gte", value=100, color="#DC2626", label="Critical"),
+                        WidgetThreshold(
+                            operator="gte", value=100, color="#DC2626", label="Critical"
+                        ),
                         WidgetThreshold(operator="gte", value=50, color="#F59E0B", label="Warning"),
                         WidgetThreshold(operator="lt", value=50, color="#10B981", label="Normal"),
                     ],
@@ -455,9 +469,13 @@ def initialize_templates():
                     max_value=100,
                     unit="%",
                     thresholds=[
-                        WidgetThreshold(operator="gte", value=90, color="#10B981", label="Excellent"),
+                        WidgetThreshold(
+                            operator="gte", value=90, color="#10B981", label="Excellent"
+                        ),
                         WidgetThreshold(operator="gte", value=70, color="#F59E0B", label="Good"),
-                        WidgetThreshold(operator="lt", value=70, color="#DC2626", label="Needs Work"),
+                        WidgetThreshold(
+                            operator="lt", value=70, color="#DC2626", label="Needs Work"
+                        ),
                     ],
                 )
             ),
@@ -555,10 +573,10 @@ initialize_templates()
 # Dashboard Endpoints
 # =============================================================================
 
+
 @router.post("/dashboards", response_model=Dashboard, status_code=status.HTTP_201_CREATED)
 async def create_dashboard(
-    dashboard: DashboardCreate,
-    current_user: str = Depends(get_current_active_user)
+    dashboard: DashboardCreate, current_user: str = Depends(get_current_active_user)
 ):
     """
     Create a new dashboard.
@@ -606,7 +624,7 @@ async def list_dashboards(
     search: Optional[str] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     List dashboards accessible to the current user.
@@ -627,8 +645,12 @@ async def list_dashboards(
         dashboards = [d for d in dashboards if tag in d.tags]
     if search:
         search_lower = search.lower()
-        dashboards = [d for d in dashboards if search_lower in d.name.lower() or
-                      (d.description and search_lower in d.description.lower())]
+        dashboards = [
+            d
+            for d in dashboards
+            if search_lower in d.name.lower()
+            or (d.description and search_lower in d.description.lower())
+        ]
 
     # Sort by last viewed
     dashboards.sort(key=lambda x: x.last_viewed_at or x.created_at, reverse=True)
@@ -639,7 +661,7 @@ async def list_dashboards(
     public = len([d for d in dashboards if d.is_public and d.owner != current_user])
 
     total = len(dashboards)
-    dashboards = dashboards[skip:skip + limit]
+    dashboards = dashboards[skip : skip + limit]
 
     return DashboardListResponse(
         dashboards=dashboards,
@@ -651,10 +673,7 @@ async def list_dashboards(
 
 
 @router.get("/dashboards/{dashboard_id}", response_model=Dashboard)
-async def get_dashboard(
-    dashboard_id: str,
-    current_user: str = Depends(get_current_active_user)
-):
+async def get_dashboard(dashboard_id: str, current_user: str = Depends(get_current_active_user)):
     """
     Get a specific dashboard with all widgets.
     """
@@ -663,9 +682,11 @@ async def get_dashboard(
         raise HTTPException(status_code=404, detail=f"Dashboard {dashboard_id} not found")
 
     # Check access
-    if not (dashboard.owner == current_user or
-            current_user in dashboard.shared_with or
-            dashboard.is_public):
+    if not (
+        dashboard.owner == current_user
+        or current_user in dashboard.shared_with
+        or dashboard.is_public
+    ):
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Update view tracking
@@ -681,9 +702,7 @@ async def get_dashboard(
 
 @router.patch("/dashboards/{dashboard_id}", response_model=Dashboard)
 async def update_dashboard(
-    dashboard_id: str,
-    update: DashboardUpdate,
-    current_user: str = Depends(get_current_active_user)
+    dashboard_id: str, update: DashboardUpdate, current_user: str = Depends(get_current_active_user)
 ):
     """
     Update a dashboard.
@@ -716,7 +735,7 @@ async def update_dashboard(
 async def delete_dashboard(
     dashboard_id: str,
     delete_widgets: bool = True,
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     Delete a dashboard and optionally its widgets.
@@ -738,16 +757,13 @@ async def delete_dashboard(
     logger.info(f"Deleted dashboard: {dashboard_id}")
 
     return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message=f"Dashboard {dashboard_id} deleted successfully"
+        status=StatusEnum.SUCCESS, message=f"Dashboard {dashboard_id} deleted successfully"
     )
 
 
 @router.post("/dashboards/{dashboard_id}/share", response_model=Dashboard)
 async def share_dashboard(
-    dashboard_id: str,
-    user_ids: List[str],
-    current_user: str = Depends(get_current_active_user)
+    dashboard_id: str, user_ids: List[str], current_user: str = Depends(get_current_active_user)
 ):
     """
     Share a dashboard with other users.
@@ -769,7 +785,7 @@ async def share_dashboard(
 async def duplicate_dashboard(
     dashboard_id: str,
     new_name: Optional[str] = None,
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     Duplicate a dashboard and its widgets.
@@ -779,9 +795,9 @@ async def duplicate_dashboard(
         raise HTTPException(status_code=404, detail=f"Dashboard {dashboard_id} not found")
 
     # Check access
-    if not (original.owner == current_user or
-            current_user in original.shared_with or
-            original.is_public):
+    if not (
+        original.owner == current_user or current_user in original.shared_with or original.is_public
+    ):
         raise HTTPException(status_code=403, detail="Access denied")
 
     now = datetime.utcnow()
@@ -832,11 +848,12 @@ async def duplicate_dashboard(
 # Widget Endpoints
 # =============================================================================
 
-@router.post("/dashboards/{dashboard_id}/widgets", response_model=Widget, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/dashboards/{dashboard_id}/widgets", response_model=Widget, status_code=status.HTTP_201_CREATED
+)
 async def create_widget(
-    dashboard_id: str,
-    widget: WidgetCreate,
-    current_user: str = Depends(get_current_active_user)
+    dashboard_id: str, widget: WidgetCreate, current_user: str = Depends(get_current_active_user)
 ):
     """
     Create a new widget in a dashboard.
@@ -914,7 +931,7 @@ async def list_widgets(
         by_category[w.category.value] += 1
 
     total = len(widgets)
-    widgets = widgets[skip:skip + limit]
+    widgets = widgets[skip : skip + limit]
 
     return WidgetListResponse(
         widgets=widgets,
@@ -937,9 +954,7 @@ async def get_widget(widget_id: str):
 
 @router.patch("/widgets/{widget_id}", response_model=Widget)
 async def update_widget(
-    widget_id: str,
-    update: WidgetUpdate,
-    current_user: str = Depends(get_current_active_user)
+    widget_id: str, update: WidgetUpdate, current_user: str = Depends(get_current_active_user)
 ):
     """
     Update a widget.
@@ -963,10 +978,7 @@ async def update_widget(
 
 
 @router.delete("/widgets/{widget_id}", response_model=APIResponse)
-async def delete_widget(
-    widget_id: str,
-    current_user: str = Depends(get_current_active_user)
-):
+async def delete_widget(widget_id: str, current_user: str = Depends(get_current_active_user)):
     """
     Delete a widget.
     """
@@ -986,8 +998,7 @@ async def delete_widget(
         del widget_cache[widget_id]
 
     return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message=f"Widget {widget_id} deleted successfully"
+        status=StatusEnum.SUCCESS, message=f"Widget {widget_id} deleted successfully"
     )
 
 
@@ -1043,8 +1054,7 @@ async def get_widget_data(
 
 @router.post("/widgets/positions", response_model=BulkWidgetPositionResponse)
 async def update_widget_positions(
-    request: BulkWidgetPositionUpdate,
-    current_user: str = Depends(get_current_active_user)
+    request: BulkWidgetPositionUpdate, current_user: str = Depends(get_current_active_user)
 ):
     """
     Bulk update widget positions (for drag-and-drop).
@@ -1089,6 +1099,7 @@ async def update_widget_positions(
 # Widget Templates Endpoints
 # =============================================================================
 
+
 @router.get("/templates", response_model=WidgetTemplateListResponse)
 async def list_widget_templates(
     category: Optional[WidgetCategoryEnum] = None,
@@ -1108,15 +1119,19 @@ async def list_widget_templates(
         templates = [t for t in templates if t.widget_type == widget_type]
     if search:
         search_lower = search.lower()
-        templates = [t for t in templates if search_lower in t.name.lower() or
-                     (t.description and search_lower in t.description.lower())]
+        templates = [
+            t
+            for t in templates
+            if search_lower in t.name.lower()
+            or (t.description and search_lower in t.description.lower())
+        ]
 
     by_category = defaultdict(int)
     for t in templates:
         by_category[t.category.value] += 1
 
     total = len(templates)
-    templates = templates[skip:skip + limit]
+    templates = templates[skip : skip + limit]
 
     return WidgetTemplateListResponse(
         templates=templates,
@@ -1142,7 +1157,7 @@ async def create_widget_from_template(
     template_id: str,
     name: Optional[str] = None,
     position: Optional[WidgetPosition] = None,
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     Create a widget from a template.
@@ -1194,11 +1209,9 @@ async def create_widget_from_template(
 # Export/Import Endpoints
 # =============================================================================
 
+
 @router.get("/dashboards/{dashboard_id}/export", response_model=DashboardExport)
-async def export_dashboard(
-    dashboard_id: str,
-    current_user: str = Depends(get_current_active_user)
-):
+async def export_dashboard(dashboard_id: str, current_user: str = Depends(get_current_active_user)):
     """
     Export a dashboard configuration.
     """
@@ -1207,9 +1220,11 @@ async def export_dashboard(
         raise HTTPException(status_code=404, detail=f"Dashboard {dashboard_id} not found")
 
     # Check access
-    if not (dashboard.owner == current_user or
-            current_user in dashboard.shared_with or
-            dashboard.is_public):
+    if not (
+        dashboard.owner == current_user
+        or current_user in dashboard.shared_with
+        or dashboard.is_public
+    ):
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Get widgets
@@ -1225,8 +1240,7 @@ async def export_dashboard(
 
 @router.post("/dashboards/import", response_model=DashboardImportResponse)
 async def import_dashboard(
-    request: DashboardImportRequest,
-    current_user: str = Depends(get_current_active_user)
+    request: DashboardImportRequest, current_user: str = Depends(get_current_active_user)
 ):
     """
     Import a dashboard from export.
@@ -1290,11 +1304,12 @@ async def import_dashboard(
 # Layout Snapshot Endpoints
 # =============================================================================
 
+
 @router.post("/dashboards/{dashboard_id}/snapshots", response_model=LayoutSnapshot)
 async def create_layout_snapshot(
     dashboard_id: str,
     description: Optional[str] = None,
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     Create a snapshot of the current dashboard layout.
@@ -1341,16 +1356,14 @@ async def list_layout_snapshots(
     snapshots.sort(key=lambda x: x.created_at, reverse=True)
 
     total = len(snapshots)
-    snapshots = snapshots[skip:skip + limit]
+    snapshots = snapshots[skip : skip + limit]
 
     return LayoutSnapshotListResponse(snapshots=snapshots, total=total)
 
 
 @router.post("/dashboards/{dashboard_id}/snapshots/{snapshot_id}/restore", response_model=Dashboard)
 async def restore_layout_snapshot(
-    dashboard_id: str,
-    snapshot_id: str,
-    current_user: str = Depends(get_current_active_user)
+    dashboard_id: str, snapshot_id: str, current_user: str = Depends(get_current_active_user)
 ):
     """
     Restore a dashboard layout from a snapshot.
@@ -1380,11 +1393,9 @@ async def restore_layout_snapshot(
 # Real-time Data Streaming (SSE)
 # =============================================================================
 
+
 @router.get("/widgets/{widget_id}/stream")
-async def stream_widget_data(
-    widget_id: str,
-    current_user: str = Depends(get_current_active_user)
-):
+async def stream_widget_data(widget_id: str, current_user: str = Depends(get_current_active_user)):
     """
     Stream real-time widget data using Server-Sent Events (SSE).
     """
@@ -1426,13 +1437,14 @@ async def stream_widget_data(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-        }
+        },
     )
 
 
 # =============================================================================
 # Statistics and Health Endpoints
 # =============================================================================
+
 
 @router.get("/stats", response_model=DashboardStats)
 async def get_dashboard_stats():
@@ -1498,9 +1510,9 @@ async def get_dashboard_health():
     }
 
     # Check data sources
-    stale_widgets = [w for w in widgets
-                     if w.last_data_fetch and
-                     (now - w.last_data_fetch).total_seconds() > 3600]
+    stale_widgets = [
+        w for w in widgets if w.last_data_fetch and (now - w.last_data_fetch).total_seconds() > 3600
+    ]
     data_sources_status = {
         "active": len(widgets) - len(stale_widgets),
         "stale": len(stale_widgets),

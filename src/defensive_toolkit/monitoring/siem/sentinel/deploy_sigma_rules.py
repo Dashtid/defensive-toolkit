@@ -30,14 +30,16 @@ try:
     from azure.mgmt.securityinsight import SecurityInsights
     from azure.mgmt.securityinsight.models import ScheduledAlertRule
 except ImportError:
-    print("[X] Error: Azure SDK not installed. Run: pip install azure-mgmt-securityinsight azure-identity")
+    print(
+        "[X] Error: Azure SDK not installed. Run: pip install azure-mgmt-securityinsight azure-identity"
+    )
     sys.exit(1)
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
@@ -89,10 +91,11 @@ class SentinelSigmaDeployer:
         try:
             # Use sigma-cli to convert
             import subprocess
+
             result = subprocess.run(
-                ['sigma', 'convert', '-t', 'azure-sentinel', str(sigma_file)],
+                ["sigma", "convert", "-t", "azure-sentinel", str(sigma_file)],
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             if result.returncode != 0:
@@ -103,34 +106,35 @@ class SentinelSigmaDeployer:
 
             # Parse Sigma file for metadata
             import yaml
-            with open(sigma_file, 'r') as f:
+
+            with open(sigma_file, "r") as f:
                 sigma_rule = yaml.safe_load(f)
 
             # Map Sigma level to Sentinel severity
             severity_map = {
-                'critical': 'High',
-                'high': 'High',
-                'medium': 'Medium',
-                'low': 'Low',
-                'informational': 'Informational'
+                "critical": "High",
+                "high": "High",
+                "medium": "Medium",
+                "low": "Low",
+                "informational": "Informational",
             }
 
             # Extract MITRE ATT&CK tactics
             tactics = []
-            for tag in sigma_rule.get('tags', []):
-                if tag.startswith('attack.'):
-                    tactic = tag.replace('attack.', '').replace('_', ' ').title()
+            for tag in sigma_rule.get("tags", []):
+                if tag.startswith("attack."):
+                    tactic = tag.replace("attack.", "").replace("_", " ").title()
                     tactics.append(tactic)
 
             return {
-                'title': sigma_rule.get('title', sigma_file.stem),
-                'id': sigma_rule.get('id', str(uuid.uuid4())),
-                'description': sigma_rule.get('description', ''),
-                'severity': severity_map.get(sigma_rule.get('level', 'medium'), 'Medium'),
-                'query': kql_query,
-                'tactics': list(set(tactics)),
-                'tags': sigma_rule.get('tags', []),
-                'references': sigma_rule.get('references', [])
+                "title": sigma_rule.get("title", sigma_file.stem),
+                "id": sigma_rule.get("id", str(uuid.uuid4())),
+                "description": sigma_rule.get("description", ""),
+                "severity": severity_map.get(sigma_rule.get("level", "medium"), "Medium"),
+                "query": kql_query,
+                "tactics": list(set(tactics)),
+                "tags": sigma_rule.get("tags", []),
+                "references": sigma_rule.get("references", []),
             }
 
         except Exception as e:
@@ -154,9 +158,7 @@ class SentinelSigmaDeployer:
             # Check if rule exists
             try:
                 existing_rule = self.client.alert_rules.get(
-                    self.resource_group,
-                    self.workspace_name,
-                    rule_id
+                    self.resource_group, self.workspace_name, rule_id
                 )
                 logger.warning(f"[!] Rule '{rule_name}' already exists, skipping...")
                 return True
@@ -165,43 +167,35 @@ class SentinelSigmaDeployer:
 
             # Create rule properties
             rule_properties = {
-                'displayName': rule_name,
-                'description': rule['description'],
-                'severity': rule['severity'],
-                'enabled': True,
-                'query': rule['query'],
-                'queryFrequency': 'PT15M',  # Run every 15 minutes
-                'queryPeriod': 'PT15M',      # Look back 15 minutes
-                'triggerOperator': 'GreaterThan',
-                'triggerThreshold': 0,
-                'suppressionDuration': 'PT1H',
-                'suppressionEnabled': False,
-                'tactics': rule['tactics'],
-                'eventGroupingSettings': {
-                    'aggregationKind': 'SingleAlert'
+                "displayName": rule_name,
+                "description": rule["description"],
+                "severity": rule["severity"],
+                "enabled": True,
+                "query": rule["query"],
+                "queryFrequency": "PT15M",  # Run every 15 minutes
+                "queryPeriod": "PT15M",  # Look back 15 minutes
+                "triggerOperator": "GreaterThan",
+                "triggerThreshold": 0,
+                "suppressionDuration": "PT1H",
+                "suppressionEnabled": False,
+                "tactics": rule["tactics"],
+                "eventGroupingSettings": {"aggregationKind": "SingleAlert"},
+                "incidentConfiguration": {
+                    "createIncident": True,
+                    "groupingConfiguration": {
+                        "enabled": False,
+                        "reopenClosedIncident": False,
+                        "lookbackDuration": "PT5H",
+                        "matchingMethod": "AllEntities",
+                    },
                 },
-                'incidentConfiguration': {
-                    'createIncident': True,
-                    'groupingConfiguration': {
-                        'enabled': False,
-                        'reopenClosedIncident': False,
-                        'lookbackDuration': 'PT5H',
-                        'matchingMethod': 'AllEntities'
-                    }
-                }
             }
 
             # Create the rule
-            alert_rule = ScheduledAlertRule(
-                kind='Scheduled',
-                **rule_properties
-            )
+            alert_rule = ScheduledAlertRule(kind="Scheduled", **rule_properties)
 
             self.client.alert_rules.create_or_update(
-                self.resource_group,
-                self.workspace_name,
-                rule_id,
-                alert_rule
+                self.resource_group, self.workspace_name, rule_id, alert_rule
             )
 
             logger.info(f"[+] Created analytics rule: {rule_name}")
@@ -221,16 +215,11 @@ class SentinelSigmaDeployer:
         Returns:
             dict: Deployment statistics
         """
-        stats = {
-            'total': 0,
-            'converted': 0,
-            'deployed': 0,
-            'failed': 0
-        }
+        stats = {"total": 0, "converted": 0, "deployed": 0, "failed": 0}
 
         # Find all Sigma rule files
-        sigma_files = list(rules_dir.rglob('*.yml'))
-        stats['total'] = len(sigma_files)
+        sigma_files = list(rules_dir.rglob("*.yml"))
+        stats["total"] = len(sigma_files)
 
         logger.info(f"Found {stats['total']} Sigma rule files")
 
@@ -240,16 +229,16 @@ class SentinelSigmaDeployer:
             # Convert rule
             rule = self.convert_sigma_to_kql(sigma_file)
             if not rule:
-                stats['failed'] += 1
+                stats["failed"] += 1
                 continue
 
-            stats['converted'] += 1
+            stats["converted"] += 1
 
             # Deploy to Sentinel
             if self.create_analytics_rule(rule):
-                stats['deployed'] += 1
+                stats["deployed"] += 1
             else:
-                stats['failed'] += 1
+                stats["failed"] += 1
 
         return stats
 
@@ -257,8 +246,9 @@ class SentinelSigmaDeployer:
 def load_config(config_file: Path) -> Dict:
     """Load configuration from YAML file"""
     import yaml
+
     try:
-        with open(config_file, 'r') as f:
+        with open(config_file, "r") as f:
             return yaml.safe_load(f)
     except Exception as e:
         logger.error(f"[X] Failed to load config: {e}")
@@ -267,38 +257,36 @@ def load_config(config_file: Path) -> Dict:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Deploy Sigma rules to Azure Sentinel as analytics rules'
+        description="Deploy Sigma rules to Azure Sentinel as analytics rules"
     )
     parser.add_argument(
-        '--config',
+        "--config",
         type=Path,
-        default='sentinel_config.yml',
-        help='Path to Sentinel configuration file'
+        default="sentinel_config.yml",
+        help="Path to Sentinel configuration file",
     )
     parser.add_argument(
-        '--rules-dir',
+        "--rules-dir",
         type=Path,
-        default='../../../rules/sigma',
-        help='Directory containing Sigma rules'
+        default="../../../rules/sigma",
+        help="Directory containing Sigma rules",
     )
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Convert rules but do not deploy to Sentinel'
+        "--dry-run", action="store_true", help="Convert rules but do not deploy to Sentinel"
     )
 
     args = parser.parse_args()
 
     # Load configuration
     config = load_config(args.config)
-    sentinel_config = config.get('sentinel', {})
+    sentinel_config = config.get("sentinel", {})
 
     if not args.dry_run:
         # Initialize deployer
         deployer = SentinelSigmaDeployer(
-            subscription_id=sentinel_config.get('subscription_id', ''),
-            resource_group=sentinel_config.get('resource_group', ''),
-            workspace_name=sentinel_config.get('workspace_name', '')
+            subscription_id=sentinel_config.get("subscription_id", ""),
+            resource_group=sentinel_config.get("resource_group", ""),
+            workspace_name=sentinel_config.get("workspace_name", ""),
         )
 
         # Connect to Sentinel
@@ -311,15 +299,15 @@ def main():
         stats = deployer.deploy_rules(args.rules_dir)
 
         # Print summary
-        logger.info("\n" + "="*50)
+        logger.info("\n" + "=" * 50)
         logger.info("Deployment Summary:")
         logger.info(f"  Total rules: {stats['total']}")
         logger.info(f"  Converted: {stats['converted']}")
         logger.info(f"  Deployed: {stats['deployed']}")
         logger.info(f"  Failed: {stats['failed']}")
-        logger.info("="*50)
+        logger.info("=" * 50)
 
-        if stats['deployed'] > 0:
+        if stats["deployed"] > 0:
             logger.info(f"\n[OK] Successfully deployed {stats['deployed']} rules to Azure Sentinel")
             logger.info("[i] View in Azure Portal: Sentinel > Analytics > Active rules")
 
@@ -327,5 +315,5 @@ def main():
         logger.info("[i] Dry run mode - rules will be converted but not deployed")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

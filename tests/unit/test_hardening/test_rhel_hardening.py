@@ -41,9 +41,7 @@ class TestRHELHardeningScript:
     def test_help_message(self, script_path: Path):
         """Test that --help displays usage information."""
         result = subprocess.run(
-            ["bash", str(script_path), "--help"],
-            capture_output=True,
-            text=True
+            ["bash", str(script_path), "--help"], capture_output=True, text=True
         )
         assert "Usage:" in result.stdout or "usage:" in result.stdout.lower()
         assert "--level" in result.stdout
@@ -54,7 +52,7 @@ class TestRHELHardeningScript:
         result = subprocess.run(
             ["bash", str(script_path), "--level", "1", "--dry-run", "--no-backup"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         # Should complete without errors or indicate dry-run
@@ -70,7 +68,7 @@ class TestRHELHardeningScript:
         result = subprocess.run(
             ["bash", str(script_path), "--level", level, "--dry-run", "--no-backup"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         # Should complete successfully
@@ -78,15 +76,11 @@ class TestRHELHardeningScript:
 
     def test_script_structure(self, script_path: Path):
         """Test that script has required functions and structure."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for essential functions
-        required_functions = [
-            "harden_ssh",
-            "configure_firewall",
-            "harden_kernel"
-        ]
+        required_functions = ["harden_ssh", "configure_firewall", "harden_kernel"]
 
         for func in required_functions:
             assert func in content, f"Missing function: {func}"
@@ -99,7 +93,7 @@ class TestRHELHardeningScript:
 
     def test_firewalld_configuration(self, script_path: Path):
         """Test that firewalld configuration is present (not UFW)."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # RHEL uses firewalld, not UFW
@@ -110,7 +104,7 @@ class TestRHELHardeningScript:
 
     def test_selinux_configuration(self, script_path: Path):
         """Test that SELinux configuration is present (not AppArmor)."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # RHEL uses SELinux, not AppArmor
@@ -121,7 +115,7 @@ class TestRHELHardeningScript:
 
     def test_yum_cron_updates(self, script_path: Path):
         """Test that yum-cron automatic updates are configured."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # RHEL uses yum-cron or dnf-automatic
@@ -129,54 +123,46 @@ class TestRHELHardeningScript:
 
     def test_ssh_hardening_commands(self, script_path: Path):
         """Test that SSH hardening includes key security settings."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for critical SSH settings
-        ssh_settings = [
-            "PermitRootLogin",
-            "MaxAuthTries",
-            "X11Forwarding"
-        ]
+        ssh_settings = ["PermitRootLogin", "MaxAuthTries", "X11Forwarding"]
 
         for setting in ssh_settings:
             assert setting in content, f"Missing SSH setting: {setting}"
 
     def test_kernel_hardening(self, script_path: Path):
         """Test that kernel parameter hardening is included."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for sysctl configuration
         assert "sysctl" in content.lower()
 
         # Check for key kernel parameters
-        kernel_params = [
-            "ip_forward",
-            "accept_redirects",
-            "tcp_syncookies"
-        ]
+        kernel_params = ["ip_forward", "accept_redirects", "tcp_syncookies"]
 
         for param in kernel_params:
             assert param in content, f"Missing kernel parameter: {param}"
 
     def test_aide_configuration(self, script_path: Path):
         """Test that AIDE file integrity monitoring is configured."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         assert "aide" in content.lower() or "AIDE" in content
 
     def test_fail2ban_configuration(self, script_path: Path):
         """Test that Fail2ban intrusion prevention is included."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         assert "fail2ban" in content.lower()
 
     def test_password_policy(self, script_path: Path):
         """Test that password policies are configured."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for PAM or password settings
@@ -185,9 +171,7 @@ class TestRHELHardeningScript:
     def test_backup_functionality(self, script_path: Path):
         """Test that backup option is supported."""
         result = subprocess.run(
-            ["bash", str(script_path), "--no-backup", "--dry-run"],
-            capture_output=True,
-            text=True
+            ["bash", str(script_path), "--no-backup", "--dry-run"], capture_output=True, text=True
         )
 
         # Should accept no-backup flag
@@ -195,7 +179,7 @@ class TestRHELHardeningScript:
 
     def test_logging_present(self, script_path: Path):
         """Test that script includes logging functionality."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for logging
@@ -203,7 +187,7 @@ class TestRHELHardeningScript:
 
     def test_error_handling(self, script_path: Path):
         """Test that script has error handling."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for error handling patterns
@@ -211,7 +195,7 @@ class TestRHELHardeningScript:
 
     def test_root_check(self, script_path: Path):
         """Test that script checks for root privileges."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for root/EUID check
@@ -219,7 +203,7 @@ class TestRHELHardeningScript:
 
     def test_service_management(self, script_path: Path):
         """Test that script manages services appropriately."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for systemctl commands
@@ -231,7 +215,7 @@ class TestRHELvsUbuntuDifferences:
 
     def test_uses_firewalld_not_ufw(self):
         """Test that RHEL script uses firewalld, not UFW."""
-        with open(RHEL_SCRIPT, 'r') as f:
+        with open(RHEL_SCRIPT, "r") as f:
             rhel_content = f.read()
 
         # RHEL should use firewalld
@@ -243,7 +227,7 @@ class TestRHELvsUbuntuDifferences:
 
     def test_uses_selinux_not_apparmor(self):
         """Test that RHEL script uses SELinux, not AppArmor."""
-        with open(RHEL_SCRIPT, 'r') as f:
+        with open(RHEL_SCRIPT, "r") as f:
             rhel_content = f.read()
 
         # RHEL should use SELinux
@@ -255,7 +239,7 @@ class TestRHELvsUbuntuDifferences:
 
     def test_uses_yum_or_dnf(self):
         """Test that RHEL script uses yum or dnf package manager."""
-        with open(RHEL_SCRIPT, 'r') as f:
+        with open(RHEL_SCRIPT, "r") as f:
             rhel_content = f.read()
 
         # RHEL should use yum or dnf
@@ -263,21 +247,16 @@ class TestRHELvsUbuntuDifferences:
 
     def test_rhel_specific_paths(self):
         """Test that RHEL script references RHEL-specific paths."""
-        with open(RHEL_SCRIPT, 'r') as f:
+        with open(RHEL_SCRIPT, "r") as f:
             content = f.read()
 
         # Common RHEL paths
-        rhel_indicators = [
-            "/etc/sysconfig",
-            "/etc/selinux",
-            "rhel",
-            "centos",
-            "rocky",
-            "alma"
-        ]
+        rhel_indicators = ["/etc/sysconfig", "/etc/selinux", "rhel", "centos", "rocky", "alma"]
 
         # At least some RHEL-specific references should exist
-        found_count = sum(1 for indicator in rhel_indicators if indicator.lower() in content.lower())
+        found_count = sum(
+            1 for indicator in rhel_indicators if indicator.lower() in content.lower()
+        )
         assert found_count > 0, "No RHEL-specific indicators found"
 
 
@@ -289,7 +268,7 @@ class TestRHELScriptIntegration:
         readme = HARDENING_DIR / "README.md"
         assert readme.exists()
 
-        with open(readme, 'r') as f:
+        with open(readme, "r") as f:
             content = f.read()
 
         assert "RHEL" in content or "Red Hat" in content
@@ -304,7 +283,7 @@ class TestRHELScriptIntegration:
         level1_config = config_dir / "cis-level1.conf"
         assert level1_config.exists()
 
-        with open(level1_config, 'r') as f:
+        with open(level1_config, "r") as f:
             content = f.read()
 
         # Should have SSH settings (common to both)
@@ -316,34 +295,26 @@ class TestRHELScriptValidation:
 
     def test_bash_syntax_valid(self):
         """Test that script has valid bash syntax."""
-        result = subprocess.run(
-            ["bash", "-n", str(RHEL_SCRIPT)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", "-n", str(RHEL_SCRIPT)], capture_output=True, text=True)
 
         assert result.returncode == 0, f"Syntax error: {result.stderr}"
 
     def test_no_hardcoded_credentials(self):
         """Test that script doesn't contain hardcoded credentials."""
-        with open(RHEL_SCRIPT, 'r') as f:
+        with open(RHEL_SCRIPT, "r") as f:
             content = f.read()
 
         # Check for common credential patterns
-        forbidden_patterns = [
-            "password=",
-            "passwd=",
-            "api_key=",
-            "secret=",
-            "token="
-        ]
+        forbidden_patterns = ["password=", "passwd=", "api_key=", "secret=", "token="]
 
         for pattern in forbidden_patterns:
-            assert pattern.lower() not in content.lower(), f"Possible hardcoded credential: {pattern}"
+            assert (
+                pattern.lower() not in content.lower()
+            ), f"Possible hardcoded credential: {pattern}"
 
     def test_safe_file_operations(self):
         """Test that script uses safe file operations."""
-        with open(RHEL_SCRIPT, 'r') as f:
+        with open(RHEL_SCRIPT, "r") as f:
             content = f.read()
 
         # Should not use dangerous operations without checks
@@ -361,7 +332,7 @@ class TestRHELDistributionSupport:
         """Test that script documents supported distributions."""
         readme = HARDENING_DIR / "README.md"
 
-        with open(readme, 'r') as f:
+        with open(readme, "r") as f:
             content = f.read()
 
         # Should mention various RHEL-based distributions
@@ -372,7 +343,7 @@ class TestRHELDistributionSupport:
 
     def test_script_handles_multiple_distros(self):
         """Test that script has logic for different RHEL variants."""
-        with open(RHEL_SCRIPT, 'r') as f:
+        with open(RHEL_SCRIPT, "r") as f:
             content = f.read()
 
         # Should check for different package managers or OS variants

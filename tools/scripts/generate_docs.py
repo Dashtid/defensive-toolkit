@@ -51,47 +51,49 @@ class DocGenerator:
     def parse_module(self, module_path: Path) -> Dict:
         """Parse a Python module and extract documentation"""
         try:
-            with open(module_path, 'r', encoding='utf-8') as f:
+            with open(module_path, "r", encoding="utf-8") as f:
                 tree = ast.parse(f.read())
         except Exception as e:
             print(f"[!] Error parsing {module_path}: {e}")
             return {}
 
         module_info = {
-            'path': module_path,
-            'docstring': self.extract_docstring(tree),
-            'classes': [],
-            'functions': [],
+            "path": module_path,
+            "docstring": self.extract_docstring(tree),
+            "classes": [],
+            "functions": [],
         }
 
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
                 class_info = {
-                    'name': node.name,
-                    'docstring': self.extract_docstring(node),
-                    'methods': []
+                    "name": node.name,
+                    "docstring": self.extract_docstring(node),
+                    "methods": [],
                 }
 
                 for item in node.body:
                     if isinstance(item, ast.FunctionDef):
                         method_info = {
-                            'name': item.name,
-                            'signature': self.get_function_signature(item),
-                            'docstring': self.extract_docstring(item)
+                            "name": item.name,
+                            "signature": self.get_function_signature(item),
+                            "docstring": self.extract_docstring(item),
                         }
-                        class_info['methods'].append(method_info)
+                        class_info["methods"].append(method_info)
 
-                module_info['classes'].append(class_info)
+                module_info["classes"].append(class_info)
 
             elif isinstance(node, ast.FunctionDef):
                 # Only top-level functions (not in classes)
-                if isinstance(getattr(node, 'parent', None), ast.Module) or not hasattr(node, 'parent'):
+                if isinstance(getattr(node, "parent", None), ast.Module) or not hasattr(
+                    node, "parent"
+                ):
                     func_info = {
-                        'name': node.name,
-                        'signature': self.get_function_signature(node),
-                        'docstring': self.extract_docstring(node)
+                        "name": node.name,
+                        "signature": self.get_function_signature(node),
+                        "docstring": self.extract_docstring(node),
                     }
-                    module_info['functions'].append(func_info)
+                    module_info["functions"].append(func_info)
 
         return module_info
 
@@ -115,48 +117,48 @@ class DocGenerator:
         """Generate markdown documentation for a module"""
         lines = []
 
-        module_path = module_info['path']
+        module_path = module_info["path"]
         relative_path = module_path.relative_to(self.root)
 
         lines.append(f"### {relative_path}\n")
 
-        if module_info['docstring']:
+        if module_info["docstring"]:
             lines.append(f"{module_info['docstring']}\n")
 
         # Document classes
-        if module_info['classes']:
+        if module_info["classes"]:
             lines.append("**Classes:**\n")
-            for cls in module_info['classes']:
+            for cls in module_info["classes"]:
                 lines.append(f"#### `{cls['name']}`\n")
-                if cls['docstring']:
+                if cls["docstring"]:
                     lines.append(f"{cls['docstring']}\n")
 
-                if cls['methods']:
+                if cls["methods"]:
                     lines.append("**Methods:**\n")
-                    for method in cls['methods']:
-                        if method['name'].startswith('_') and method['name'] != '__init__':
+                    for method in cls["methods"]:
+                        if method["name"].startswith("_") and method["name"] != "__init__":
                             continue  # Skip private methods
 
                         lines.append(f"- `{method['signature']}`")
-                        if method['docstring']:
+                        if method["docstring"]:
                             # Get first line of docstring
-                            first_line = method['docstring'].split('\n')[0]
+                            first_line = method["docstring"].split("\n")[0]
                             lines.append(f"  - {first_line}")
                         lines.append("")
 
         # Document functions
-        if module_info['functions']:
+        if module_info["functions"]:
             lines.append("**Functions:**\n")
-            for func in module_info['functions']:
-                if func['name'].startswith('_'):
+            for func in module_info["functions"]:
+                if func["name"].startswith("_"):
                     continue  # Skip private functions
 
                 lines.append(f"#### `{func['signature']}`\n")
-                if func['docstring']:
+                if func["docstring"]:
                     lines.append(f"{func['docstring']}\n")
 
         lines.append("---\n")
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def generate_category_docs(self, category_name: str, modules: List[Dict]) -> str:
         """Generate documentation for a category"""
@@ -167,7 +169,7 @@ class DocGenerator:
         for module_info in modules:
             lines.append(self.generate_module_docs(module_info))
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def generate_api_reference(self, specific_module: Optional[str] = None) -> str:
         """Generate complete API reference documentation"""
@@ -203,7 +205,7 @@ class DocGenerator:
                 print(f"    Found {len(modules)} modules")
                 lines.append(self.generate_category_docs(category, modules))
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def write_api_reference(self, content: str):
         """Write API reference to file"""
@@ -211,7 +213,7 @@ class DocGenerator:
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(content)
 
         print(f"\n[OK] API reference written to: {output_file}")
@@ -222,21 +224,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate API documentation from Python docstrings"
     )
-    parser.add_argument(
-        "--module",
-        type=str,
-        help="Generate docs for specific module only"
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        help="Output directory for documentation"
-    )
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output"
-    )
+    parser.add_argument("--module", type=str, help="Generate docs for specific module only")
+    parser.add_argument("--output", type=Path, help="Output directory for documentation")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 

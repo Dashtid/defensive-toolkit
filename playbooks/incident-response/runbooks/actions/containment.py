@@ -29,8 +29,13 @@ try:
 except ImportError:
     # Fallback for direct execution
     class ActionResult:
-        def __init__(self, success: bool, message: str, data: Optional[Dict] = None,
-                     rollback_info: Optional[Dict] = None):
+        def __init__(
+            self,
+            success: bool,
+            message: str,
+            data: Optional[Dict] = None,
+            rollback_info: Optional[Dict] = None,
+        ):
             self.success = success
             self.message = message
             self.data = data or {}
@@ -43,8 +48,9 @@ except ImportError:
                 "message": self.message,
                 "data": self.data,
                 "rollback_info": self.rollback_info,
-                "timestamp": self.timestamp
+                "timestamp": self.timestamp,
             }
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +59,7 @@ def isolate_host(
     hostname: str,
     method: str = "firewall",
     allow_management: bool = True,
-    management_ips: Optional[list] = None
+    management_ips: Optional[list] = None,
 ) -> ActionResult:
     """
     Isolate a host from the network.
@@ -75,11 +81,7 @@ def isolate_host(
         return _isolate_remote_host(hostname, method, allow_management, management_ips or [])
 
 
-def _isolate_local_host(
-    method: str,
-    allow_management: bool,
-    management_ips: list
-) -> ActionResult:
+def _isolate_local_host(method: str, allow_management: bool, management_ips: list) -> ActionResult:
     """Isolate the local machine"""
     is_windows = platform.system() == "Windows"
 
@@ -91,8 +93,7 @@ def _isolate_local_host(
 
     elif method == "network_disable":
         return ActionResult(
-            success=False,
-            message="Network disable method not recommended for local host"
+            success=False, message="Network disable method not recommended for local host"
         )
 
     return ActionResult(success=False, message=f"Unknown isolation method: {method}")
@@ -106,35 +107,40 @@ def _windows_firewall_isolate(allow_management: bool, management_ips: list) -> A
     try:
         # Create blocking rule for all outbound traffic
         block_cmd = [
-            "netsh", "advfirewall", "firewall", "add", "rule",
+            "netsh",
+            "advfirewall",
+            "firewall",
+            "add",
+            "rule",
             f"name={rule_name}",
             "dir=out",
             "action=block",
-            "enable=yes"
+            "enable=yes",
         ]
 
         result = subprocess.run(block_cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
             return ActionResult(
-                success=False,
-                message=f"Failed to create firewall rule: {result.stderr}"
+                success=False, message=f"Failed to create firewall rule: {result.stderr}"
             )
 
-        rollback_cmds = [
-            f"netsh advfirewall firewall delete rule name={rule_name}"
-        ]
+        rollback_cmds = [f"netsh advfirewall firewall delete rule name={rule_name}"]
 
         # Allow management IPs if specified
         if allow_management and management_ips:
             for ip in management_ips:
                 allow_cmd = [
-                    "netsh", "advfirewall", "firewall", "add", "rule",
+                    "netsh",
+                    "advfirewall",
+                    "firewall",
+                    "add",
+                    "rule",
                     f"name={allow_rule_name}-{ip}",
                     "dir=out",
                     f"remoteip={ip}",
                     "action=allow",
-                    "enable=yes"
+                    "enable=yes",
                 ]
                 subprocess.run(allow_cmd, capture_output=True)
                 rollback_cmds.append(
@@ -145,10 +151,7 @@ def _windows_firewall_isolate(allow_management: bool, management_ips: list) -> A
             success=True,
             message=f"Host isolated via Windows Firewall (rule: {rule_name})",
             data={"rule_name": rule_name, "management_ips": management_ips},
-            rollback_info={
-                "action": "remove_firewall_rules",
-                "commands": rollback_cmds
-            }
+            rollback_info={"action": "remove_firewall_rules", "commands": rollback_cmds},
         )
 
     except Exception as e:
@@ -189,9 +192,9 @@ def _linux_firewall_isolate(allow_management: bool, management_ips: list) -> Act
                 "commands": [
                     f"iptables -D OUTPUT -j {chain_name}",
                     f"iptables -F {chain_name}",
-                    f"iptables -X {chain_name}"
-                ]
-            }
+                    f"iptables -X {chain_name}",
+                ],
+            },
         )
 
     except Exception as e:
@@ -199,10 +202,7 @@ def _linux_firewall_isolate(allow_management: bool, management_ips: list) -> Act
 
 
 def _isolate_remote_host(
-    hostname: str,
-    method: str,
-    allow_management: bool,
-    management_ips: list
+    hostname: str, method: str, allow_management: bool, management_ips: list
 ) -> ActionResult:
     """Isolate a remote host (requires remote execution capability)"""
     # This would integrate with remote execution tools like:
@@ -212,14 +212,12 @@ def _isolate_remote_host(
 
     return ActionResult(
         success=False,
-        message=f"Remote host isolation not implemented. Configure EDR integration for {hostname}"
+        message=f"Remote host isolation not implemented. Configure EDR integration for {hostname}",
     )
 
 
 def block_ip(
-    ip_address: str,
-    direction: str = "both",
-    duration_hours: Optional[int] = None
+    ip_address: str, direction: str = "both", duration_hours: Optional[int] = None
 ) -> ActionResult:
     """
     Block an IP address via firewall rules.
@@ -259,33 +257,31 @@ def _windows_block_ip(ip_address: str, direction: str, rule_name: str) -> Action
 
     for dir_type in directions:
         cmd = [
-            "netsh", "advfirewall", "firewall", "add", "rule",
+            "netsh",
+            "advfirewall",
+            "firewall",
+            "add",
+            "rule",
             f"name={rule_name}-{dir_type}",
             f"dir={dir_type}",
             f"remoteip={ip_address}",
             "action=block",
-            "enable=yes"
+            "enable=yes",
         ]
 
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             return ActionResult(
-                success=False,
-                message=f"Failed to create block rule: {result.stderr}"
+                success=False, message=f"Failed to create block rule: {result.stderr}"
             )
 
-        rollback_cmds.append(
-            f"netsh advfirewall firewall delete rule name={rule_name}-{dir_type}"
-        )
+        rollback_cmds.append(f"netsh advfirewall firewall delete rule name={rule_name}-{dir_type}")
 
     return ActionResult(
         success=True,
         message=f"Blocked IP {ip_address} ({direction})",
         data={"ip": ip_address, "rule_name": rule_name, "direction": direction},
-        rollback_info={
-            "action": "unblock_ip",
-            "commands": rollback_cmds
-        }
+        rollback_info={"action": "unblock_ip", "commands": rollback_cmds},
     )
 
 
@@ -307,17 +303,12 @@ def _linux_block_ip(ip_address: str, direction: str, rule_name: str) -> ActionRe
         success=True,
         message=f"Blocked IP {ip_address} ({direction})",
         data={"ip": ip_address, "direction": direction},
-        rollback_info={
-            "action": "unblock_ip",
-            "commands": rollback_cmds
-        }
+        rollback_info={"action": "unblock_ip", "commands": rollback_cmds},
     )
 
 
 def disable_account(
-    username: str,
-    domain: Optional[str] = None,
-    method: str = "disable"
+    username: str, domain: Optional[str] = None, method: str = "disable"
 ) -> ActionResult:
     """
     Disable a user account.
@@ -359,18 +350,14 @@ def _disable_local_windows_account(username: str, method: str) -> ActionResult:
 
         if result.returncode != 0:
             return ActionResult(
-                success=False,
-                message=f"Failed to disable account: {result.stderr}"
+                success=False, message=f"Failed to disable account: {result.stderr}"
             )
 
         return ActionResult(
             success=True,
             message=f"Account {username} disabled",
             data={"username": username, "method": method},
-            rollback_info={
-                "action": "enable_account",
-                "command": rollback_cmd
-            }
+            rollback_info={"action": "enable_account", "command": rollback_cmd},
         )
 
     except Exception as e:
@@ -393,18 +380,14 @@ def _disable_local_linux_account(username: str, method: str) -> ActionResult:
 
         if result.returncode != 0:
             return ActionResult(
-                success=False,
-                message=f"Failed to disable account: {result.stderr}"
+                success=False, message=f"Failed to disable account: {result.stderr}"
             )
 
         return ActionResult(
             success=True,
             message=f"Account {username} disabled",
             data={"username": username, "method": method},
-            rollback_info={
-                "action": "enable_account",
-                "command": rollback_cmd
-            }
+            rollback_info={"action": "enable_account", "command": rollback_cmd},
         )
 
     except Exception as e:
@@ -425,18 +408,14 @@ def _disable_ad_account(username: str, domain: str, method: str) -> ActionResult
 
         if result.returncode != 0:
             return ActionResult(
-                success=False,
-                message=f"Failed to disable AD account: {result.stderr}"
+                success=False, message=f"Failed to disable AD account: {result.stderr}"
             )
 
         return ActionResult(
             success=True,
             message=f"AD account {domain}\\{username} disabled",
             data={"username": username, "domain": domain, "method": method},
-            rollback_info={
-                "action": "enable_ad_account",
-                "powershell_command": rollback_cmd
-            }
+            rollback_info={"action": "enable_ad_account", "powershell_command": rollback_cmd},
         )
 
     except Exception as e:
@@ -444,9 +423,7 @@ def _disable_ad_account(username: str, domain: str, method: str) -> ActionResult
 
 
 def quarantine_file(
-    file_path: str,
-    quarantine_dir: Optional[str] = None,
-    preserve_metadata: bool = True
+    file_path: str, quarantine_dir: Optional[str] = None, preserve_metadata: bool = True
 ) -> ActionResult:
     """
     Quarantine a suspicious file.
@@ -490,7 +467,7 @@ def quarantine_file(
                 "created": datetime.fromtimestamp(stat.st_ctime).isoformat(),
                 "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
                 "quarantined_at": datetime.now().isoformat(),
-                "quarantined_by": os.getenv("USERNAME", os.getenv("USER", "unknown"))
+                "quarantined_by": os.getenv("USERNAME", os.getenv("USER", "unknown")),
             }
 
             metadata_file = quarantine / f"{dest_name}.metadata.json"
@@ -503,16 +480,12 @@ def quarantine_file(
         return ActionResult(
             success=True,
             message=f"File quarantined: {dest}",
-            data={
-                "original_path": str(source),
-                "quarantine_path": str(dest),
-                "metadata": metadata
-            },
+            data={"original_path": str(source), "quarantine_path": str(dest), "metadata": metadata},
             rollback_info={
                 "action": "restore_file",
                 "source": str(dest),
-                "destination": str(source)
-            }
+                "destination": str(source),
+            },
         )
 
     except Exception as e:
@@ -520,9 +493,7 @@ def quarantine_file(
 
 
 def kill_process(
-    process_name: Optional[str] = None,
-    pid: Optional[int] = None,
-    force: bool = False
+    process_name: Optional[str] = None, pid: Optional[int] = None, force: bool = False
 ) -> ActionResult:
     """
     Terminate a process.
@@ -536,10 +507,7 @@ def kill_process(
         ActionResult (no rollback available for this action)
     """
     if not process_name and not pid:
-        return ActionResult(
-            success=False,
-            message="Either process_name or pid required"
-        )
+        return ActionResult(success=False, message="Either process_name or pid required")
 
     logger.info(f"[+] Killing process: {process_name or pid}")
 
@@ -564,15 +532,12 @@ def kill_process(
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
-            return ActionResult(
-                success=False,
-                message=f"Failed to kill process: {result.stderr}"
-            )
+            return ActionResult(success=False, message=f"Failed to kill process: {result.stderr}")
 
         return ActionResult(
             success=True,
             message=f"Process terminated: {process_name or pid}",
-            data={"process": process_name, "pid": pid, "forced": force}
+            data={"process": process_name, "pid": pid, "forced": force},
             # No rollback - process termination is irreversible
         )
 

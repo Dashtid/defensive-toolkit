@@ -76,9 +76,7 @@ class SigmaValidator:
             rule_count=rule_count,
         )
 
-    def _validate_document(
-        self, doc: dict, doc_num: int
-    ) -> tuple[list[str], list[str]]:
+    def _validate_document(self, doc: dict, doc_num: int) -> tuple[list[str], list[str]]:
         """Validate a single Sigma rule document."""
         errors = []
         warnings = []
@@ -119,12 +117,8 @@ class SigmaValidator:
             logsource = doc["logsource"]
             if not isinstance(logsource, dict):
                 errors.append(f"{prefix}logsource must be a dictionary")
-            elif not any(
-                k in logsource for k in ["category", "product", "service"]
-            ):
-                warnings.append(
-                    f"{prefix}logsource should have category, product, or service"
-                )
+            elif not any(k in logsource for k in ["category", "product", "service"]):
+                warnings.append(f"{prefix}logsource should have category, product, or service")
 
         # Validate detection
         if "detection" in doc:
@@ -140,9 +134,7 @@ class SigmaValidator:
             if isinstance(tags, list):
                 attack_tags = [t for t in tags if t.startswith("attack.")]
                 if not attack_tags:
-                    warnings.append(
-                        f"{prefix}Consider adding MITRE ATT&CK tags (attack.tXXXX)"
-                    )
+                    warnings.append(f"{prefix}Consider adding MITRE ATT&CK tags (attack.tXXXX)")
 
         return errors, warnings
 
@@ -169,9 +161,7 @@ class YaraValidator:
 
                 yara.compile(source=content)
             except ImportError:
-                warnings.append(
-                    "yara-python not installed - syntax check skipped"
-                )
+                warnings.append("yara-python not installed - syntax check skipped")
             except yara.SyntaxError as e:
                 errors.append(f"YARA syntax error: {e}")
             except Exception as e:
@@ -195,9 +185,7 @@ class YaraValidator:
             rule_count=rule_count,
         )
 
-    def _validate_rules(
-        self, content: str
-    ) -> tuple[list[str], list[str], int]:
+    def _validate_rules(self, content: str) -> tuple[list[str], list[str], int]:
         """Validate YARA rules from content."""
         errors = []
         warnings = []
@@ -215,17 +203,13 @@ class YaraValidator:
         for rule_name in rules:
             rule_content = self._extract_rule_content(content, rule_name)
             if rule_content:
-                rule_errors, rule_warnings = self._validate_rule_metadata(
-                    rule_name, rule_content
-                )
+                rule_errors, rule_warnings = self._validate_rule_metadata(rule_name, rule_content)
                 errors.extend(rule_errors)
                 warnings.extend(rule_warnings)
 
         return errors, warnings, rule_count
 
-    def _extract_rule_content(
-        self, content: str, rule_name: str
-    ) -> Optional[str]:
+    def _extract_rule_content(self, content: str, rule_name: str) -> Optional[str]:
         """Extract content of a specific YARA rule using brace matching."""
         # Find the rule start
         pattern = rf"rule\s+{rule_name}\s*(?::\s*\w+(?:\s+\w+)*)?\s*\{{"
@@ -262,9 +246,7 @@ class YaraValidator:
             return errors, warnings
 
         # Extract meta section
-        meta_match = re.search(
-            r"meta:\s*(.*?)(?=strings:|condition:)", rule_content, re.DOTALL
-        )
+        meta_match = re.search(r"meta:\s*(.*?)(?=strings:|condition:)", rule_content, re.DOTALL)
         if not meta_match:
             return errors, warnings
 
@@ -383,9 +365,7 @@ class RuleValidator:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Validate Sigma and YARA detection rules"
-    )
+    parser = argparse.ArgumentParser(description="Validate Sigma and YARA detection rules")
     parser.add_argument(
         "--path",
         type=Path,

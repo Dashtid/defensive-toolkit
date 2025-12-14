@@ -15,11 +15,11 @@ Description:
 import logging
 from typing import Optional
 
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def isolate_host(hostname: str, method: str = 'firewall', dry_run: bool = False) -> bool:
+def isolate_host(hostname: str, method: str = "firewall", dry_run: bool = False) -> bool:
     """
     Isolate host from network
 
@@ -38,13 +38,13 @@ def isolate_host(hostname: str, method: str = 'firewall', dry_run: bool = False)
         return True
 
     try:
-        if method == 'firewall':
+        if method == "firewall":
             # Example: Windows Firewall block all
-            cmd = ['netsh', 'advfirewall', 'set', 'allprofiles', 'state', 'on']
+            cmd = ["netsh", "advfirewall", "set", "allprofiles", "state", "on"]
             # In production, would block all traffic for specific host
             logger.info(f"[OK] Host {hostname} isolated via firewall")
 
-        elif method == 'edr':
+        elif method == "edr":
             # Would integrate with EDR API (CrowdStrike, SentinelOne, etc.)
             logger.info(f"[OK] Host {hostname} isolated via EDR")
 
@@ -55,7 +55,9 @@ def isolate_host(hostname: str, method: str = 'firewall', dry_run: bool = False)
         return False
 
 
-def block_ip(ip_address: str, direction: str = 'both', duration: Optional[int] = None, dry_run: bool = False) -> bool:
+def block_ip(
+    ip_address: str, direction: str = "both", duration: Optional[int] = None, dry_run: bool = False
+) -> bool:
     """
     Block IP address at firewall
 
@@ -91,7 +93,9 @@ def block_ip(ip_address: str, direction: str = 'both', duration: Optional[int] =
         return False
 
 
-def quarantine_file(file_path: str, quarantine_dir: str = '/quarantine', dry_run: bool = False) -> bool:
+def quarantine_file(
+    file_path: str, quarantine_dir: str = "/quarantine", dry_run: bool = False
+) -> bool:
     """
     Quarantine suspicious file
 
@@ -146,6 +150,7 @@ def terminate_process(process_name: str = None, pid: int = None, dry_run: bool =
             # Kill by PID
             import os
             import signal
+
             os.kill(pid, signal.SIGTERM)
             logger.info(f"[OK] Process {pid} terminated")
 

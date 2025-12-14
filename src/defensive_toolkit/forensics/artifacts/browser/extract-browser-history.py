@@ -31,7 +31,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -42,10 +42,10 @@ class BrowserForensics:
         self.user_profile = user_profile
         self.output_dir = output_dir
         self.results = {
-            'timestamp': datetime.now().isoformat(),
-            'user_profile': str(user_profile),
-            'browsers_analyzed': [],
-            'artifacts_extracted': {}
+            "timestamp": datetime.now().isoformat(),
+            "user_profile": str(user_profile),
+            "browsers_analyzed": [],
+            "artifacts_extracted": {},
         }
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -94,7 +94,7 @@ class BrowserForensics:
 
         chrome_paths = [
             self.user_profile / "AppData/Local/Google/Chrome/User Data/Default",
-            self.user_profile / "Local Settings/Application Data/Google/Chrome/User Data/Default"
+            self.user_profile / "Local Settings/Application Data/Google/Chrome/User Data/Default",
         ]
 
         for chrome_path in chrome_paths:
@@ -112,52 +112,57 @@ class BrowserForensics:
                 cursor = conn.cursor()
 
                 # Extract browsing history
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT url, title, visit_count, last_visit_time
                     FROM urls
                     ORDER BY last_visit_time DESC
-                """)
+                """
+                )
 
                 history = []
                 for row in cursor.fetchall():
-                    history.append({
-                        'url': row[0],
-                        'title': row[1],
-                        'visit_count': row[2],
-                        'last_visit': self.chrome_timestamp_to_datetime(row[3])
-                    })
+                    history.append(
+                        {
+                            "url": row[0],
+                            "title": row[1],
+                            "visit_count": row[2],
+                            "last_visit": self.chrome_timestamp_to_datetime(row[3]),
+                        }
+                    )
 
                 # Extract downloads
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT target_path, tab_url, start_time, end_time, total_bytes
                     FROM downloads
                     ORDER BY start_time DESC
-                """)
+                """
+                )
 
                 downloads = []
                 for row in cursor.fetchall():
-                    downloads.append({
-                        'file': row[0],
-                        'url': row[1],
-                        'start_time': self.chrome_timestamp_to_datetime(row[2]),
-                        'end_time': self.chrome_timestamp_to_datetime(row[3]),
-                        'size_bytes': row[4]
-                    })
+                    downloads.append(
+                        {
+                            "file": row[0],
+                            "url": row[1],
+                            "start_time": self.chrome_timestamp_to_datetime(row[2]),
+                            "end_time": self.chrome_timestamp_to_datetime(row[3]),
+                            "size_bytes": row[4],
+                        }
+                    )
 
                 conn.close()
                 temp_db.unlink()
 
                 # Save results
                 output_file = self.output_dir / "chrome_history.json"
-                with open(output_file, 'w') as f:
-                    json.dump({
-                        'browsing_history': history,
-                        'downloads': downloads
-                    }, f, indent=2)
+                with open(output_file, "w") as f:
+                    json.dump({"browsing_history": history, "downloads": downloads}, f, indent=2)
 
-                self.results['artifacts_extracted']['chrome_history'] = len(history)
-                self.results['artifacts_extracted']['chrome_downloads'] = len(downloads)
-                self.results['browsers_analyzed'].append('Chrome')
+                self.results["artifacts_extracted"]["chrome_history"] = len(history)
+                self.results["artifacts_extracted"]["chrome_downloads"] = len(downloads)
+                self.results["browsers_analyzed"].append("Chrome")
 
                 logger.info(f"[OK] Chrome: {len(history)} URLs, {len(downloads)} downloads")
                 return True
@@ -197,31 +202,35 @@ class BrowserForensics:
                 cursor = conn.cursor()
 
                 # Extract history (same schema as Chrome)
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT url, title, visit_count, last_visit_time
                     FROM urls
                     ORDER BY last_visit_time DESC
-                """)
+                """
+                )
 
                 history = []
                 for row in cursor.fetchall():
-                    history.append({
-                        'url': row[0],
-                        'title': row[1],
-                        'visit_count': row[2],
-                        'last_visit': self.chrome_timestamp_to_datetime(row[3])
-                    })
+                    history.append(
+                        {
+                            "url": row[0],
+                            "title": row[1],
+                            "visit_count": row[2],
+                            "last_visit": self.chrome_timestamp_to_datetime(row[3]),
+                        }
+                    )
 
                 conn.close()
                 temp_db.unlink()
 
                 # Save results
                 output_file = self.output_dir / "edge_history.json"
-                with open(output_file, 'w') as f:
-                    json.dump({'browsing_history': history}, f, indent=2)
+                with open(output_file, "w") as f:
+                    json.dump({"browsing_history": history}, f, indent=2)
 
-                self.results['artifacts_extracted']['edge_history'] = len(history)
-                self.results['browsers_analyzed'].append('Edge')
+                self.results["artifacts_extracted"]["edge_history"] = len(history)
+                self.results["browsers_analyzed"].append("Edge")
 
                 logger.info(f"[OK] Edge: {len(history)} URLs")
                 return True
@@ -265,52 +274,61 @@ class BrowserForensics:
                 cursor = conn.cursor()
 
                 # Extract history
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT url, title, visit_count, last_visit_date
                     FROM moz_places
                     WHERE last_visit_date IS NOT NULL
                     ORDER BY last_visit_date DESC
-                """)
+                """
+                )
 
                 history = []
                 for row in cursor.fetchall():
-                    history.append({
-                        'url': row[0],
-                        'title': row[1],
-                        'visit_count': row[2],
-                        'last_visit': self.firefox_timestamp_to_datetime(row[3])
-                    })
+                    history.append(
+                        {
+                            "url": row[0],
+                            "title": row[1],
+                            "visit_count": row[2],
+                            "last_visit": self.firefox_timestamp_to_datetime(row[3]),
+                        }
+                    )
 
                 # Extract downloads
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT content, dateAdded
                     FROM moz_anno_attributes
                     JOIN moz_annos ON moz_anno_attributes.id = moz_annos.anno_attribute_id
                     WHERE moz_anno_attributes.name = 'downloads/destinationFileName'
-                """)
+                """
+                )
 
                 downloads = []
                 for row in cursor.fetchall():
-                    downloads.append({
-                        'file': row[0],
-                        'date': self.firefox_timestamp_to_datetime(row[1])
-                    })
+                    downloads.append(
+                        {"file": row[0], "date": self.firefox_timestamp_to_datetime(row[1])}
+                    )
 
                 conn.close()
                 temp_db.unlink()
 
                 # Save results
                 output_file = self.output_dir / "firefox_history.json"
-                with open(output_file, 'w') as f:
-                    json.dump({
-                        'profile': profile_dir.name,
-                        'browsing_history': history,
-                        'downloads': downloads
-                    }, f, indent=2)
+                with open(output_file, "w") as f:
+                    json.dump(
+                        {
+                            "profile": profile_dir.name,
+                            "browsing_history": history,
+                            "downloads": downloads,
+                        },
+                        f,
+                        indent=2,
+                    )
 
-                self.results['artifacts_extracted']['firefox_history'] = len(history)
-                self.results['artifacts_extracted']['firefox_downloads'] = len(downloads)
-                self.results['browsers_analyzed'].append('Firefox')
+                self.results["artifacts_extracted"]["firefox_history"] = len(history)
+                self.results["artifacts_extracted"]["firefox_downloads"] = len(downloads)
+                self.results["browsers_analyzed"].append("Firefox")
 
                 logger.info(f"[OK] Firefox: {len(history)} URLs, {len(downloads)} downloads")
                 return True
@@ -344,32 +362,36 @@ class BrowserForensics:
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT host_key, name, path, creation_utc, last_access_utc, expires_utc, is_secure
                 FROM cookies
-            """)
+            """
+            )
 
             cookies = []
             for row in cursor.fetchall():
-                cookies.append({
-                    'domain': row[0],
-                    'name': row[1],
-                    'path': row[2],
-                    'created': self.chrome_timestamp_to_datetime(row[3]),
-                    'last_access': self.chrome_timestamp_to_datetime(row[4]),
-                    'expires': self.chrome_timestamp_to_datetime(row[5]),
-                    'secure': bool(row[6])
-                })
+                cookies.append(
+                    {
+                        "domain": row[0],
+                        "name": row[1],
+                        "path": row[2],
+                        "created": self.chrome_timestamp_to_datetime(row[3]),
+                        "last_access": self.chrome_timestamp_to_datetime(row[4]),
+                        "expires": self.chrome_timestamp_to_datetime(row[5]),
+                        "secure": bool(row[6]),
+                    }
+                )
 
             conn.close()
             temp_db.unlink()
 
             # Save results
             output_file = self.output_dir / "chrome_cookies.json"
-            with open(output_file, 'w') as f:
-                json.dump({'cookies': cookies}, f, indent=2)
+            with open(output_file, "w") as f:
+                json.dump({"cookies": cookies}, f, indent=2)
 
-            self.results['artifacts_extracted']['chrome_cookies'] = len(cookies)
+            self.results["artifacts_extracted"]["chrome_cookies"] = len(cookies)
             logger.info(f"[OK] Chrome: {len(cookies)} cookies")
             return True
 
@@ -379,40 +401,51 @@ class BrowserForensics:
 
     def generate_report(self) -> None:
         """Generate extraction report"""
-        logger.info("\n" + "="*70)
+        logger.info("\n" + "=" * 70)
         logger.info("Browser Forensics Report")
-        logger.info("="*70)
+        logger.info("=" * 70)
 
         logger.info(f"\nUser Profile: {self.user_profile}")
         logger.info(f"Output Directory: {self.output_dir}")
         logger.info(f"Timestamp: {self.results['timestamp']}")
 
-        logger.info(f"\n[+] Browsers Analyzed: {', '.join(self.results['browsers_analyzed']) or 'None'}")
+        logger.info(
+            f"\n[+] Browsers Analyzed: {', '.join(self.results['browsers_analyzed']) or 'None'}"
+        )
 
-        if self.results['artifacts_extracted']:
+        if self.results["artifacts_extracted"]:
             logger.info("\n[+] Artifacts Extracted:")
-            for artifact, count in self.results['artifacts_extracted'].items():
+            for artifact, count in self.results["artifacts_extracted"].items():
                 logger.info(f"  {artifact}: {count}")
         else:
             logger.info("\n[!] No artifacts extracted")
 
         # Save report
         report_file = self.output_dir / "browser_forensics_report.json"
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump(self.results, f, indent=2)
 
         logger.info(f"\n[OK] Report saved to: {report_file}")
-        logger.info("="*70)
+        logger.info("=" * 70)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Browser forensics artifact extraction')
-    parser.add_argument('--user-profile', type=Path, required=True,
-                        help='User profile directory (e.g., C:\\Users\\John)')
-    parser.add_argument('--output', type=Path, default=Path('browser_artifacts'),
-                        help='Output directory')
-    parser.add_argument('--browser', choices=['chrome', 'edge', 'firefox', 'all'], default='all',
-                        help='Browser to extract from')
+    parser = argparse.ArgumentParser(description="Browser forensics artifact extraction")
+    parser.add_argument(
+        "--user-profile",
+        type=Path,
+        required=True,
+        help="User profile directory (e.g., C:\\Users\\John)",
+    )
+    parser.add_argument(
+        "--output", type=Path, default=Path("browser_artifacts"), help="Output directory"
+    )
+    parser.add_argument(
+        "--browser",
+        choices=["chrome", "edge", "firefox", "all"],
+        default="all",
+        help="Browser to extract from",
+    )
 
     args = parser.parse_args()
 
@@ -425,16 +458,16 @@ def main():
     # Extract artifacts based on browser selection
     extracted_any = False
 
-    if args.browser in ['chrome', 'all']:
+    if args.browser in ["chrome", "all"]:
         if forensics.extract_chrome_history():
             extracted_any = True
         forensics.extract_chrome_cookies()
 
-    if args.browser in ['edge', 'all']:
+    if args.browser in ["edge", "all"]:
         if forensics.extract_edge_history():
             extracted_any = True
 
-    if args.browser in ['firefox', 'all']:
+    if args.browser in ["firefox", "all"]:
         if forensics.extract_firefox_history():
             extracted_any = True
 
@@ -444,5 +477,5 @@ def main():
     return 0 if extracted_any else 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

@@ -13,9 +13,9 @@ def cleanup_pycache():
     """Remove all __pycache__ directories"""
     print("[+] Removing __pycache__ directories...")
     count = 0
-    for root, dirs, files in os.walk('.'):
-        if '__pycache__' in dirs:
-            pycache_path = Path(root) / '__pycache__'
+    for root, dirs, files in os.walk("."):
+        if "__pycache__" in dirs:
+            pycache_path = Path(root) / "__pycache__"
             try:
                 shutil.rmtree(pycache_path)
                 count += 1
@@ -29,9 +29,9 @@ def cleanup_pyc_files():
     """Remove .pyc and .pyo files"""
     print("[+] Removing .pyc and .pyo files...")
     count = 0
-    for root, dirs, files in os.walk('.'):
+    for root, dirs, files in os.walk("."):
         for file in files:
-            if file.endswith(('.pyc', '.pyo')):
+            if file.endswith((".pyc", ".pyo")):
                 file_path = Path(root) / file
                 try:
                     file_path.unlink()
@@ -45,9 +45,9 @@ def cleanup_logs():
     """Remove .log files"""
     print("[+] Removing .log files...")
     count = 0
-    for root, dirs, files in os.walk('.'):
+    for root, dirs, files in os.walk("."):
         for file in files:
-            if file.endswith('.log'):
+            if file.endswith(".log"):
                 file_path = Path(root) / file
                 try:
                     file_path.unlink()
@@ -62,9 +62,9 @@ def cleanup_os_files():
     """Remove OS-specific files"""
     print("[+] Removing OS-specific files (.DS_Store, Thumbs.db)...")
     count = 0
-    for root, dirs, files in os.walk('.'):
+    for root, dirs, files in os.walk("."):
         for file in files:
-            if file in ('.DS_Store', 'Thumbs.db', 'desktop.ini'):
+            if file in (".DS_Store", "Thumbs.db", "desktop.ini"):
                 file_path = Path(root) / file
                 try:
                     file_path.unlink()
@@ -78,7 +78,7 @@ def cleanup_os_files():
 def cleanup_pytest_cache():
     """Remove pytest cache"""
     print("[+] Removing pytest cache...")
-    pytest_cache = Path('.pytest_cache')
+    pytest_cache = Path(".pytest_cache")
     if pytest_cache.exists():
         try:
             shutil.rmtree(pytest_cache)
@@ -93,12 +93,12 @@ def cleanup_pytest_cache():
 def cleanup_coverage():
     """Remove coverage files"""
     print("[+] Removing coverage files...")
-    coverage_files = ['.coverage', 'coverage.json', '.coverage.*']
-    coverage_dir = Path('htmlcov')
+    coverage_files = [".coverage", "coverage.json", ".coverage.*"]
+    coverage_dir = Path("htmlcov")
 
     count = 0
     for pattern in coverage_files:
-        for file in Path('.').glob(pattern):
+        for file in Path(".").glob(pattern):
             try:
                 if file.is_file():
                     file.unlink()
@@ -121,11 +121,11 @@ def cleanup_coverage():
 def cleanup_temp_files():
     """Remove temporary files"""
     print("[+] Removing temporary files...")
-    temp_patterns = ['*.tmp', '*.temp', '*.bak', '*.backup', '*~']
+    temp_patterns = ["*.tmp", "*.temp", "*.bak", "*.backup", "*~"]
     count = 0
 
     for pattern in temp_patterns:
-        for file in Path('.').rglob(pattern):
+        for file in Path(".").rglob(pattern):
             if file.is_file():
                 try:
                     file.unlink()
@@ -139,9 +139,9 @@ def cleanup_temp_files():
 
 def main():
     """Run all cleanup operations"""
-    print("="*70)
+    print("=" * 70)
     print("Defensive Toolkit - Deep Cleanup")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     cleanup_pycache()
     cleanup_pyc_files()
@@ -151,10 +151,10 @@ def main():
     cleanup_coverage()
     cleanup_temp_files()
 
-    print("="*70)
+    print("=" * 70)
     print("[OK] Deep cleanup completed!")
-    print("="*70)
+    print("=" * 70)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

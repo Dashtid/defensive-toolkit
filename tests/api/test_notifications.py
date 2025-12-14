@@ -5,7 +5,6 @@ Comprehensive tests for multi-channel notification management, templates,
 routing rules, escalation policies, and delivery tracking.
 """
 
-
 import pytest
 from api.main import app
 from fastapi.testclient import TestClient
@@ -31,8 +30,8 @@ def sample_email_channel():
             "smtp_host": "smtp.example.com",
             "smtp_port": 587,
             "from_address": "security@example.com",
-            "default_recipients": ["soc@example.com"]
-        }
+            "default_recipients": ["soc@example.com"],
+        },
     }
 
 
@@ -51,8 +50,8 @@ def sample_slack_channel():
         "config": {
             "webhook_url": "https://hooks.slack.com/services/xxx/yyy/zzz",
             "default_channel": "#security-alerts",
-            "username": "Defensive Toolkit"
-        }
+            "username": "Defensive Toolkit",
+        },
     }
 
 
@@ -67,14 +66,39 @@ def sample_template():
         "body_template": "Alert Details:\n\nName: {{alert_name}}\nSeverity: {{severity}}\nSource: {{source}}\nTimestamp: {{timestamp}}\n\nDescription:\n{{description}}",
         "html_template": "<h2>Security Alert: {{alert_name}}</h2><p><strong>Severity:</strong> {{severity}}</p><p>{{description}}</p>",
         "variables": [
-            {"name": "alert_name", "description": "Name of the alert", "required": True, "default_value": None},
-            {"name": "severity", "description": "Alert severity", "required": True, "default_value": "medium"},
-            {"name": "source", "description": "Alert source", "required": False, "default_value": "Unknown"},
-            {"name": "timestamp", "description": "Alert timestamp", "required": False, "default_value": None},
-            {"name": "description", "description": "Alert description", "required": False, "default_value": "No description provided"}
+            {
+                "name": "alert_name",
+                "description": "Name of the alert",
+                "required": True,
+                "default_value": None,
+            },
+            {
+                "name": "severity",
+                "description": "Alert severity",
+                "required": True,
+                "default_value": "medium",
+            },
+            {
+                "name": "source",
+                "description": "Alert source",
+                "required": False,
+                "default_value": "Unknown",
+            },
+            {
+                "name": "timestamp",
+                "description": "Alert timestamp",
+                "required": False,
+                "default_value": None,
+            },
+            {
+                "name": "description",
+                "description": "Alert description",
+                "required": False,
+                "default_value": "No description provided",
+            },
         ],
         "default_priority": "high",
-        "channel_overrides": {}
+        "channel_overrides": {},
     }
 
 
@@ -86,14 +110,17 @@ def sample_routing_rule():
         "description": "Route critical alerts to all channels",
         "enabled": True,
         "priority": 1,
-        "conditions": [
-            {"field": "priority", "operator": "equals", "value": "critical"}
-        ],
+        "conditions": [{"field": "priority", "operator": "equals", "value": "critical"}],
         "condition_logic": "all",
         "actions": [
-            {"action_type": "route", "channel_ids": [], "template_id": None, "priority_override": None}
+            {
+                "action_type": "route",
+                "channel_ids": [],
+                "template_id": None,
+                "priority_override": None,
+            }
         ],
-        "schedule": None
+        "schedule": None,
     }
 
 
@@ -112,18 +139,18 @@ def sample_escalation_policy():
                 "delay_minutes": 0,
                 "channel_ids": [],
                 "repeat_count": 1,
-                "repeat_interval_minutes": 5
+                "repeat_interval_minutes": 5,
             },
             {
                 "step_number": 2,
                 "delay_minutes": 15,
                 "channel_ids": [],
                 "repeat_count": 2,
-                "repeat_interval_minutes": 10
-            }
+                "repeat_interval_minutes": 10,
+            },
         ],
         "acknowledgment_timeout_minutes": 30,
-        "total_timeout_minutes": 120
+        "total_timeout_minutes": 120,
     }
 
 
@@ -143,9 +170,7 @@ class TestNotificationChannels:
     def test_create_email_channel(self, auth_headers, sample_email_channel):
         """Test creating an email channel"""
         response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -157,9 +182,7 @@ class TestNotificationChannels:
     def test_create_slack_channel(self, auth_headers, sample_slack_channel):
         """Test creating a Slack channel"""
         response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_slack_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_slack_channel, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -169,36 +192,26 @@ class TestNotificationChannels:
         """Test getting a specific channel"""
         # Create channel
         create_response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         channel_id = create_response.json()["channel"]["id"]
 
         # Get channel
-        response = client.get(
-            f"/api/v1/notifications/channels/{channel_id}",
-            headers=auth_headers
-        )
+        response = client.get(f"/api/v1/notifications/channels/{channel_id}", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["channel"]["id"] == channel_id
 
     def test_get_nonexistent_channel(self, auth_headers):
         """Test getting a channel that doesn't exist"""
-        response = client.get(
-            "/api/v1/notifications/channels/nonexistent-id",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/notifications/channels/nonexistent-id", headers=auth_headers)
         assert response.status_code == 404
 
     def test_update_channel(self, auth_headers, sample_email_channel):
         """Test updating a channel"""
         # Create channel
         create_response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         channel_id = create_response.json()["channel"]["id"]
 
@@ -206,12 +219,10 @@ class TestNotificationChannels:
         update_data = {
             "name": "Updated Email Channel",
             "enabled": False,
-            "rate_limit_per_minute": 50
+            "rate_limit_per_minute": 50,
         }
         response = client.put(
-            f"/api/v1/notifications/channels/{channel_id}",
-            json=update_data,
-            headers=auth_headers
+            f"/api/v1/notifications/channels/{channel_id}", json=update_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -223,24 +234,20 @@ class TestNotificationChannels:
         """Test deleting a channel"""
         # Create channel
         create_response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         channel_id = create_response.json()["channel"]["id"]
 
         # Delete channel
         response = client.delete(
-            f"/api/v1/notifications/channels/{channel_id}",
-            headers=auth_headers
+            f"/api/v1/notifications/channels/{channel_id}", headers=auth_headers
         )
         assert response.status_code == 200
         assert response.json()["status"] == "success"
 
         # Verify deletion
         get_response = client.get(
-            f"/api/v1/notifications/channels/{channel_id}",
-            headers=auth_headers
+            f"/api/v1/notifications/channels/{channel_id}", headers=auth_headers
         )
         assert get_response.status_code == 404
 
@@ -248,9 +255,7 @@ class TestNotificationChannels:
         """Test sending a test message to a channel"""
         # Create channel
         create_response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         channel_id = create_response.json()["channel"]["id"]
 
@@ -258,23 +263,28 @@ class TestNotificationChannels:
         response = client.post(
             f"/api/v1/notifications/channels/{channel_id}/test",
             json={"test_message": "This is a test notification"},
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
         assert data["channel_id"] == channel_id
         assert "response_time_ms" in data
 
-    def test_list_channels_with_filters(self, auth_headers, sample_email_channel, sample_slack_channel):
+    def test_list_channels_with_filters(
+        self, auth_headers, sample_email_channel, sample_slack_channel
+    ):
         """Test listing channels with filters"""
         # Create multiple channels
-        client.post("/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers)
-        client.post("/api/v1/notifications/channels", json=sample_slack_channel, headers=auth_headers)
+        client.post(
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
+        )
+        client.post(
+            "/api/v1/notifications/channels", json=sample_slack_channel, headers=auth_headers
+        )
 
         # Filter by type
         response = client.get(
-            "/api/v1/notifications/channels?channel_type=email",
-            headers=auth_headers
+            "/api/v1/notifications/channels?channel_type=email", headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -297,9 +307,7 @@ class TestNotificationTemplates:
     def test_create_template(self, auth_headers, sample_template):
         """Test creating a notification template"""
         response = client.post(
-            "/api/v1/notifications/templates",
-            json=sample_template,
-            headers=auth_headers
+            "/api/v1/notifications/templates", json=sample_template, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -311,16 +319,13 @@ class TestNotificationTemplates:
         """Test getting a specific template"""
         # Create template
         create_response = client.post(
-            "/api/v1/notifications/templates",
-            json=sample_template,
-            headers=auth_headers
+            "/api/v1/notifications/templates", json=sample_template, headers=auth_headers
         )
         template_id = create_response.json()["template"]["id"]
 
         # Get template
         response = client.get(
-            f"/api/v1/notifications/templates/{template_id}",
-            headers=auth_headers
+            f"/api/v1/notifications/templates/{template_id}", headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -329,8 +334,7 @@ class TestNotificationTemplates:
     def test_get_nonexistent_template(self, auth_headers):
         """Test getting a template that doesn't exist"""
         response = client.get(
-            "/api/v1/notifications/templates/nonexistent-id",
-            headers=auth_headers
+            "/api/v1/notifications/templates/nonexistent-id", headers=auth_headers
         )
         assert response.status_code == 404
 
@@ -338,21 +342,17 @@ class TestNotificationTemplates:
         """Test updating a template"""
         # Create template
         create_response = client.post(
-            "/api/v1/notifications/templates",
-            json=sample_template,
-            headers=auth_headers
+            "/api/v1/notifications/templates", json=sample_template, headers=auth_headers
         )
         template_id = create_response.json()["template"]["id"]
 
         # Update template
         update_data = {
             "name": "Updated Security Alert Template",
-            "subject_template": "[ALERT] {{alert_name}}"
+            "subject_template": "[ALERT] {{alert_name}}",
         }
         response = client.put(
-            f"/api/v1/notifications/templates/{template_id}",
-            json=update_data,
-            headers=auth_headers
+            f"/api/v1/notifications/templates/{template_id}", json=update_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -362,16 +362,13 @@ class TestNotificationTemplates:
         """Test deleting a template"""
         # Create template
         create_response = client.post(
-            "/api/v1/notifications/templates",
-            json=sample_template,
-            headers=auth_headers
+            "/api/v1/notifications/templates", json=sample_template, headers=auth_headers
         )
         template_id = create_response.json()["template"]["id"]
 
         # Delete template
         response = client.delete(
-            f"/api/v1/notifications/templates/{template_id}",
-            headers=auth_headers
+            f"/api/v1/notifications/templates/{template_id}", headers=auth_headers
         )
         assert response.status_code == 200
         assert response.json()["status"] == "success"
@@ -380,9 +377,7 @@ class TestNotificationTemplates:
         """Test rendering a template with variables"""
         # Create template
         create_response = client.post(
-            "/api/v1/notifications/templates",
-            json=sample_template,
-            headers=auth_headers
+            "/api/v1/notifications/templates", json=sample_template, headers=auth_headers
         )
         template_id = create_response.json()["template"]["id"]
 
@@ -394,14 +389,12 @@ class TestNotificationTemplates:
                 "severity": "HIGH",
                 "source": "SIEM",
                 "timestamp": "2025-01-15T10:30:00Z",
-                "description": "Multiple failed login attempts from unknown IP"
+                "description": "Multiple failed login attempts from unknown IP",
             },
-            "target_channel": None
+            "target_channel": None,
         }
         response = client.post(
-            "/api/v1/notifications/templates/render",
-            json=render_request,
-            headers=auth_headers
+            "/api/v1/notifications/templates/render", json=render_request, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -412,9 +405,7 @@ class TestNotificationTemplates:
         """Test rendering a template with missing required variables"""
         # Create template
         create_response = client.post(
-            "/api/v1/notifications/templates",
-            json=sample_template,
-            headers=auth_headers
+            "/api/v1/notifications/templates", json=sample_template, headers=auth_headers
         )
         template_id = create_response.json()["template"]["id"]
 
@@ -424,12 +415,10 @@ class TestNotificationTemplates:
             "variables": {
                 "source": "SIEM"
                 # Missing required: alert_name, severity
-            }
+            },
         }
         response = client.post(
-            "/api/v1/notifications/templates/render",
-            json=render_request,
-            headers=auth_headers
+            "/api/v1/notifications/templates/render", json=render_request, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -451,9 +440,7 @@ class TestRoutingRules:
     def test_create_routing_rule(self, auth_headers, sample_routing_rule):
         """Test creating a routing rule"""
         response = client.post(
-            "/api/v1/notifications/routing-rules",
-            json=sample_routing_rule,
-            headers=auth_headers
+            "/api/v1/notifications/routing-rules", json=sample_routing_rule, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -465,16 +452,13 @@ class TestRoutingRules:
         """Test getting a specific routing rule"""
         # Create rule
         create_response = client.post(
-            "/api/v1/notifications/routing-rules",
-            json=sample_routing_rule,
-            headers=auth_headers
+            "/api/v1/notifications/routing-rules", json=sample_routing_rule, headers=auth_headers
         )
         rule_id = create_response.json()["rule"]["id"]
 
         # Get rule
         response = client.get(
-            f"/api/v1/notifications/routing-rules/{rule_id}",
-            headers=auth_headers
+            f"/api/v1/notifications/routing-rules/{rule_id}", headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -484,22 +468,14 @@ class TestRoutingRules:
         """Test updating a routing rule"""
         # Create rule
         create_response = client.post(
-            "/api/v1/notifications/routing-rules",
-            json=sample_routing_rule,
-            headers=auth_headers
+            "/api/v1/notifications/routing-rules", json=sample_routing_rule, headers=auth_headers
         )
         rule_id = create_response.json()["rule"]["id"]
 
         # Update rule
-        update_data = {
-            "name": "Updated Critical Alert Routing",
-            "priority": 2,
-            "enabled": False
-        }
+        update_data = {"name": "Updated Critical Alert Routing", "priority": 2, "enabled": False}
         response = client.put(
-            f"/api/v1/notifications/routing-rules/{rule_id}",
-            json=update_data,
-            headers=auth_headers
+            f"/api/v1/notifications/routing-rules/{rule_id}", json=update_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -511,16 +487,13 @@ class TestRoutingRules:
         """Test deleting a routing rule"""
         # Create rule
         create_response = client.post(
-            "/api/v1/notifications/routing-rules",
-            json=sample_routing_rule,
-            headers=auth_headers
+            "/api/v1/notifications/routing-rules", json=sample_routing_rule, headers=auth_headers
         )
         rule_id = create_response.json()["rule"]["id"]
 
         # Delete rule
         response = client.delete(
-            f"/api/v1/notifications/routing-rules/{rule_id}",
-            headers=auth_headers
+            f"/api/v1/notifications/routing-rules/{rule_id}", headers=auth_headers
         )
         assert response.status_code == 200
         assert response.json()["status"] == "success"
@@ -534,7 +507,7 @@ class TestRoutingRules:
             "priority": 10,
             "conditions": [],
             "condition_logic": "all",
-            "actions": []
+            "actions": [],
         }
         rule2 = {
             "name": "High Priority Rule",
@@ -542,7 +515,7 @@ class TestRoutingRules:
             "priority": 1,
             "conditions": [],
             "condition_logic": "all",
-            "actions": []
+            "actions": [],
         }
 
         client.post("/api/v1/notifications/routing-rules", json=rule1, headers=auth_headers)
@@ -574,9 +547,7 @@ class TestNotifications:
         """Test sending a notification"""
         # Create channel first
         channel_response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         channel_id = channel_response.json()["channel"]["id"]
 
@@ -587,16 +558,10 @@ class TestNotifications:
             "subject": "Test Security Alert",
             "body": "This is a test security alert notification.",
             "source": "test",
-            "recipients": [
-                {"channel_id": channel_id, "address": "test@example.com"}
-            ],
-            "tags": ["test", "security"]
+            "recipients": [{"channel_id": channel_id, "address": "test@example.com"}],
+            "tags": ["test", "security"],
         }
-        response = client.post(
-            "/api/v1/notifications/",
-            json=notification,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/notifications/", json=notification, headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
@@ -607,9 +572,7 @@ class TestNotifications:
         """Test getting a specific notification"""
         # Create channel and send notification
         channel_response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         channel_id = channel_response.json()["channel"]["id"]
 
@@ -618,39 +581,29 @@ class TestNotifications:
             "priority": "medium",
             "subject": "Test Alert",
             "body": "Test notification body",
-            "recipients": [{"channel_id": channel_id}]
+            "recipients": [{"channel_id": channel_id}],
         }
         send_response = client.post(
-            "/api/v1/notifications/",
-            json=notification,
-            headers=auth_headers
+            "/api/v1/notifications/", json=notification, headers=auth_headers
         )
         notification_id = send_response.json()["notification"]["id"]
 
         # Get notification
-        response = client.get(
-            f"/api/v1/notifications/{notification_id}",
-            headers=auth_headers
-        )
+        response = client.get(f"/api/v1/notifications/{notification_id}", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["notification"]["id"] == notification_id
 
     def test_get_nonexistent_notification(self, auth_headers):
         """Test getting a notification that doesn't exist"""
-        response = client.get(
-            "/api/v1/notifications/nonexistent-id",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/notifications/nonexistent-id", headers=auth_headers)
         assert response.status_code == 404
 
     def test_send_notification_with_deduplication(self, auth_headers, sample_email_channel):
         """Test notification deduplication"""
         # Create channel
         channel_response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         channel_id = channel_response.json()["channel"]["id"]
 
@@ -662,21 +615,17 @@ class TestNotifications:
             "body": "First notification",
             "dedupe_key": "unique-dedupe-key-123",
             "dedupe_window_seconds": 300,
-            "recipients": [{"channel_id": channel_id}]
+            "recipients": [{"channel_id": channel_id}],
         }
         first_response = client.post(
-            "/api/v1/notifications/",
-            json=notification,
-            headers=auth_headers
+            "/api/v1/notifications/", json=notification, headers=auth_headers
         )
         assert first_response.status_code == 200
 
         # Send duplicate (same dedupe key)
         notification["body"] = "Duplicate notification"
         second_response = client.post(
-            "/api/v1/notifications/",
-            json=notification,
-            headers=auth_headers
+            "/api/v1/notifications/", json=notification, headers=auth_headers
         )
         assert second_response.status_code == 409  # Conflict - duplicate
 
@@ -684,9 +633,7 @@ class TestNotifications:
         """Test sending bulk notifications"""
         # Create channel
         channel_response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         channel_id = channel_response.json()["channel"]["id"]
 
@@ -698,22 +645,20 @@ class TestNotifications:
                     "priority": "high",
                     "subject": "Bulk Test 1",
                     "body": "First bulk notification",
-                    "recipients": [{"channel_id": channel_id}]
+                    "recipients": [{"channel_id": channel_id}],
                 },
                 {
                     "category": "security_alert",
                     "priority": "medium",
                     "subject": "Bulk Test 2",
                     "body": "Second bulk notification",
-                    "recipients": [{"channel_id": channel_id}]
-                }
+                    "recipients": [{"channel_id": channel_id}],
+                },
             ],
-            "fail_on_first_error": False
+            "fail_on_first_error": False,
         }
         response = client.post(
-            "/api/v1/notifications/bulk",
-            json=bulk_request,
-            headers=auth_headers
+            "/api/v1/notifications/bulk", json=bulk_request, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -724,9 +669,7 @@ class TestNotifications:
         """Test listing notifications with filters"""
         # Create channel and send notifications
         channel_response = client.post(
-            "/api/v1/notifications/channels",
-            json=sample_email_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=sample_email_channel, headers=auth_headers
         )
         channel_id = channel_response.json()["channel"]["id"]
 
@@ -737,15 +680,12 @@ class TestNotifications:
                 "priority": priority,
                 "subject": f"{priority.capitalize()} Priority Test",
                 "body": f"Test notification with {priority} priority",
-                "recipients": [{"channel_id": channel_id}]
+                "recipients": [{"channel_id": channel_id}],
             }
             client.post("/api/v1/notifications/", json=notification, headers=auth_headers)
 
         # Filter by priority
-        response = client.get(
-            "/api/v1/notifications/?priority=high",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/notifications/?priority=high", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         for notif in data["notifications"]:
@@ -768,7 +708,7 @@ class TestEscalationPolicies:
         response = client.post(
             "/api/v1/notifications/escalation-policies",
             json=sample_escalation_policy,
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -782,14 +722,13 @@ class TestEscalationPolicies:
         create_response = client.post(
             "/api/v1/notifications/escalation-policies",
             json=sample_escalation_policy,
-            headers=auth_headers
+            headers=auth_headers,
         )
         policy_id = create_response.json()["policy"]["id"]
 
         # Get policy
         response = client.get(
-            f"/api/v1/notifications/escalation-policies/{policy_id}",
-            headers=auth_headers
+            f"/api/v1/notifications/escalation-policies/{policy_id}", headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -801,7 +740,7 @@ class TestEscalationPolicies:
         create_response = client.post(
             "/api/v1/notifications/escalation-policies",
             json=sample_escalation_policy,
-            headers=auth_headers
+            headers=auth_headers,
         )
         policy_id = create_response.json()["policy"]["id"]
 
@@ -809,12 +748,12 @@ class TestEscalationPolicies:
         update_data = {
             "name": "Updated Escalation Policy",
             "enabled": False,
-            "acknowledgment_timeout_minutes": 45
+            "acknowledgment_timeout_minutes": 45,
         }
         response = client.put(
             f"/api/v1/notifications/escalation-policies/{policy_id}",
             json=update_data,
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -827,14 +766,13 @@ class TestEscalationPolicies:
         create_response = client.post(
             "/api/v1/notifications/escalation-policies",
             json=sample_escalation_policy,
-            headers=auth_headers
+            headers=auth_headers,
         )
         policy_id = create_response.json()["policy"]["id"]
 
         # Delete policy
         response = client.delete(
-            f"/api/v1/notifications/escalation-policies/{policy_id}",
-            headers=auth_headers
+            f"/api/v1/notifications/escalation-policies/{policy_id}", headers=auth_headers
         )
         assert response.status_code == 200
         assert response.json()["status"] == "success"
@@ -871,12 +809,10 @@ class TestSubscriptions:
             "categories": ["security_alert", "incident"],
             "min_priority": "medium",
             "channels": ["email", "slack"],
-            "schedule": None
+            "schedule": None,
         }
         response = client.post(
-            "/api/v1/notifications/subscriptions",
-            json=subscription,
-            headers=auth_headers
+            "/api/v1/notifications/subscriptions", json=subscription, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -891,24 +827,19 @@ class TestSubscriptions:
             "subscriber_type": "user",
             "categories": ["security_alert"],
             "min_priority": "low",
-            "channels": ["email"]
+            "channels": ["email"],
         }
         create_response = client.post(
-            "/api/v1/notifications/subscriptions",
-            json=subscription,
-            headers=auth_headers
+            "/api/v1/notifications/subscriptions", json=subscription, headers=auth_headers
         )
         subscription_id = create_response.json()["subscription"]["id"]
 
         # Update subscription
-        update_data = {
-            "min_priority": "high",
-            "enabled": False
-        }
+        update_data = {"min_priority": "high", "enabled": False}
         response = client.put(
             f"/api/v1/notifications/subscriptions/{subscription_id}",
             json=update_data,
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -923,19 +854,16 @@ class TestSubscriptions:
             "subscriber_type": "user",
             "categories": ["incident"],
             "min_priority": "medium",
-            "channels": ["slack"]
+            "channels": ["slack"],
         }
         create_response = client.post(
-            "/api/v1/notifications/subscriptions",
-            json=subscription,
-            headers=auth_headers
+            "/api/v1/notifications/subscriptions", json=subscription, headers=auth_headers
         )
         subscription_id = create_response.json()["subscription"]["id"]
 
         # Delete subscription
         response = client.delete(
-            f"/api/v1/notifications/subscriptions/{subscription_id}",
-            headers=auth_headers
+            f"/api/v1/notifications/subscriptions/{subscription_id}", headers=auth_headers
         )
         assert response.status_code == 200
         assert response.json()["status"] == "success"
@@ -998,7 +926,7 @@ class TestNotificationAuthentication:
             "category": "security_alert",
             "priority": "high",
             "subject": "Test",
-            "body": "Test"
+            "body": "Test",
         }
         response = client.post("/api/v1/notifications/", json=notification)
         assert response.status_code == 401
@@ -1022,12 +950,10 @@ class TestNotificationValidation:
         invalid_channel = {
             "name": "Invalid Channel",
             "channel_type": "invalid_type",
-            "enabled": True
+            "enabled": True,
         }
         response = client.post(
-            "/api/v1/notifications/channels",
-            json=invalid_channel,
-            headers=auth_headers
+            "/api/v1/notifications/channels", json=invalid_channel, headers=auth_headers
         )
         assert response.status_code == 422
 
@@ -1037,13 +963,9 @@ class TestNotificationValidation:
             "category": "security_alert",
             "priority": "invalid_priority",
             "subject": "Test",
-            "body": "Test"
+            "body": "Test",
         }
-        response = client.post(
-            "/api/v1/notifications/",
-            json=notification,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/notifications/", json=notification, headers=auth_headers)
         assert response.status_code == 422
 
     def test_send_notification_invalid_category(self, auth_headers):
@@ -1052,27 +974,17 @@ class TestNotificationValidation:
             "category": "invalid_category",
             "priority": "high",
             "subject": "Test",
-            "body": "Test"
+            "body": "Test",
         }
-        response = client.post(
-            "/api/v1/notifications/",
-            json=notification,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/notifications/", json=notification, headers=auth_headers)
         assert response.status_code == 422
 
     def test_list_notifications_invalid_page(self, auth_headers):
         """Test listing notifications with invalid page"""
-        response = client.get(
-            "/api/v1/notifications/?page=0",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/notifications/?page=0", headers=auth_headers)
         assert response.status_code == 422
 
     def test_list_notifications_invalid_page_size(self, auth_headers):
         """Test listing notifications with invalid page size"""
-        response = client.get(
-            "/api/v1/notifications/?page_size=500",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/notifications/?page_size=500", headers=auth_headers)
         assert response.status_code == 422

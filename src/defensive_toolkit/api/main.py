@@ -56,7 +56,7 @@ settings = get_settings()
 # Configure logging
 logging.basicConfig(
     level=getattr(logging, settings.log_level),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -109,6 +109,7 @@ Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_sch
 # Root and Health Endpoints
 # ============================================================================
 
+
 @app.get("/", tags=["Root"])
 async def root():
     """Root endpoint with API information."""
@@ -130,13 +131,14 @@ async def health_check():
             "api": "healthy",
             "authentication": "healthy",
             "rate_limiting": "healthy" if settings.rate_limit_enabled else "disabled",
-        }
+        },
     )
 
 
 # ============================================================================
 # Authentication Endpoints
 # ============================================================================
+
 
 @app.post(f"{settings.api_prefix}/auth/token", response_model=Token, tags=["Authentication"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -155,10 +157,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
 
     # Create token pair
-    token = create_token_pair(
-        username=user["username"],
-        scopes=user.get("scopes", [])
-    )
+    token = create_token_pair(username=user["username"], scopes=user.get("scopes", []))
 
     logger.info(f"User {user['username']} logged in successfully")
     return token
@@ -189,19 +188,13 @@ async def logout(current_user: str = Depends(get_current_active_user)):
     Note: For full token blacklisting, implement Redis-backed blacklist in production.
     """
     logger.info(f"User {current_user} logged out")
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Logged out successfully"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Logged out successfully")
 
 
 @app.get(f"{settings.api_prefix}/auth/me", tags=["Authentication"])
 async def get_current_user_info(current_user: str = Depends(get_current_active_user)):
     """Get current authenticated user information."""
-    return {
-        "username": current_user,
-        "authenticated": True
-    }
+    return {"username": current_user, "authenticated": True}
 
 
 @app.post(f"{settings.api_prefix}/auth/api-key", tags=["Authentication"])
@@ -214,7 +207,7 @@ async def create_api_key(current_user: str = Depends(get_current_active_user)):
     if current_user not in ["admin", "api_key_user"]:
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
-            content={"detail": "Admin privileges required to create API keys"}
+            content={"detail": "Admin privileges required to create API keys"},
         )
 
     api_key = generate_api_key()
@@ -222,7 +215,7 @@ async def create_api_key(current_user: str = Depends(get_current_active_user)):
     return {
         "api_key": api_key,
         "usage": "Add header: X-API-Key: <your-api-key>",
-        "warning": "Store this key securely. It will not be shown again."
+        "warning": "Store this key securely. It will not be shown again.",
     }
 
 

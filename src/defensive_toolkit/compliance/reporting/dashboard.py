@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
 
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -92,24 +92,24 @@ def generate_html_dashboard(compliance_data: Dict, output_file: Path):
 """
 
     # Calculate overall statistics
-    total_checks = compliance_data.get('total_checks', 0)
-    passed = compliance_data.get('passed', 0)
-    failed = compliance_data.get('failed', 0)
-    skipped = compliance_data.get('skipped', 0)
+    total_checks = compliance_data.get("total_checks", 0)
+    passed = compliance_data.get("passed", 0)
+    failed = compliance_data.get("failed", 0)
+    skipped = compliance_data.get("skipped", 0)
 
     overall_score = round((passed / total_checks * 100) if total_checks > 0 else 0, 1)
     passed_pct = round((passed / total_checks * 100) if total_checks > 0 else 0, 1)
     failed_pct = round((failed / total_checks * 100) if total_checks > 0 else 0, 1)
     skipped_pct = round((skipped / total_checks * 100) if total_checks > 0 else 0, 1)
 
-    overall_class = 'good' if overall_score >= 80 else 'warning' if overall_score >= 60 else 'bad'
+    overall_class = "good" if overall_score >= 80 else "warning" if overall_score >= 60 else "bad"
 
     # Generate framework sections
     frameworks_html = ""
-    for framework in compliance_data.get('frameworks', []):
-        f_passed = framework.get('passed', 0)
-        f_failed = framework.get('failed', 0)
-        f_skipped = framework.get('skipped', 0)
+    for framework in compliance_data.get("frameworks", []):
+        f_passed = framework.get("passed", 0)
+        f_failed = framework.get("failed", 0)
+        f_skipped = framework.get("skipped", 0)
         f_total = f_passed + f_failed + f_skipped
 
         f_score = round((f_passed / f_total * 100) if f_total > 0 else 0, 1)
@@ -134,7 +134,7 @@ def generate_html_dashboard(compliance_data: Dict, output_file: Path):
 
     # Generate HTML
     html_output = html_template.format(
-        timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         overall_score=overall_score,
         overall_class=overall_class,
         total_checks=total_checks,
@@ -144,10 +144,10 @@ def generate_html_dashboard(compliance_data: Dict, output_file: Path):
         passed_pct=passed_pct,
         failed_pct=failed_pct,
         skipped_pct=skipped_pct,
-        frameworks_html=frameworks_html
+        frameworks_html=frameworks_html,
     )
 
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         f.write(html_output)
 
     logger.info(f"HTML dashboard generated: {output_file}")
@@ -155,13 +155,7 @@ def generate_html_dashboard(compliance_data: Dict, output_file: Path):
 
 def load_compliance_results(result_files: List[Path]) -> Dict:
     """Load and aggregate compliance results from multiple sources"""
-    compliance_data = {
-        'total_checks': 0,
-        'passed': 0,
-        'failed': 0,
-        'skipped': 0,
-        'frameworks': []
-    }
+    compliance_data = {"total_checks": 0, "passed": 0, "failed": 0, "skipped": 0, "frameworks": []}
 
     for result_file in result_files:
         if not result_file.exists():
@@ -169,37 +163,37 @@ def load_compliance_results(result_files: List[Path]) -> Dict:
             continue
 
         try:
-            with open(result_file, 'r') as f:
+            with open(result_file, "r") as f:
                 result = json.load(f)
 
             # Detect framework type
-            if 'cis_version' in result:
+            if "cis_version" in result:
                 framework_name = f"CIS Controls {result['cis_version']}"
-            elif 'framework' in result and 'NIST' in result['framework']:
-                framework_name = result['framework']
-            elif 'policy_file' in result:
+            elif "framework" in result and "NIST" in result["framework"]:
+                framework_name = result["framework"]
+            elif "policy_file" in result:
                 framework_name = "Security Policy"
             else:
                 framework_name = result_file.stem
 
-            summary = result.get('compliance_summary', result.get('summary', {}))
+            summary = result.get("compliance_summary", result.get("summary", {}))
 
             framework_data = {
-                'name': framework_name,
-                'description': result.get('description', ''),
-                'passed': summary.get('passed', 0),
-                'failed': summary.get('failed', 0),
-                'skipped': summary.get('not_applicable', summary.get('skipped', 0)),
-                'total': summary.get('total', 0)
+                "name": framework_name,
+                "description": result.get("description", ""),
+                "passed": summary.get("passed", 0),
+                "failed": summary.get("failed", 0),
+                "skipped": summary.get("not_applicable", summary.get("skipped", 0)),
+                "total": summary.get("total", 0),
             }
 
-            compliance_data['frameworks'].append(framework_data)
+            compliance_data["frameworks"].append(framework_data)
 
             # Aggregate totals
-            compliance_data['total_checks'] += framework_data['total']
-            compliance_data['passed'] += framework_data['passed']
-            compliance_data['failed'] += framework_data['failed']
-            compliance_data['skipped'] += framework_data['skipped']
+            compliance_data["total_checks"] += framework_data["total"]
+            compliance_data["passed"] += framework_data["passed"]
+            compliance_data["failed"] += framework_data["failed"]
+            compliance_data["skipped"] += framework_data["skipped"]
 
             logger.info(f"Loaded results from {result_file.name}")
 
@@ -211,7 +205,7 @@ def load_compliance_results(result_files: List[Path]) -> Dict:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Compliance Dashboard Generator',
+        description="Compliance Dashboard Generator",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -220,15 +214,20 @@ Examples:
 
   # Single framework dashboard
   python dashboard.py --results cis-results.json --output cis-dashboard.html
-        """
+        """,
     )
 
-    parser.add_argument('--results', nargs='+', type=Path, required=True,
-                       help='Compliance result files (JSON)')
-    parser.add_argument('--output', '-o', type=Path, default=Path('compliance-dashboard.html'),
-                       help='Output HTML file (default: compliance-dashboard.html)')
-    parser.add_argument('--verbose', '-v', action='store_true',
-                       help='Verbose output')
+    parser.add_argument(
+        "--results", nargs="+", type=Path, required=True, help="Compliance result files (JSON)"
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=Path,
+        default=Path("compliance-dashboard.html"),
+        help="Output HTML file (default: compliance-dashboard.html)",
+    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 
@@ -238,7 +237,7 @@ Examples:
     # Load compliance results
     compliance_data = load_compliance_results(args.results)
 
-    if compliance_data['total_checks'] == 0:
+    if compliance_data["total_checks"] == 0:
         logger.error("No compliance data loaded")
         return 1
 
@@ -249,5 +248,5 @@ Examples:
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

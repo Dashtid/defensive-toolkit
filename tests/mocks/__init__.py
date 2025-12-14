@@ -27,5 +27,5 @@ __all__ = [
     "MockAbuseIPDBClient",
     "create_mock_siem_client",
     "create_mock_scanner",
-    "create_mock_ticketing_client"
+    "create_mock_ticketing_client",
 ]

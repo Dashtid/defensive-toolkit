@@ -28,8 +28,8 @@ class TestPlaybookEngine:
         assert engine.variables == {}
         assert engine.execution_log == []
         assert isinstance(engine.actions_registry, dict)
-        assert 'log' in engine.actions_registry
-        assert 'set_variable' in engine.actions_registry
+        assert "log" in engine.actions_registry
+        assert "set_variable" in engine.actions_registry
 
     def test_init_dry_run(self):
         """Test engine initialization with dry_run"""
@@ -40,7 +40,7 @@ class TestPlaybookEngine:
         """Test built-in actions are registered"""
         engine = PlaybookEngine()
 
-        expected_actions = ['log', 'set_variable', 'sleep', 'conditional', 'loop']
+        expected_actions = ["log", "set_variable", "sleep", "conditional", "loop"]
         for action in expected_actions:
             assert action in engine.actions_registry
 
@@ -50,10 +50,10 @@ class TestPlaybookEngine:
         playbook = engine.load_playbook(sample_playbook_file)
 
         assert isinstance(playbook, dict)
-        assert 'name' in playbook
-        assert 'description' in playbook
-        assert 'tasks' in playbook
-        assert playbook['name'] == "Test Playbook"
+        assert "name" in playbook
+        assert "description" in playbook
+        assert "tasks" in playbook
+        assert playbook["name"] == "Test Playbook"
 
     def test_load_playbook_missing_file(self, tmp_path):
         """Test loading non-existent playbook"""
@@ -78,7 +78,7 @@ class TestPlaybookEngine:
         incomplete_file = tmp_path / "incomplete.yaml"
 
         incomplete_data = {"name": "Test"}  # Missing 'description' and 'tasks'
-        with open(incomplete_file, 'w') as f:
+        with open(incomplete_file, "w") as f:
             yaml.dump(incomplete_data, f)
 
         with pytest.raises(ValueError, match="Missing required field"):
@@ -126,7 +126,7 @@ class TestPlaybookEngine:
         result = engine._action_set_variable(params)
         assert result is False
 
-    @patch('time.sleep')
+    @patch("time.sleep")
     def test_action_sleep(self, mock_sleep):
         """Test sleep action"""
         engine = PlaybookEngine()
@@ -183,14 +183,14 @@ class TestPlaybookEngine:
     def test_execute_task_success(self, sample_playbook_dict):
         """Test executing valid task"""
         engine = PlaybookEngine()
-        task = sample_playbook_dict['tasks'][0]  # Log task
+        task = sample_playbook_dict["tasks"][0]  # Log task
 
         result = engine.execute_task(task)
 
         assert result is True
         assert len(engine.execution_log) == 1
-        assert engine.execution_log[0]['action'] == 'log'
-        assert engine.execution_log[0]['success'] is True
+        assert engine.execution_log[0]["action"] == "log"
+        assert engine.execution_log[0]["success"] is True
 
     def test_execute_task_missing_action(self):
         """Test executing task without action"""
@@ -226,9 +226,7 @@ class TestPlaybookEngine:
         playbook = {
             "name": "Test Playbook",
             "description": "Test",
-            "tasks": [
-                {"name": "Invalid task", "action": "invalid_action", "parameters": {}}
-            ]
+            "tasks": [{"name": "Invalid task", "action": "invalid_action", "parameters": {}}],
         }
 
         result = engine.execute_playbook(playbook)
@@ -246,14 +244,10 @@ class TestPlaybookEngine:
                     "name": "Failing task",
                     "action": "invalid_action",
                     "parameters": {},
-                    "continue_on_failure": True
+                    "continue_on_failure": True,
                 },
-                {
-                    "name": "Success task",
-                    "action": "log",
-                    "parameters": {"message": "test"}
-                }
-            ]
+                {"name": "Success task", "action": "log", "parameters": {"message": "test"}},
+            ],
         }
 
         result = engine.execute_playbook(playbook)
@@ -268,12 +262,8 @@ class TestPlaybookEngine:
             "items": ["item1", "item2", "item3"],
             "variable": "current_item",
             "tasks": [
-                {
-                    "name": "Log item",
-                    "action": "log",
-                    "parameters": {"message": "${current_item}"}
-                }
-            ]
+                {"name": "Log item", "action": "log", "parameters": {"message": "${current_item}"}}
+            ],
         }
 
         result = engine._action_loop(params)
@@ -291,7 +281,7 @@ class TestPlaybookEngine:
             "if_true": [
                 {"name": "True branch", "action": "log", "parameters": {"message": "true"}}
             ],
-            "if_false": []
+            "if_false": [],
         }
 
         result = engine._action_conditional(params)
@@ -302,11 +292,7 @@ class TestPlaybookEngine:
         engine = PlaybookEngine()
         engine.variables = {"test": "value"}
         engine.execution_log = [
-            {
-                "timestamp": "2025-10-15T00:00:00",
-                "action": "log",
-                "success": True
-            }
+            {"timestamp": "2025-10-15T00:00:00", "action": "log", "success": True}
         ]
 
         output_file = tmp_path / "execution.json"
@@ -314,12 +300,12 @@ class TestPlaybookEngine:
 
         assert output_file.exists()
 
-        with open(output_file, 'r') as f:
+        with open(output_file, "r") as f:
             log_data = json.load(f)
 
-        assert 'execution_log' in log_data
-        assert 'variables' in log_data
-        assert log_data['variables']['test'] == 'value'
+        assert "execution_log" in log_data
+        assert "variables" in log_data
+        assert log_data["variables"]["test"] == "value"
 
     def test_evaluate_condition_simple(self):
         """Test simple condition evaluation"""
@@ -355,7 +341,7 @@ class TestPlaybookEngineIntegration:
         result = engine.execute_playbook(playbook)
 
         assert result is True
-        assert engine.variables.get('test_var') == 'test_value'
+        assert engine.variables.get("test_var") == "test_value"
 
     def test_playbook_with_variable_substitution(self, tmp_path):
         """Test playbook with variable substitution"""
@@ -366,18 +352,18 @@ class TestPlaybookEngineIntegration:
                 {
                     "name": "Set server",
                     "action": "set_variable",
-                    "parameters": {"name": "server", "value": "web01"}
+                    "parameters": {"name": "server", "value": "web01"},
                 },
                 {
                     "name": "Log server",
                     "action": "log",
-                    "parameters": {"message": "Server: ${server}"}
-                }
-            ]
+                    "parameters": {"message": "Server: ${server}"},
+                },
+            ],
         }
 
         playbook_file = tmp_path / "var_test.yaml"
-        with open(playbook_file, 'w') as f:
+        with open(playbook_file, "w") as f:
             yaml.dump(playbook_data, f)
 
         engine = PlaybookEngine()
@@ -385,20 +371,24 @@ class TestPlaybookEngineIntegration:
         result = engine.execute_playbook(playbook)
 
         assert result is True
-        assert engine.variables['server'] == 'web01'
+        assert engine.variables["server"] == "web01"
 
 
 class TestMainFunction:
     """Test main function and CLI"""
 
-    @patch('sys.argv', ['playbook-engine.py', '--playbook', 'test.yaml'])
-    @patch('automation.playbooks.playbook_engine.Path.exists')
-    @patch('automation.playbooks.playbook_engine.PlaybookEngine')
+    @patch("sys.argv", ["playbook-engine.py", "--playbook", "test.yaml"])
+    @patch("automation.playbooks.playbook_engine.Path.exists")
+    @patch("automation.playbooks.playbook_engine.PlaybookEngine")
     def test_main_basic(self, mock_engine_class, mock_exists, sample_playbook_file):
         """Test main function basic execution"""
         mock_exists.return_value = True
         mock_engine = Mock()
-        mock_engine.load_playbook.return_value = {"name": "Test", "description": "Test", "tasks": []}
+        mock_engine.load_playbook.return_value = {
+            "name": "Test",
+            "description": "Test",
+            "tasks": [],
+        }
         mock_engine.execute_playbook.return_value = True
         mock_engine_class.return_value = mock_engine
 
@@ -436,20 +426,14 @@ def test_large_playbook_execution(tmp_path):
     # Create large playbook with many tasks
     tasks = []
     for i in range(100):
-        tasks.append({
-            "name": f"Task {i}",
-            "action": "log",
-            "parameters": {"message": f"Message {i}"}
-        })
+        tasks.append(
+            {"name": f"Task {i}", "action": "log", "parameters": {"message": f"Message {i}"}}
+        )
 
-    playbook_data = {
-        "name": "Large Playbook",
-        "description": "Test large playbook",
-        "tasks": tasks
-    }
+    playbook_data = {"name": "Large Playbook", "description": "Test large playbook", "tasks": tasks}
 
     playbook_file = tmp_path / "large.yaml"
-    with open(playbook_file, 'w') as f:
+    with open(playbook_file, "w") as f:
         yaml.dump(playbook_data, f)
 
     engine = PlaybookEngine()

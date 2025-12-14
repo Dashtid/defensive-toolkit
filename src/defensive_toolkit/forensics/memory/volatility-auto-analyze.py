@@ -34,8 +34,8 @@ from typing import Dict, List, Optional
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
@@ -54,18 +54,19 @@ class VolatilityAnalyzer:
         self.memory_dump = memory_dump
         self.output_dir = output_dir
         self.results = {
-            'timestamp': datetime.now().isoformat(),
-            'memory_dump': str(memory_dump),
-            'plugins_run': [],
-            'suspicious_findings': [],
-            'statistics': {}
+            "timestamp": datetime.now().isoformat(),
+            "memory_dump": str(memory_dump),
+            "plugins_run": [],
+            "suspicious_findings": [],
+            "statistics": {},
         }
 
         # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def run_plugin(self, plugin: str, output_file: Optional[str] = None,
-                   extra_args: List[str] = None) -> Dict:
+    def run_plugin(
+        self, plugin: str, output_file: Optional[str] = None, extra_args: List[str] = None
+    ) -> Dict:
         """
         Run Volatility 3 plugin
 
@@ -80,7 +81,7 @@ class VolatilityAnalyzer:
         logger.info(f"Running plugin: {plugin}")
 
         # Build command
-        cmd = ['vol', '-f', str(self.memory_dump), plugin]
+        cmd = ["vol", "-f", str(self.memory_dump), plugin]
 
         if extra_args:
             cmd.extend(extra_args)
@@ -92,45 +93,42 @@ class VolatilityAnalyzer:
             output_path = self.output_dir / f"{plugin.replace('.', '_')}.txt"
 
         result = {
-            'plugin': plugin,
-            'output_file': str(output_path),
-            'status': 'unknown',
-            'error': None
+            "plugin": plugin,
+            "output_file": str(output_path),
+            "status": "unknown",
+            "error": None,
         }
 
         try:
             # Run plugin and capture output
             process = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minute timeout
+                cmd, capture_output=True, text=True, timeout=300  # 5 minute timeout
             )
 
             if process.returncode == 0:
                 # Save output to file
-                with open(output_path, 'w') as f:
+                with open(output_path, "w") as f:
                     f.write(process.stdout)
 
-                result['status'] = 'success'
-                result['lines'] = len(process.stdout.splitlines())
+                result["status"] = "success"
+                result["lines"] = len(process.stdout.splitlines())
                 logger.info(f"[OK] {plugin} completed ({result['lines']} lines)")
             else:
-                result['status'] = 'failed'
-                result['error'] = process.stderr
+                result["status"] = "failed"
+                result["error"] = process.stderr
                 logger.error(f"[X] {plugin} failed: {process.stderr}")
 
         except subprocess.TimeoutExpired:
-            result['status'] = 'timeout'
-            result['error'] = 'Plugin execution timed out (5 minutes)'
+            result["status"] = "timeout"
+            result["error"] = "Plugin execution timed out (5 minutes)"
             logger.error(f"[X] {plugin} timed out")
 
         except Exception as e:
-            result['status'] = 'error'
-            result['error'] = str(e)
+            result["status"] = "error"
+            result["error"] = str(e)
             logger.error(f"[X] {plugin} error: {e}")
 
-        self.results['plugins_run'].append(result)
+        self.results["plugins_run"].append(result)
         return result
 
     def quick_analysis(self) -> None:
@@ -139,11 +137,11 @@ class VolatilityAnalyzer:
 
         # Essential plugins for quick analysis
         plugins = [
-            ('windows.info.Info', 'system_info.txt'),
-            ('windows.pslist.PsList', 'processes.txt'),
-            ('windows.pstree.PsTree', 'process_tree.txt'),
-            ('windows.netscan.NetScan', 'network_connections.txt'),
-            ('windows.cmdline.CmdLine', 'command_lines.txt'),
+            ("windows.info.Info", "system_info.txt"),
+            ("windows.pslist.PsList", "processes.txt"),
+            ("windows.pstree.PsTree", "process_tree.txt"),
+            ("windows.netscan.NetScan", "network_connections.txt"),
+            ("windows.cmdline.CmdLine", "command_lines.txt"),
         ]
 
         for plugin, output_file in plugins:
@@ -156,39 +154,35 @@ class VolatilityAnalyzer:
         # All analysis plugins
         plugins = [
             # System information
-            ('windows.info.Info', 'system_info.txt'),
-
+            ("windows.info.Info", "system_info.txt"),
             # Process analysis
-            ('windows.pslist.PsList', 'processes.txt'),
-            ('windows.pstree.PsTree', 'process_tree.txt'),
-            ('windows.psscan.PsScan', 'process_scan.txt'),
-            ('windows.cmdline.CmdLine', 'command_lines.txt'),
-            ('windows.envars.Envars', 'environment_variables.txt'),
-
+            ("windows.pslist.PsList", "processes.txt"),
+            ("windows.pstree.PsTree", "process_tree.txt"),
+            ("windows.psscan.PsScan", "process_scan.txt"),
+            ("windows.cmdline.CmdLine", "command_lines.txt"),
+            ("windows.envars.Envars", "environment_variables.txt"),
             # Network analysis
-            ('windows.netscan.NetScan', 'network_connections.txt'),
-            ('windows.netstat.NetStat', 'network_stats.txt'),
-
+            ("windows.netscan.NetScan", "network_connections.txt"),
+            ("windows.netstat.NetStat", "network_stats.txt"),
             # DLL and driver analysis
-            ('windows.dlllist.DllList', 'loaded_dlls.txt'),
-            ('windows.modules.Modules', 'kernel_modules.txt'),
-            ('windows.driverscan.DriverScan', 'drivers.txt'),
-
+            ("windows.dlllist.DllList", "loaded_dlls.txt"),
+            ("windows.modules.Modules", "kernel_modules.txt"),
+            ("windows.driverscan.DriverScan", "drivers.txt"),
             # Registry
-            ('windows.registry.hivelist.HiveList', 'registry_hives.txt'),
-            ('windows.registry.printkey.PrintKey', 'registry_run_keys.txt',
-             ['--key', 'Software\\Microsoft\\Windows\\CurrentVersion\\Run']),
-
+            ("windows.registry.hivelist.HiveList", "registry_hives.txt"),
+            (
+                "windows.registry.printkey.PrintKey",
+                "registry_run_keys.txt",
+                ["--key", "Software\\Microsoft\\Windows\\CurrentVersion\\Run"],
+            ),
             # File analysis
-            ('windows.filescan.FileScan', 'file_scan.txt'),
-            ('windows.handles.Handles', 'file_handles.txt'),
-
+            ("windows.filescan.FileScan", "file_scan.txt"),
+            ("windows.handles.Handles", "file_handles.txt"),
             # Malware detection
-            ('windows.malfind.Malfind', 'malfind.txt'),
-            ('windows.ldrmodules.LdrModules', 'unlinked_dlls.txt'),
-
+            ("windows.malfind.Malfind", "malfind.txt"),
+            ("windows.ldrmodules.LdrModules", "unlinked_dlls.txt"),
             # Timeline
-            ('timeliner.Timeliner', 'timeline.txt'),
+            ("timeliner.Timeliner", "timeline.txt"),
         ]
 
         for item in plugins:
@@ -205,14 +199,14 @@ class VolatilityAnalyzer:
 
         # Malware-focused plugins
         plugins = [
-            ('windows.malfind.Malfind', 'malfind.txt'),
-            ('windows.ldrmodules.LdrModules', 'unlinked_dlls.txt'),
-            ('windows.pslist.PsList', 'processes.txt'),
-            ('windows.psscan.PsScan', 'hidden_processes.txt'),
-            ('windows.dlllist.DllList', 'loaded_dlls.txt'),
-            ('windows.netscan.NetScan', 'network_connections.txt'),
-            ('windows.cmdline.CmdLine', 'command_lines.txt'),
-            ('windows.svcscan.SvcScan', 'services.txt'),
+            ("windows.malfind.Malfind", "malfind.txt"),
+            ("windows.ldrmodules.LdrModules", "unlinked_dlls.txt"),
+            ("windows.pslist.PsList", "processes.txt"),
+            ("windows.psscan.PsScan", "hidden_processes.txt"),
+            ("windows.dlllist.DllList", "loaded_dlls.txt"),
+            ("windows.netscan.NetScan", "network_connections.txt"),
+            ("windows.cmdline.CmdLine", "command_lines.txt"),
+            ("windows.svcscan.SvcScan", "services.txt"),
         ]
 
         for plugin, output_file in plugins:
@@ -228,49 +222,55 @@ class VolatilityAnalyzer:
         suspicious_findings = []
 
         # Check malfind results
-        malfind_file = self.output_dir / 'malfind.txt'
+        malfind_file = self.output_dir / "malfind.txt"
         if malfind_file.exists():
-            with open(malfind_file, 'r') as f:
+            with open(malfind_file, "r") as f:
                 content = f.read()
-                if 'MZ' in content or 'This program cannot be run' in content:
-                    suspicious_findings.append({
-                        'indicator': 'Injected code detected',
-                        'source': 'malfind.txt',
-                        'severity': 'high'
-                    })
+                if "MZ" in content or "This program cannot be run" in content:
+                    suspicious_findings.append(
+                        {
+                            "indicator": "Injected code detected",
+                            "source": "malfind.txt",
+                            "severity": "high",
+                        }
+                    )
 
         # Check for hidden processes
-        pslist_file = self.output_dir / 'processes.txt'
-        psscan_file = self.output_dir / 'hidden_processes.txt'
+        pslist_file = self.output_dir / "processes.txt"
+        psscan_file = self.output_dir / "hidden_processes.txt"
         if pslist_file.exists() and psscan_file.exists():
-            with open(pslist_file, 'r') as f:
+            with open(pslist_file, "r") as f:
                 pslist_pids = set([line.split()[1] for line in f if line.strip()])
-            with open(psscan_file, 'r') as f:
+            with open(psscan_file, "r") as f:
                 psscan_pids = set([line.split()[1] for line in f if line.strip()])
 
             hidden = psscan_pids - pslist_pids
             if hidden:
-                suspicious_findings.append({
-                    'indicator': f'Hidden processes detected: {len(hidden)}',
-                    'source': 'process comparison',
-                    'severity': 'critical'
-                })
+                suspicious_findings.append(
+                    {
+                        "indicator": f"Hidden processes detected: {len(hidden)}",
+                        "source": "process comparison",
+                        "severity": "critical",
+                    }
+                )
 
         # Check for suspicious network connections
-        netscan_file = self.output_dir / 'network_connections.txt'
+        netscan_file = self.output_dir / "network_connections.txt"
         if netscan_file.exists():
-            suspicious_ports = ['4444', '8080', '1337', '31337']
-            with open(netscan_file, 'r') as f:
+            suspicious_ports = ["4444", "8080", "1337", "31337"]
+            with open(netscan_file, "r") as f:
                 for line in f:
                     if any(port in line for port in suspicious_ports):
-                        suspicious_findings.append({
-                            'indicator': 'Suspicious port detected',
-                            'details': line.strip(),
-                            'source': 'network_connections.txt',
-                            'severity': 'medium'
-                        })
+                        suspicious_findings.append(
+                            {
+                                "indicator": "Suspicious port detected",
+                                "details": line.strip(),
+                                "source": "network_connections.txt",
+                                "severity": "medium",
+                            }
+                        )
 
-        self.results['suspicious_findings'] = suspicious_findings
+        self.results["suspicious_findings"] = suspicious_findings
 
         if suspicious_findings:
             logger.warning(f"[!] Found {len(suspicious_findings)} suspicious indicators")
@@ -283,31 +283,31 @@ class VolatilityAnalyzer:
         """Generate analysis summary report"""
         logger.info("Generating analysis report...")
 
-        report_path = self.output_dir / 'analysis_report.json'
+        report_path = self.output_dir / "analysis_report.json"
 
         # Calculate statistics
-        successful = len([p for p in self.results['plugins_run'] if p['status'] == 'success'])
-        failed = len([p for p in self.results['plugins_run'] if p['status'] != 'success'])
+        successful = len([p for p in self.results["plugins_run"] if p["status"] == "success"])
+        failed = len([p for p in self.results["plugins_run"] if p["status"] != "success"])
 
-        self.results['statistics'] = {
-            'total_plugins': len(self.results['plugins_run']),
-            'successful': successful,
-            'failed': failed,
-            'suspicious_findings': len(self.results['suspicious_findings'])
+        self.results["statistics"] = {
+            "total_plugins": len(self.results["plugins_run"]),
+            "successful": successful,
+            "failed": failed,
+            "suspicious_findings": len(self.results["suspicious_findings"]),
         }
 
         # Save JSON report
-        with open(report_path, 'w') as f:
+        with open(report_path, "w") as f:
             json.dump(self.results, f, indent=2)
 
         logger.info(f"[OK] Report saved to: {report_path}")
 
         # Generate text summary
-        summary_path = self.output_dir / 'ANALYSIS_SUMMARY.txt'
-        with open(summary_path, 'w') as f:
-            f.write("="*70 + "\n")
+        summary_path = self.output_dir / "ANALYSIS_SUMMARY.txt"
+        with open(summary_path, "w") as f:
+            f.write("=" * 70 + "\n")
             f.write("Volatility 3 Memory Analysis Summary\n")
-            f.write("="*70 + "\n\n")
+            f.write("=" * 70 + "\n\n")
             f.write(f"Timestamp: {self.results['timestamp']}\n")
             f.write(f"Memory Dump: {self.memory_dump}\n")
             f.write(f"Output Directory: {self.output_dir}\n\n")
@@ -316,20 +316,22 @@ class VolatilityAnalyzer:
             f.write(f"  Plugins Run: {self.results['statistics']['total_plugins']}\n")
             f.write(f"  Successful: {self.results['statistics']['successful']}\n")
             f.write(f"  Failed: {self.results['statistics']['failed']}\n")
-            f.write(f"  Suspicious Findings: {self.results['statistics']['suspicious_findings']}\n\n")
+            f.write(
+                f"  Suspicious Findings: {self.results['statistics']['suspicious_findings']}\n\n"
+            )
 
-            if self.results['suspicious_findings']:
+            if self.results["suspicious_findings"]:
                 f.write("Suspicious Findings:\n")
-                for i, finding in enumerate(self.results['suspicious_findings'], 1):
+                for i, finding in enumerate(self.results["suspicious_findings"], 1):
                     f.write(f"\n  {i}. {finding['indicator']}\n")
                     f.write(f"     Severity: {finding['severity']}\n")
                     f.write(f"     Source: {finding['source']}\n")
-                    if 'details' in finding:
+                    if "details" in finding:
                         f.write(f"     Details: {finding['details']}\n")
 
-            f.write("\n" + "="*70 + "\n")
+            f.write("\n" + "=" * 70 + "\n")
             f.write("Analysis complete. Review individual plugin outputs for details.\n")
-            f.write("="*70 + "\n")
+            f.write("=" * 70 + "\n")
 
         logger.info(f"[OK] Summary saved to: {summary_path}")
 
@@ -337,37 +339,23 @@ class VolatilityAnalyzer:
 def check_volatility() -> bool:
     """Check if Volatility 3 is installed"""
     try:
-        result = subprocess.run(['vol', '--help'], capture_output=True)
+        result = subprocess.run(["vol", "--help"], capture_output=True)
         return result.returncode == 0
     except FileNotFoundError:
         return False
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Automated Volatility 3 memory analysis'
-    )
+    parser = argparse.ArgumentParser(description="Automated Volatility 3 memory analysis")
+    parser.add_argument("memory_dump", type=Path, help="Path to memory dump file")
     parser.add_argument(
-        'memory_dump',
+        "--output",
         type=Path,
-        help='Path to memory dump file'
+        default=Path("volatility_analysis"),
+        help="Output directory (default: volatility_analysis)",
     )
-    parser.add_argument(
-        '--output',
-        type=Path,
-        default=Path('volatility_analysis'),
-        help='Output directory (default: volatility_analysis)'
-    )
-    parser.add_argument(
-        '--quick',
-        action='store_true',
-        help='Quick triage analysis (faster)'
-    )
-    parser.add_argument(
-        '--malware-hunt',
-        action='store_true',
-        help='Focus on malware detection'
-    )
+    parser.add_argument("--quick", action="store_true", help="Quick triage analysis (faster)")
+    parser.add_argument("--malware-hunt", action="store_true", help="Focus on malware detection")
 
     args = parser.parse_args()
 
@@ -381,9 +369,9 @@ def main():
         logger.error("[X] Volatility 3 not found. Install: pip install volatility3")
         sys.exit(1)
 
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("Volatility 3 Automated Memory Analysis")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info(f"Memory Dump: {args.memory_dump}")
     logger.info(f"Output Directory: {args.output}")
 
@@ -405,17 +393,17 @@ def main():
     analyzer.generate_report()
 
     # Summary
-    stats = analyzer.results['statistics']
-    logger.info("\n" + "="*70)
+    stats = analyzer.results["statistics"]
+    logger.info("\n" + "=" * 70)
     logger.info("Analysis Complete")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info(f"Plugins Run: {stats['total_plugins']}")
     logger.info(f"Successful: {stats['successful']}")
     logger.info(f"Failed: {stats['failed']}")
     logger.info(f"Suspicious Findings: {stats['suspicious_findings']}")
     logger.info(f"\nResults saved to: {args.output}")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

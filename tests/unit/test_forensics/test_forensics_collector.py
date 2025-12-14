@@ -19,27 +19,27 @@ class TestForensicsCollector:
 
     def test_memory_dump_metadata(self, sample_memory_dump_metadata):
         """Test memory dump metadata structure"""
-        assert 'filename' in sample_memory_dump_metadata
-        assert 'size_bytes' in sample_memory_dump_metadata
-        assert 'acquired_date' in sample_memory_dump_metadata
-        assert 'profile' in sample_memory_dump_metadata
+        assert "filename" in sample_memory_dump_metadata
+        assert "size_bytes" in sample_memory_dump_metadata
+        assert "acquired_date" in sample_memory_dump_metadata
+        assert "profile" in sample_memory_dump_metadata
 
     def test_forensic_timeline_entry(self, sample_forensic_timeline_entry):
         """Test forensic timeline entry structure"""
-        assert 'timestamp' in sample_forensic_timeline_entry
-        assert 'source' in sample_forensic_timeline_entry
-        assert 'type' in sample_forensic_timeline_entry
-        assert 'path' in sample_forensic_timeline_entry
+        assert "timestamp" in sample_forensic_timeline_entry
+        assert "source" in sample_forensic_timeline_entry
+        assert "type" in sample_forensic_timeline_entry
+        assert "path" in sample_forensic_timeline_entry
 
     def test_suspicious_file_detection(self, sample_forensic_timeline_entry):
         """Test suspicious file detection logic"""
         entry = sample_forensic_timeline_entry
 
-        assert entry['suspicious'] is True
-        assert 'reason' in entry
-        assert 'suspicious location' in entry['reason'].lower()
+        assert entry["suspicious"] is True
+        assert "reason" in entry
+        assert "suspicious location" in entry["reason"].lower()
 
-    @patch('pathlib.Path.exists')
+    @patch("pathlib.Path.exists")
     def test_artifact_collection_paths(self, mock_exists):
         """Test artifact collection path validation"""
         mock_exists.return_value = True
@@ -48,7 +48,7 @@ class TestForensicsCollector:
         artifact_paths = [
             "/var/log/auth.log",
             "C:\\Windows\\System32\\winevt\\Logs\\Security.evtx",
-            "/var/log/syslog"
+            "/var/log/syslog",
         ]
 
         for path in artifact_paths:
@@ -76,11 +76,7 @@ class TestMemoryForensics:
     def test_memory_profile_detection(self):
         """Test memory profile detection"""
         # Common Volatility profiles
-        common_profiles = [
-            "Win10x64_19041",
-            "Win7SP1x64",
-            "LinuxUbuntu20x64"
-        ]
+        common_profiles = ["Win10x64_19041", "Win7SP1x64", "LinuxUbuntu20x64"]
 
         for profile in common_profiles:
             assert "Win" in profile or "Linux" in profile
@@ -92,11 +88,11 @@ class TestDiskForensics:
 
     def test_file_hash_validation(self, sample_forensic_timeline_entry):
         """Test file hash is valid MD5"""
-        md5_hash = sample_forensic_timeline_entry['md5']
+        md5_hash = sample_forensic_timeline_entry["md5"]
 
         # MD5 is 32 hex characters
         assert len(md5_hash) == 32
-        assert all(c in '0123456789abcdef' for c in md5_hash.lower())
+        assert all(c in "0123456789abcdef" for c in md5_hash.lower())
 
     def test_suspicious_file_paths(self):
         """Test suspicious file path detection"""
@@ -104,12 +100,12 @@ class TestDiskForensics:
             "C:\\Windows\\Temp\\suspicious.exe",
             "/tmp/.hidden_malware",
             "C:\\Users\\Public\\payload.dll",
-            "/var/tmp/backdoor.sh"
+            "/var/tmp/backdoor.sh",
         ]
 
         for path in suspicious_paths:
             # Should trigger suspicion due to Temp, tmp, or hidden paths
-            assert any(x in path.lower() for x in ['temp', 'tmp', 'public', '.hidden'])
+            assert any(x in path.lower() for x in ["temp", "tmp", "public", ".hidden"])
 
 
 class TestBrowserArtifacts:
@@ -122,12 +118,12 @@ class TestBrowserArtifacts:
             "title": "Example Site",
             "visit_count": 5,
             "last_visit": "2025-10-15T14:30:22Z",
-            "browser": "chrome"
+            "browser": "chrome",
         }
 
-        assert 'url' in history_entry
-        assert 'visit_count' in history_entry
-        assert history_entry['visit_count'] > 0
+        assert "url" in history_entry
+        assert "visit_count" in history_entry
+        assert history_entry["visit_count"] > 0
 
     def test_cookie_extraction(self):
         """Test cookie data extraction"""
@@ -136,12 +132,12 @@ class TestBrowserArtifacts:
             "name": "session_id",
             "value": "abc123",
             "expires": "2025-12-31T23:59:59Z",
-            "secure": True
+            "secure": True,
         }
 
-        assert 'host' in cookie_entry
-        assert 'name' in cookie_entry
-        assert 'secure' in cookie_entry
+        assert "host" in cookie_entry
+        assert "name" in cookie_entry
+        assert "secure" in cookie_entry
 
 
 class TestChainOfCustody:
@@ -156,13 +152,13 @@ class TestChainOfCustody:
             "timestamp": datetime.now().isoformat(),
             "hash_algorithm": "SHA256",
             "hash_value": "a" * 64,  # SHA256 is 64 hex chars
-            "location": "Server Room A"
+            "location": "Server Room A",
         }
 
-        assert 'case_id' in custody_data
-        assert 'evidence_id' in custody_data
-        assert 'hash_algorithm' in custody_data
-        assert len(custody_data['hash_value']) == 64
+        assert "case_id" in custody_data
+        assert "evidence_id" in custody_data
+        assert "hash_algorithm" in custody_data
+        assert len(custody_data["hash_value"]) == 64
 
     def test_evidence_integrity_hash(self):
         """Test evidence integrity hash validation"""
@@ -170,7 +166,7 @@ class TestChainOfCustody:
         sha256_hash = "a" * 64
 
         assert len(sha256_hash) == 64
-        assert all(c in '0123456789abcdef' for c in sha256_hash.lower())
+        assert all(c in "0123456789abcdef" for c in sha256_hash.lower())
 
 
 # [+] Integration Tests
@@ -188,7 +184,7 @@ class TestForensicsWorkflow:
         artifacts = {
             "memory": evidence_dir / "memory.raw",
             "disk": evidence_dir / "disk.dd",
-            "logs": evidence_dir / "logs"
+            "logs": evidence_dir / "logs",
         }
 
         for name, path in artifacts.items():
@@ -205,22 +201,22 @@ class TestForensicsWorkflow:
             {
                 "timestamp": "2025-10-15T14:00:00Z",
                 "event": "File Created",
-                "artifact": "suspicious.exe"
+                "artifact": "suspicious.exe",
             },
             {
                 "timestamp": "2025-10-15T14:05:00Z",
                 "event": "Process Executed",
-                "artifact": "suspicious.exe"
+                "artifact": "suspicious.exe",
             },
             {
                 "timestamp": "2025-10-15T14:10:00Z",
                 "event": "Network Connection",
-                "artifact": "192.168.1.100:4444"
-            }
+                "artifact": "192.168.1.100:4444",
+            },
         ]
 
         # Timeline should be chronological
-        timestamps = [entry['timestamp'] for entry in timeline_entries]
+        timestamps = [entry["timestamp"] for entry in timeline_entries]
         assert timestamps == sorted(timestamps)
 
 

@@ -26,10 +26,7 @@ import requests
 import yaml
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -44,8 +41,8 @@ class WazuhDeployer:
             config_path: Path to wazuh_config.yml
         """
         self.config = self._load_config(config_path)
-        self.wazuh_config = self.config['wazuh']
-        self.deployment_config = self.config['deployment']
+        self.wazuh_config = self.config["wazuh"]
+        self.deployment_config = self.config["deployment"]
 
         # Wazuh API base URL
         self.base_url = (
@@ -60,7 +57,7 @@ class WazuhDeployer:
     def _load_config(self, config_path: str) -> Dict:
         """Load configuration from YAML file"""
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 config = yaml.safe_load(f)
             logger.info(f"Loaded configuration from {config_path}")
             return config
@@ -79,18 +76,18 @@ class WazuhDeployer:
             auth_url = f"{self.base_url}/security/user/authenticate"
 
             # Get password from environment or config
-            password = os.getenv('WAZUH_PASSWORD') or self.wazuh_config.get('password')
+            password = os.getenv("WAZUH_PASSWORD") or self.wazuh_config.get("password")
 
             response = self.session.post(
                 auth_url,
-                auth=(self.wazuh_config['username'], password),
-                verify=self.wazuh_config.get('verify_ssl', True),
-                timeout=self.wazuh_config.get('timeout', 30)
+                auth=(self.wazuh_config["username"], password),
+                verify=self.wazuh_config.get("verify_ssl", True),
+                timeout=self.wazuh_config.get("timeout", 30),
             )
 
             if response.status_code == 200:
-                self.token = response.json()['data']['token']
-                self.session.headers.update({'Authorization': f'Bearer {self.token}'})
+                self.token = response.json()["data"]["token"]
+                self.session.headers.update({"Authorization": f"Bearer {self.token}"})
                 logger.info("Successfully authenticated with Wazuh API")
                 return True
             else:
@@ -117,7 +114,7 @@ class WazuhDeployer:
             logger.info(f"Converting {sigma_file.name} to Wazuh format...")
 
             # Read Sigma rule
-            with open(sigma_file, 'r') as f:
+            with open(sigma_file, "r") as f:
                 sigma_rule = yaml.safe_load(f)
 
             # Generate Wazuh XML rule
@@ -141,17 +138,12 @@ class WazuhDeployer:
             str: Wazuh XML rule
         """
         # Extract Sigma rule metadata
-        title = sigma_rule.get('title', 'Untitled Rule')
-        description = sigma_rule.get('description', '')
-        level = sigma_rule.get('level', 'medium')
+        title = sigma_rule.get("title", "Untitled Rule")
+        description = sigma_rule.get("description", "")
+        level = sigma_rule.get("level", "medium")
 
         # Map Sigma levels to Wazuh levels
-        level_map = {
-            'low': 5,
-            'medium': 7,
-            'high': 10,
-            'critical': 12
-        }
+        level_map = {"low": 5, "medium": 7, "high": 10, "critical": 12}
         wazuh_level = level_map.get(level, 7)
 
         # Generate unique rule ID (100000+)
@@ -179,12 +171,7 @@ class WazuhDeployer:
         Returns:
             Dict: Deployment statistics
         """
-        stats = {
-            'total': 0,
-            'converted': 0,
-            'deployed': 0,
-            'failed': 0
-        }
+        stats = {"total": 0, "converted": 0, "deployed": 0, "failed": 0}
 
         rules_path = Path(rules_dir)
         if not rules_path.exists():
@@ -192,8 +179,8 @@ class WazuhDeployer:
             return stats
 
         # Find all Sigma rule files
-        sigma_files = list(rules_path.rglob('*.yml')) + list(rules_path.rglob('*.yaml'))
-        stats['total'] = len(sigma_files)
+        sigma_files = list(rules_path.rglob("*.yml")) + list(rules_path.rglob("*.yaml"))
+        stats["total"] = len(sigma_files)
 
         logger.info(f"Found {stats['total']} Sigma rules to deploy")
 
@@ -206,9 +193,9 @@ class WazuhDeployer:
 
             if wazuh_rule:
                 wazuh_rules.append(wazuh_rule)
-                stats['converted'] += 1
+                stats["converted"] += 1
             else:
-                stats['failed'] += 1
+                stats["failed"] += 1
 
         if dry_run:
             logger.info(f"[DRY RUN] Would deploy {stats['converted']} rules")
@@ -218,10 +205,10 @@ class WazuhDeployer:
             return stats
 
         # Deploy to Wazuh
-        if self.deployment_config.get('deploy_custom_rules', True):
+        if self.deployment_config.get("deploy_custom_rules", True):
             success = self._deploy_custom_rules(wazuh_rules)
             if success:
-                stats['deployed'] = stats['converted']
+                stats["deployed"] = stats["converted"]
 
         logger.info(f"Deployment complete: {stats['deployed']}/{stats['total']} rules deployed")
         return stats
@@ -238,7 +225,7 @@ class WazuhDeployer:
         """
         try:
             # Generate custom rules file
-            rules_file = Path(self.wazuh_config['rules_directory']) / 'custom_sigma_rules.xml'
+            rules_file = Path(self.wazuh_config["rules_directory"]) / "custom_sigma_rules.xml"
 
             # Build complete XML file
             xml_content = f"""
@@ -250,24 +237,27 @@ class WazuhDeployer:
 """
 
             # Backup existing rules if configured
-            if self.deployment_config.get('backup_rules', True):
+            if self.deployment_config.get("backup_rules", True):
                 if rules_file.exists():
-                    backup_dir = Path(self.deployment_config['backup_directory'])
+                    backup_dir = Path(self.deployment_config["backup_directory"])
                     backup_dir.mkdir(parents=True, exist_ok=True)
-                    backup_file = backup_dir / f"custom_sigma_rules_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xml"
+                    backup_file = (
+                        backup_dir
+                        / f"custom_sigma_rules_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xml"
+                    )
                     rules_file.rename(backup_file)
                     logger.info(f"Backed up existing rules to {backup_file}")
 
             # Write new rules file
-            with open(rules_file, 'w') as f:
+            with open(rules_file, "w") as f:
                 f.write(xml_content)
 
             logger.info(f"Deployed custom rules to {rules_file}")
 
             # Restart Wazuh manager if configured
-            if self.deployment_config.get('auto_restart', False):
+            if self.deployment_config.get("auto_restart", False):
                 logger.info("Restarting Wazuh manager...")
-                subprocess.run(['systemctl', 'restart', 'wazuh-manager'], check=True)
+                subprocess.run(["systemctl", "restart", "wazuh-manager"], check=True)
                 logger.info("Wazuh manager restarted successfully")
 
             return True
@@ -278,21 +268,15 @@ class WazuhDeployer:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Deploy Sigma rules to Wazuh SIEM')
+    parser = argparse.ArgumentParser(description="Deploy Sigma rules to Wazuh SIEM")
+    parser.add_argument("--config", default="wazuh_config.yml", help="Path to wazuh_config.yml")
     parser.add_argument(
-        '--config',
-        default='wazuh_config.yml',
-        help='Path to wazuh_config.yml'
+        "--rules-dir", default="../../rules/sigma", help="Directory containing Sigma rules"
     )
     parser.add_argument(
-        '--rules-dir',
-        default='../../rules/sigma',
-        help='Directory containing Sigma rules'
-    )
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Show what would be deployed without actually deploying'
+        "--dry-run",
+        action="store_true",
+        help="Show what would be deployed without actually deploying",
     )
 
     args = parser.parse_args()
@@ -321,9 +305,9 @@ def main():
     logger.info(f"  Failed: {stats['failed']}")
     logger.info("=" * 70)
 
-    if stats['failed'] > 0:
+    if stats["failed"] > 0:
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

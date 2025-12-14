@@ -23,66 +23,66 @@ class TestCISChecker:
         """Test CIS checker initialization"""
         checker = CISChecker()
 
-        assert checker.output_format == 'json'
-        assert checker.os_type in ['windows', 'linux', 'darwin']
-        assert 'timestamp' in checker.results
-        assert checker.results['cis_version'] == 'v8'
+        assert checker.output_format == "json"
+        assert checker.os_type in ["windows", "linux", "darwin"]
+        assert "timestamp" in checker.results
+        assert checker.results["cis_version"] == "v8"
 
     def test_init_custom_format(self):
         """Test initialization with custom output format"""
-        checker = CISChecker(output_format='text')
-        assert checker.output_format == 'text'
+        checker = CISChecker(output_format="text")
+        assert checker.output_format == "text"
 
     def test_results_structure(self):
         """Test results dictionary structure"""
         checker = CISChecker()
 
-        assert 'compliance_summary' in checker.results
-        summary = checker.results['compliance_summary']
+        assert "compliance_summary" in checker.results
+        summary = checker.results["compliance_summary"]
 
-        assert 'total' in summary
-        assert 'passed' in summary
-        assert 'failed' in summary
-        assert 'not_applicable' in summary
-        assert 'compliance_percentage' in summary
+        assert "total" in summary
+        assert "passed" in summary
+        assert "failed" in summary
+        assert "not_applicable" in summary
+        assert "compliance_percentage" in summary
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_run_command_success(self, mock_run):
         """Test successful command execution"""
         mock_run.return_value = Mock(returncode=0, stdout="success", stderr="")
 
         checker = CISChecker()
-        result = checker._run_command(['echo', 'test'])
+        result = checker._run_command(["echo", "test"])
 
         assert result is not None
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_run_command_failure(self, mock_run):
         """Test failed command execution"""
         mock_run.side_effect = Exception("Command failed")
 
         checker = CISChecker()
-        result = checker._run_command(['invalid_command'])
+        result = checker._run_command(["invalid_command"])
 
         assert result is None or result == False
 
-    @patch('shutil.which')
+    @patch("shutil.which")
     def test_command_exists_true(self, mock_which):
         """Test command existence check - command exists"""
-        mock_which.return_value = '/usr/bin/test'
+        mock_which.return_value = "/usr/bin/test"
 
         checker = CISChecker()
-        result = checker._command_exists('test')
+        result = checker._command_exists("test")
 
         assert result is True
 
-    @patch('shutil.which')
+    @patch("shutil.which")
     def test_command_exists_false(self, mock_which):
         """Test command existence check - command not found"""
         mock_which.return_value = None
 
         checker = CISChecker()
-        result = checker._command_exists('nonexistent')
+        result = checker._command_exists("nonexistent")
 
         assert result is False
 
@@ -92,11 +92,11 @@ class TestCISChecker:
         result = checker.check_control_1_inventory()
 
         assert isinstance(result, dict)
-        assert 'control' in result
-        assert result['control'] == '1'
-        assert 'title' in result
-        assert 'checks' in result
-        assert isinstance(result['checks'], list)
+        assert "control" in result
+        assert result["control"] == "1"
+        assert "title" in result
+        assert "checks" in result
+        assert isinstance(result["checks"], list)
 
     def test_check_control_2_software_inventory(self):
         """Test CIS Control 2 check"""
@@ -104,9 +104,9 @@ class TestCISChecker:
         result = checker.check_control_2_software_inventory()
 
         assert isinstance(result, dict)
-        assert result['control'] == '2'
-        assert 'checks' in result
-        assert len(result['checks']) > 0
+        assert result["control"] == "2"
+        assert "checks" in result
+        assert len(result["checks"]) > 0
 
     def test_check_control_3_data_protection(self):
         """Test CIS Control 3 check"""
@@ -114,8 +114,8 @@ class TestCISChecker:
         result = checker.check_control_3_data_protection()
 
         assert isinstance(result, dict)
-        assert result['control'] == '3'
-        assert 'checks' in result
+        assert result["control"] == "3"
+        assert "checks" in result
 
     def test_check_results_format(self):
         """Test check result format"""
@@ -123,30 +123,30 @@ class TestCISChecker:
         result = checker.check_control_1_inventory()
 
         # Validate check structure
-        for check in result['checks']:
-            assert 'safeguard' in check
-            assert 'title' in check
-            assert 'status' in check
-            assert check['status'] in ['PASS', 'FAIL', 'MANUAL', 'N/A']
+        for check in result["checks"]:
+            assert "safeguard" in check
+            assert "title" in check
+            assert "status" in check
+            assert check["status"] in ["PASS", "FAIL", "MANUAL", "N/A"]
 
-    @patch('platform.system')
+    @patch("platform.system")
     def test_windows_specific_checks(self, mock_platform):
         """Test Windows-specific checks"""
-        mock_platform.return_value = 'Windows'
+        mock_platform.return_value = "Windows"
 
         checker = CISChecker()
-        assert checker.os_type == 'windows'
+        assert checker.os_type == "windows"
 
         result = checker.check_control_1_inventory()
         assert result is not None
 
-    @patch('platform.system')
+    @patch("platform.system")
     def test_linux_specific_checks(self, mock_platform):
         """Test Linux-specific checks"""
-        mock_platform.return_value = 'Linux'
+        mock_platform.return_value = "Linux"
 
         checker = CISChecker()
-        assert checker.os_type == 'linux'
+        assert checker.os_type == "linux"
 
         result = checker.check_control_1_inventory()
         assert result is not None
@@ -156,33 +156,33 @@ class TestCISChecker:
         checker = CISChecker()
 
         # This will depend on the actual system
-        if checker.os_type == 'linux':
+        if checker.os_type == "linux":
             result = checker._detect_package_manager()
             # Should return apt, yum, dnf, pacman, or None
-            assert result in ['apt', 'yum', 'dnf', 'pacman', 'zypper', None]
+            assert result in ["apt", "yum", "dnf", "pacman", "zypper", None]
 
     def test_calculate_compliance_percentage(self):
         """Test compliance percentage calculation"""
         checker = CISChecker()
 
         # Manually set some test results
-        checker.results['compliance_summary']['total'] = 10
-        checker.results['compliance_summary']['passed'] = 7
-        checker.results['compliance_summary']['failed'] = 3
+        checker.results["compliance_summary"]["total"] = 10
+        checker.results["compliance_summary"]["passed"] = 7
+        checker.results["compliance_summary"]["failed"] = 3
 
         # Calculate compliance
         checker._calculate_compliance()
 
-        assert checker.results['compliance_summary']['compliance_percentage'] == 70.0
+        assert checker.results["compliance_summary"]["compliance_percentage"] == 70.0
 
     def test_calculate_compliance_percentage_zero_total(self):
         """Test compliance calculation with zero total"""
         checker = CISChecker()
 
-        checker.results['compliance_summary']['total'] = 0
+        checker.results["compliance_summary"]["total"] = 0
         checker._calculate_compliance()
 
-        assert checker.results['compliance_summary']['compliance_percentage'] == 0.0
+        assert checker.results["compliance_summary"]["compliance_percentage"] == 0.0
 
 
 class TestCISCheckerIntegration:
@@ -203,7 +203,7 @@ class TestCISCheckerIntegration:
 
     def test_generate_report_json(self, tmp_path):
         """Test generating JSON report"""
-        checker = CISChecker(output_format='json')
+        checker = CISChecker(output_format="json")
 
         # Run some checks
         checker.check_control_1_inventory()
@@ -215,11 +215,11 @@ class TestCISCheckerIntegration:
 
         assert report_file.exists()
 
-        with open(report_file, 'r') as f:
+        with open(report_file, "r") as f:
             report_data = json.load(f)
 
-        assert 'timestamp' in report_data
-        assert 'cis_version' in report_data
+        assert "timestamp" in report_data
+        assert "cis_version" in report_data
 
 
 # [+] Parametrized Tests
@@ -246,7 +246,7 @@ def test_control_checks(control_num):
     if control_num in check_methods:
         result = check_methods[control_num]()
         assert result is not None
-        assert result['control'] == str(control_num)
+        assert result["control"] == str(control_num)
 
 
 # [+] Platform-specific tests
@@ -254,7 +254,8 @@ def test_control_checks(control_num):
 def test_windows_registry_check():
     """Test Windows registry-based checks"""
     import platform
-    if platform.system() != 'Windows':
+
+    if platform.system() != "Windows":
         pytest.skip("Windows-only test")
 
     checker = CISChecker()
@@ -266,7 +267,8 @@ def test_windows_registry_check():
 def test_linux_package_manager():
     """Test Linux package manager detection"""
     import platform
-    if platform.system() != 'Linux':
+
+    if platform.system() != "Linux":
         pytest.skip("Linux-only test")
 
     checker = CISChecker()
@@ -285,7 +287,7 @@ def test_comprehensive_scan():
     results = []
     for i in range(1, 8):  # CIS Controls 1-7
         try:
-            check_method = getattr(checker, f'check_control_{i}_*', None)
+            check_method = getattr(checker, f"check_control_{i}_*", None)
             if check_method:
                 results.append(check_method())
         except AttributeError:

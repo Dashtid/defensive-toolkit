@@ -60,9 +60,11 @@ router = APIRouter(prefix="/ws", tags=["WebSocket"])
 # Connection Manager
 # ============================================================================
 
+
 @dataclass
 class WebSocketConnection:
     """Represents an authenticated WebSocket connection"""
+
     connection_id: str
     websocket: WebSocket
     user: str
@@ -165,14 +167,13 @@ class ConnectionManager:
                 uptime = int((datetime.utcnow() - conn.connected_at).total_seconds())
 
                 heartbeat = WebSocketHeartbeat(
-                    sequence=conn.heartbeat_sequence,
-                    connection_uptime_seconds=uptime
+                    sequence=conn.heartbeat_sequence, connection_uptime_seconds=uptime
                 )
 
                 message = WebSocketMessage(
                     event_type=WebSocketEventTypeEnum.HEARTBEAT,
                     channel=WebSocketChannelEnum.SYSTEM,
-                    data=heartbeat.model_dump()
+                    data=heartbeat.model_dump(),
                 )
 
                 await conn.websocket.send_json(message.model_dump(mode="json"))
@@ -211,7 +212,7 @@ class ConnectionManager:
             connected_at=datetime.utcnow(),
             last_activity=datetime.utcnow(),
             client_ip=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
 
         self._connections[connection_id] = conn
@@ -232,27 +233,22 @@ class ConnectionManager:
                 channel=WebSocketChannelEnum.SYSTEM,
                 data={
                     "connection_id": connection_id,
-                    "message": "Connected. Please authenticate with your JWT token."
-                }
-            )
+                    "message": "Connected. Please authenticate with your JWT token.",
+                },
+            ),
         )
 
         return connection_id
 
     async def authenticate(
-        self,
-        connection_id: str,
-        auth_request: WebSocketAuthRequest
+        self, connection_id: str, auth_request: WebSocketAuthRequest
     ) -> WebSocketAuthResponse:
         """
         Authenticate a WebSocket connection with JWT token.
         """
         conn = self._connections.get(connection_id)
         if not conn:
-            return WebSocketAuthResponse(
-                success=False,
-                message="Connection not found"
-            )
+            return WebSocketAuthResponse(success=False, message="Connection not found")
 
         try:
             # Verify JWT token
@@ -293,9 +289,9 @@ class ConnectionManager:
                         "user": user,
                         "subscribed_channels": [c.value for c in conn.subscribed_channels],
                         "subscribed_executions": list(conn.subscribed_executions),
-                        "subscribed_incidents": list(conn.subscribed_incidents)
-                    }
-                )
+                        "subscribed_incidents": list(conn.subscribed_incidents),
+                    },
+                ),
             )
 
             return WebSocketAuthResponse(
@@ -303,7 +299,7 @@ class ConnectionManager:
                 message="Authentication successful",
                 user=user,
                 subscribed_channels=list(conn.subscribed_channels),
-                connection_id=connection_id
+                connection_id=connection_id,
             )
 
         except Exception as e:
@@ -315,14 +311,11 @@ class ConnectionManager:
                 WebSocketMessage(
                     event_type=WebSocketEventTypeEnum.AUTHENTICATION_FAILED,
                     channel=WebSocketChannelEnum.SYSTEM,
-                    data={"error": str(e)}
-                )
+                    data={"error": str(e)},
+                ),
             )
 
-            return WebSocketAuthResponse(
-                success=False,
-                message=f"Authentication failed: {e}"
-            )
+            return WebSocketAuthResponse(success=False, message=f"Authentication failed: {e}")
 
     async def disconnect(self, connection_id: str):
         """Remove a WebSocket connection"""
@@ -359,7 +352,9 @@ class ConnectionManager:
 
         del self._connections[connection_id]
 
-        logger.info(f"WebSocket disconnected: {connection_id} (user={conn.user}, duration={duration:.1f}s)")
+        logger.info(
+            f"WebSocket disconnected: {connection_id} (user={conn.user}, duration={duration:.1f}s)"
+        )
 
     async def subscribe_channel(self, connection_id: str, channel: WebSocketChannelEnum):
         """Subscribe connection to a channel"""
@@ -571,7 +566,7 @@ class ConnectionManager:
             messages_sent=conn.messages_sent,
             messages_received=conn.messages_received,
             client_ip=conn.client_ip,
-            user_agent=conn.user_agent
+            user_agent=conn.user_agent,
         )
 
     def get_stats(self) -> WebSocketConnectionStats:
@@ -582,7 +577,8 @@ class ConnectionManager:
         connections_by_channel = {}
         for channel, conn_ids in self._channel_subscribers.items():
             authenticated_count = sum(
-                1 for cid in conn_ids
+                1
+                for cid in conn_ids
                 if cid in self._connections and self._connections[cid].authenticated
             )
             if authenticated_count > 0:
@@ -610,7 +606,7 @@ class ConnectionManager:
             connections_by_channel=connections_by_channel,
             average_connection_duration_seconds=avg_duration,
             peak_connections_today=self._peak_connections_today,
-            last_activity_at=last_activity
+            last_activity_at=last_activity,
         )
 
     def get_all_connections(self) -> List[WebSocketConnectionInfo]:
@@ -630,12 +626,9 @@ manager = ConnectionManager()
 # Event Publishing Functions (for use by other routers)
 # ============================================================================
 
+
 async def publish_runbook_started(
-    execution_id: str,
-    runbook_name: str,
-    incident_id: str,
-    total_steps: int,
-    analyst: str
+    execution_id: str, runbook_name: str, incident_id: str, total_steps: int, analyst: str
 ):
     """Publish runbook started event"""
     event = RunbookProgressEvent(
@@ -649,13 +642,13 @@ async def publish_runbook_started(
         steps_skipped=0,
         steps_awaiting=0,
         percentage_complete=0.0,
-        status=StatusEnum.IN_PROGRESS
+        status=StatusEnum.IN_PROGRESS,
     )
 
     message = WebSocketMessage(
         event_type=WebSocketEventTypeEnum.RUNBOOK_STARTED,
         channel=WebSocketChannelEnum.RUNBOOKS,
-        data=event.model_dump(mode="json")
+        data=event.model_dump(mode="json"),
     )
 
     await manager.broadcast_to_execution(execution_id, message)
@@ -674,7 +667,7 @@ async def publish_runbook_step_event(
     status: RunbookStepStatusEnum,
     message_text: Optional[str] = None,
     data: Optional[Dict[str, Any]] = None,
-    duration_ms: Optional[int] = None
+    duration_ms: Optional[int] = None,
 ):
     """Publish runbook step event"""
     event = RunbookStepEvent(
@@ -689,18 +682,23 @@ async def publish_runbook_step_event(
         message=message_text,
         data=data or {},
         started_at=datetime.utcnow() if status == RunbookStepStatusEnum.RUNNING else None,
-        completed_at=datetime.utcnow() if status in [
-            RunbookStepStatusEnum.COMPLETED,
-            RunbookStepStatusEnum.FAILED,
-            RunbookStepStatusEnum.SKIPPED
-        ] else None,
-        duration_ms=duration_ms
+        completed_at=(
+            datetime.utcnow()
+            if status
+            in [
+                RunbookStepStatusEnum.COMPLETED,
+                RunbookStepStatusEnum.FAILED,
+                RunbookStepStatusEnum.SKIPPED,
+            ]
+            else None
+        ),
+        duration_ms=duration_ms,
     )
 
     message = WebSocketMessage(
         event_type=event_type,
         channel=WebSocketChannelEnum.RUNBOOKS,
-        data=event.model_dump(mode="json")
+        data=event.model_dump(mode="json"),
     )
 
     await manager.broadcast_to_execution(execution_id, message)
@@ -719,10 +717,14 @@ async def publish_runbook_progress(
     steps_awaiting: int,
     status: StatusEnum,
     current_step_name: Optional[str] = None,
-    current_step_action: Optional[str] = None
+    current_step_action: Optional[str] = None,
 ):
     """Publish runbook progress update"""
-    percentage = (steps_completed + steps_failed + steps_skipped) / total_steps * 100 if total_steps > 0 else 0
+    percentage = (
+        (steps_completed + steps_failed + steps_skipped) / total_steps * 100
+        if total_steps > 0
+        else 0
+    )
 
     event = RunbookProgressEvent(
         execution_id=execution_id,
@@ -737,13 +739,13 @@ async def publish_runbook_progress(
         percentage_complete=round(percentage, 1),
         current_step_name=current_step_name,
         current_step_action=current_step_action,
-        status=status
+        status=status,
     )
 
     message = WebSocketMessage(
         event_type=WebSocketEventTypeEnum.RUNBOOK_PROGRESS,
         channel=WebSocketChannelEnum.RUNBOOKS,
-        data=event.model_dump(mode="json")
+        data=event.model_dump(mode="json"),
     )
 
     await manager.broadcast_to_execution(execution_id, message)
@@ -760,7 +762,7 @@ async def publish_approval_request(
     description: str,
     parameters: Dict[str, Any],
     requested_by: str,
-    expires_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None,
 ):
     """Publish approval request event"""
     event = ApprovalRequestEvent(
@@ -775,13 +777,13 @@ async def publish_approval_request(
         parameters=parameters,
         requested_by=requested_by,
         requested_at=datetime.utcnow(),
-        expires_at=expires_at
+        expires_at=expires_at,
     )
 
     message = WebSocketMessage(
         event_type=WebSocketEventTypeEnum.RUNBOOK_AWAITING_APPROVAL,
         channel=WebSocketChannelEnum.RUNBOOKS,
-        data=event.model_dump(mode="json")
+        data=event.model_dump(mode="json"),
     )
 
     await manager.broadcast_to_execution(execution_id, message)
@@ -796,7 +798,7 @@ async def publish_runbook_completed(
     steps_completed: int,
     steps_failed: int,
     steps_skipped: int,
-    success: bool
+    success: bool,
 ):
     """Publish runbook completion event"""
     event = RunbookProgressEvent(
@@ -810,15 +812,19 @@ async def publish_runbook_completed(
         steps_skipped=steps_skipped,
         steps_awaiting=0,
         percentage_complete=100.0,
-        status=StatusEnum.SUCCESS if success else StatusEnum.FAILED
+        status=StatusEnum.SUCCESS if success else StatusEnum.FAILED,
     )
 
-    event_type = WebSocketEventTypeEnum.RUNBOOK_COMPLETED if success else WebSocketEventTypeEnum.RUNBOOK_FAILED
+    event_type = (
+        WebSocketEventTypeEnum.RUNBOOK_COMPLETED
+        if success
+        else WebSocketEventTypeEnum.RUNBOOK_FAILED
+    )
 
     message = WebSocketMessage(
         event_type=event_type,
         channel=WebSocketChannelEnum.RUNBOOKS,
-        data=event.model_dump(mode="json")
+        data=event.model_dump(mode="json"),
     )
 
     await manager.broadcast_to_execution(execution_id, message)
@@ -834,7 +840,7 @@ async def publish_incident_event(
     update_type: str,
     previous_status: Optional[IncidentStatusEnum] = None,
     assigned_to: Optional[str] = None,
-    comment: Optional[str] = None
+    comment: Optional[str] = None,
 ):
     """Publish incident status event"""
     event = IncidentEvent(
@@ -846,7 +852,7 @@ async def publish_incident_event(
         assigned_to=assigned_to,
         updated_by=updated_by,
         update_type=update_type,
-        comment=comment
+        comment=comment,
     )
 
     # Map update type to event type
@@ -856,14 +862,14 @@ async def publish_incident_event(
         "assigned": WebSocketEventTypeEnum.INCIDENT_UPDATED,
         "escalated": WebSocketEventTypeEnum.INCIDENT_ESCALATED,
         "comment": WebSocketEventTypeEnum.INCIDENT_COMMENT,
-        "closed": WebSocketEventTypeEnum.INCIDENT_CLOSED
+        "closed": WebSocketEventTypeEnum.INCIDENT_CLOSED,
     }
     event_type = event_type_map.get(update_type, WebSocketEventTypeEnum.INCIDENT_UPDATED)
 
     message = WebSocketMessage(
         event_type=event_type,
         channel=WebSocketChannelEnum.INCIDENTS,
-        data=event.model_dump(mode="json")
+        data=event.model_dump(mode="json"),
     )
 
     await manager.broadcast_to_incident(incident_id, message)
@@ -880,7 +886,7 @@ async def publish_alert_event(
     processed: bool,
     triggered_runbook: Optional[str] = None,
     execution_id: Optional[str] = None,
-    incident_id: Optional[str] = None
+    incident_id: Optional[str] = None,
 ):
     """Publish webhook alert event"""
     event = AlertEvent(
@@ -894,17 +900,23 @@ async def publish_alert_event(
         processed=processed,
         triggered_runbook=triggered_runbook,
         execution_id=execution_id,
-        incident_id=incident_id
+        incident_id=incident_id,
     )
 
-    event_type = WebSocketEventTypeEnum.ALERT_TRIGGERED_RUNBOOK if triggered_runbook else (
-        WebSocketEventTypeEnum.ALERT_PROCESSED if processed else WebSocketEventTypeEnum.ALERT_RECEIVED
+    event_type = (
+        WebSocketEventTypeEnum.ALERT_TRIGGERED_RUNBOOK
+        if triggered_runbook
+        else (
+            WebSocketEventTypeEnum.ALERT_PROCESSED
+            if processed
+            else WebSocketEventTypeEnum.ALERT_RECEIVED
+        )
     )
 
     message = WebSocketMessage(
         event_type=event_type,
         channel=WebSocketChannelEnum.ALERTS,
-        data=event.model_dump(mode="json")
+        data=event.model_dump(mode="json"),
     )
 
     await manager.broadcast_to_channel(WebSocketChannelEnum.ALERTS, message)
@@ -921,10 +933,12 @@ async def publish_ioc_enrichment_event(
     total_sources: int = 0,
     overall_reputation: Optional[ReputationScoreEnum] = None,
     risk_score: Optional[int] = None,
-    processing_time_ms: Optional[int] = None
+    processing_time_ms: Optional[int] = None,
 ):
     """Publish IOC enrichment event"""
-    high_risk = overall_reputation == ReputationScoreEnum.MALICIOUS or (risk_score and risk_score >= 80)
+    high_risk = overall_reputation == ReputationScoreEnum.MALICIOUS or (
+        risk_score and risk_score >= 80
+    )
 
     event = IOCEnrichmentEvent(
         request_id=request_id,
@@ -938,18 +952,23 @@ async def publish_ioc_enrichment_event(
         risk_score=risk_score,
         high_risk_detected=high_risk,
         completed_at=datetime.utcnow() if status in ["completed", "failed"] else None,
-        processing_time_ms=processing_time_ms
+        processing_time_ms=processing_time_ms,
     )
 
-    event_type = WebSocketEventTypeEnum.IOC_HIGH_RISK_DETECTED if high_risk else (
-        WebSocketEventTypeEnum.IOC_ENRICHMENT_COMPLETED if status == "completed" else
-        WebSocketEventTypeEnum.IOC_ENRICHMENT_STARTED
+    event_type = (
+        WebSocketEventTypeEnum.IOC_HIGH_RISK_DETECTED
+        if high_risk
+        else (
+            WebSocketEventTypeEnum.IOC_ENRICHMENT_COMPLETED
+            if status == "completed"
+            else WebSocketEventTypeEnum.IOC_ENRICHMENT_STARTED
+        )
     )
 
     message = WebSocketMessage(
         event_type=event_type,
         channel=WebSocketChannelEnum.THREAT_INTEL,
-        data=event.model_dump(mode="json")
+        data=event.model_dump(mode="json"),
     )
 
     await manager.broadcast_to_channel(WebSocketChannelEnum.THREAT_INTEL, message)
@@ -964,7 +983,7 @@ async def publish_system_alert(
     title: str,
     description: str,
     affected_component: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None,
 ):
     """Publish system alert event"""
     event = SystemAlertEvent(
@@ -973,13 +992,13 @@ async def publish_system_alert(
         title=title,
         description=description,
         affected_component=affected_component,
-        metadata=metadata or {}
+        metadata=metadata or {},
     )
 
     message = WebSocketMessage(
         event_type=WebSocketEventTypeEnum.SYSTEM_ALERT,
         channel=WebSocketChannelEnum.SYSTEM,
-        data=event.model_dump(mode="json")
+        data=event.model_dump(mode="json"),
     )
 
     await manager.broadcast_to_channel(WebSocketChannelEnum.SYSTEM, message)
@@ -989,6 +1008,7 @@ async def publish_system_alert(
 # ============================================================================
 # WebSocket Endpoint
 # ============================================================================
+
 
 @router.websocket("/events")
 async def websocket_endpoint(websocket: WebSocket):
@@ -1032,11 +1052,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     conn.last_activity = datetime.utcnow()
 
             except json.JSONDecodeError:
-                await websocket.send_json({
-                    "event_type": "error",
-                    "channel": "system",
-                    "data": {"error": "Invalid JSON"}
-                })
+                await websocket.send_json(
+                    {"event_type": "error", "channel": "system", "data": {"error": "Invalid JSON"}}
+                )
                 continue
 
             msg_type = data.get("type", "").lower()
@@ -1046,11 +1064,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 auth_request = WebSocketAuthRequest(
                     token=data.get("token", ""),
                     subscribe_channels=[
-                        WebSocketChannelEnum(c) for c in data.get("channels", ["all"])
+                        WebSocketChannelEnum(c)
+                        for c in data.get("channels", ["all"])
                         if c in [e.value for e in WebSocketChannelEnum]
                     ],
                     subscribe_executions=data.get("executions", []),
-                    subscribe_incidents=data.get("incidents", [])
+                    subscribe_incidents=data.get("incidents", []),
                 )
                 await manager.authenticate(connection_id, auth_request)
 
@@ -1058,11 +1077,13 @@ async def websocket_endpoint(websocket: WebSocket):
             elif msg_type in ["subscribe", "unsubscribe"]:
                 conn = manager._connections.get(connection_id)
                 if not conn or not conn.authenticated:
-                    await websocket.send_json({
-                        "event_type": "error",
-                        "channel": "system",
-                        "data": {"error": "Not authenticated"}
-                    })
+                    await websocket.send_json(
+                        {
+                            "event_type": "error",
+                            "channel": "system",
+                            "data": {"error": "Not authenticated"},
+                        }
+                    )
                     continue
 
                 channels = data.get("channels", [])
@@ -1073,8 +1094,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     for channel in channels:
                         try:
                             await manager.subscribe_channel(
-                                connection_id,
-                                WebSocketChannelEnum(channel)
+                                connection_id, WebSocketChannelEnum(channel)
                             )
                         except ValueError:
                             pass
@@ -1086,8 +1106,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     for channel in channels:
                         try:
                             await manager.unsubscribe_channel(
-                                connection_id,
-                                WebSocketChannelEnum(channel)
+                                connection_id, WebSocketChannelEnum(channel)
                             )
                         except ValueError:
                             pass
@@ -1099,30 +1118,38 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Send confirmation
                 conn = manager._connections.get(connection_id)
                 if conn:
-                    await websocket.send_json({
-                        "event_type": "subscribed" if msg_type == "subscribe" else "unsubscribed",
-                        "channel": "system",
-                        "data": {
-                            "channels": [c.value for c in conn.subscribed_channels],
-                            "executions": list(conn.subscribed_executions),
-                            "incidents": list(conn.subscribed_incidents)
+                    await websocket.send_json(
+                        {
+                            "event_type": (
+                                "subscribed" if msg_type == "subscribe" else "unsubscribed"
+                            ),
+                            "channel": "system",
+                            "data": {
+                                "channels": [c.value for c in conn.subscribed_channels],
+                                "executions": list(conn.subscribed_executions),
+                                "incidents": list(conn.subscribed_incidents),
+                            },
                         }
-                    })
+                    )
 
             # Handle ping/pong
             elif msg_type == "ping":
-                await websocket.send_json({
-                    "event_type": "pong",
-                    "channel": "system",
-                    "timestamp": datetime.utcnow().isoformat()
-                })
+                await websocket.send_json(
+                    {
+                        "event_type": "pong",
+                        "channel": "system",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                )
 
             else:
-                await websocket.send_json({
-                    "event_type": "error",
-                    "channel": "system",
-                    "data": {"error": f"Unknown message type: {msg_type}"}
-                })
+                await websocket.send_json(
+                    {
+                        "event_type": "error",
+                        "channel": "system",
+                        "data": {"error": f"Unknown message type: {msg_type}"},
+                    }
+                )
 
     except WebSocketDisconnect:
         logger.info(f"WebSocket client disconnected: {connection_id}")
@@ -1136,10 +1163,9 @@ async def websocket_endpoint(websocket: WebSocket):
 # REST API Endpoints (for management and monitoring)
 # ============================================================================
 
+
 @router.get("/connections", response_model=List[WebSocketConnectionInfo])
-async def list_connections(
-    token: str = Query(..., description="JWT token for authentication")
-):
+async def list_connections(token: str = Query(..., description="JWT token for authentication")):
     """
     List all active WebSocket connections.
 
@@ -1149,53 +1175,39 @@ async def list_connections(
         token_data = verify_token(token, token_type="access")
         if token_data.username not in ["admin"]:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin access required"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
             )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
     return manager.get_all_connections()
 
 
 @router.get("/connections/{connection_id}", response_model=WebSocketConnectionInfo)
 async def get_connection(
-    connection_id: str,
-    token: str = Query(..., description="JWT token for authentication")
+    connection_id: str, token: str = Query(..., description="JWT token for authentication")
 ):
     """Get details of a specific WebSocket connection."""
     try:
         token_data = verify_token(token, token_type="access")
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
     conn_info = manager.get_connection_info(connection_id)
     if not conn_info:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     # Users can only view their own connections unless admin
     if token_data.username != "admin" and conn_info.user != token_data.username:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot view other users' connections"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Cannot view other users' connections"
         )
 
     return conn_info
 
 
 @router.get("/stats", response_model=WebSocketConnectionStats)
-async def get_websocket_stats(
-    token: str = Query(..., description="JWT token for authentication")
-):
+async def get_websocket_stats(token: str = Query(..., description="JWT token for authentication")):
     """
     Get WebSocket connection statistics.
 
@@ -1205,10 +1217,7 @@ async def get_websocket_stats(
     try:
         verify_token(token, token_type="access")
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
     return manager.get_stats()
 
@@ -1217,7 +1226,7 @@ async def get_websocket_stats(
 async def broadcast_message(
     channel: WebSocketChannelEnum,
     message_data: Dict[str, Any],
-    token: str = Query(..., description="JWT token for authentication")
+    token: str = Query(..., description="JWT token for authentication"),
 ):
     """
     Broadcast a custom message to a channel.
@@ -1228,19 +1237,13 @@ async def broadcast_message(
         token_data = verify_token(token, token_type="access")
         if token_data.username not in ["admin"]:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin access required"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
             )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
     message = WebSocketMessage(
-        event_type=WebSocketEventTypeEnum.SYSTEM_ALERT,
-        channel=channel,
-        data=message_data
+        event_type=WebSocketEventTypeEnum.SYSTEM_ALERT, channel=channel, data=message_data
     )
 
     await manager.broadcast_to_channel(channel, message)
@@ -1250,8 +1253,7 @@ async def broadcast_message(
 
 @router.delete("/connections/{connection_id}")
 async def disconnect_connection(
-    connection_id: str,
-    token: str = Query(..., description="JWT token for authentication")
+    connection_id: str, token: str = Query(..., description="JWT token for authentication")
 ):
     """
     Force disconnect a WebSocket connection.
@@ -1262,29 +1264,24 @@ async def disconnect_connection(
         token_data = verify_token(token, token_type="access")
         if token_data.username not in ["admin"]:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin access required"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
             )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
     conn = manager._connections.get(connection_id)
     if not conn:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Connection not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
 
     # Send disconnect message before closing
     try:
-        await conn.websocket.send_json({
-            "event_type": "disconnected",
-            "channel": "system",
-            "data": {"reason": "Disconnected by administrator"}
-        })
+        await conn.websocket.send_json(
+            {
+                "event_type": "disconnected",
+                "channel": "system",
+                "data": {"reason": "Disconnected by administrator"},
+            }
+        )
         await conn.websocket.close()
     except Exception:
         pass
@@ -1298,6 +1295,7 @@ async def disconnect_connection(
 # Test Endpoints (for development/testing)
 # ============================================================================
 
+
 @router.post("/test/runbook-event")
 async def test_runbook_event(
     execution_id: str = "test-exec-001",
@@ -1305,7 +1303,7 @@ async def test_runbook_event(
     incident_id: str = "INC-TEST-001",
     step: int = 1,
     total_steps: int = 5,
-    token: str = Query(..., description="JWT token for authentication")
+    token: str = Query(..., description="JWT token for authentication"),
 ):
     """
     Send a test runbook progress event.
@@ -1315,10 +1313,7 @@ async def test_runbook_event(
     try:
         verify_token(token, token_type="access")
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
     await publish_runbook_progress(
         execution_id=execution_id,
@@ -1332,7 +1327,7 @@ async def test_runbook_event(
         steps_awaiting=0,
         status=StatusEnum.IN_PROGRESS,
         current_step_name=f"Test Step {step}",
-        current_step_action="test_action"
+        current_step_action="test_action",
     )
 
     return {"status": "success", "message": "Test event sent"}
@@ -1342,7 +1337,7 @@ async def test_runbook_event(
 async def test_alert_event(
     webhook_id: str = "test-webhook-001",
     alert_title: str = "Test Alert",
-    token: str = Query(..., description="JWT token for authentication")
+    token: str = Query(..., description="JWT token for authentication"),
 ):
     """
     Send a test alert event.
@@ -1352,10 +1347,7 @@ async def test_alert_event(
     try:
         verify_token(token, token_type="access")
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
     await publish_alert_event(
         webhook_id=webhook_id,
@@ -1364,7 +1356,7 @@ async def test_alert_event(
         source=WebhookSourceEnum.GENERIC,
         severity="high",
         title=alert_title,
-        processed=True
+        processed=True,
     )
 
     return {"status": "success", "message": "Test alert event sent"}

@@ -1,11 +1,11 @@
 """Hardening API Router"""
 
-
 from api.dependencies import get_current_active_user, require_write_scope
 from api.models import APIResponse, HardeningResult, HardeningScanRequest, StatusEnum
 from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/hardening", tags=["Hardening"])
+
 
 @router.post("/scan", response_model=HardeningResult)
 async def scan_system(
@@ -21,8 +21,9 @@ async def scan_system(
         passed=85,
         failed=15,
         compliance_percentage=85.0,
-        findings=[]
+        findings=[],
     )
+
 
 @router.post("/apply", response_model=APIResponse)
 async def apply_hardening(
@@ -31,6 +32,5 @@ async def apply_hardening(
 ):
     """Apply hardening configurations to target system."""
     return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Hardening configurations applied successfully"
+        status=StatusEnum.SUCCESS, message="Hardening configurations applied successfully"
     )

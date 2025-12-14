@@ -27,11 +27,7 @@ class MockWazuhClient:
 
     def deploy_rule(self, rule_content: str, rule_id: str) -> Dict:
         """Mock rule deployment"""
-        return {
-            "status": "success",
-            "rule_id": rule_id,
-            "message": "Rule deployed successfully"
-        }
+        return {"status": "success", "rule_id": rule_id, "message": "Rule deployed successfully"}
 
     def query_logs(self, query: str, time_range: str = "24h") -> Dict:
         """Mock log query"""
@@ -43,9 +39,9 @@ class MockWazuhClient:
                         "timestamp": datetime.utcnow().isoformat(),
                         "rule_id": "60122",
                         "level": 5,
-                        "description": "Test log entry"
+                        "description": "Test log entry",
                     }
-                ]
+                ],
             }
         }
 
@@ -53,7 +49,7 @@ class MockWazuhClient:
         """Mock get agents"""
         return [
             {"id": "001", "name": "agent-001", "status": "active"},
-            {"id": "002", "name": "agent-002", "status": "active"}
+            {"id": "002", "name": "agent-002", "status": "active"},
         ]
 
 
@@ -76,21 +72,16 @@ class MockElasticClient:
                         "_source": {
                             "@timestamp": datetime.utcnow().isoformat(),
                             "message": "Test log message",
-                            "severity": "high"
-                        }
+                            "severity": "high",
+                        },
                     }
-                ]
+                ],
             }
         }
 
     def index(self, index: str, body: Dict, id: Optional[str] = None) -> Dict:
         """Mock document indexing"""
-        return {
-            "_index": index,
-            "_id": id or str(uuid4()),
-            "result": "created",
-            "_version": 1
-        }
+        return {"_index": index, "_id": id or str(uuid4()), "result": "created", "_version": 1}
 
     def indices_create(self, index: str, body: Optional[Dict] = None) -> Dict:
         """Mock index creation"""
@@ -113,19 +104,15 @@ class MockGraylogClient:
                     "timestamp": datetime.utcnow().isoformat(),
                     "message": "Test message",
                     "source": "test-host",
-                    "level": 6
+                    "level": 6,
                 }
             ],
-            "total_results": 1
+            "total_results": 1,
         }
 
     def create_stream(self, title: str, description: str) -> Dict:
         """Mock stream creation"""
-        return {
-            "stream_id": str(uuid4()),
-            "title": title,
-            "description": description
-        }
+        return {"stream_id": str(uuid4()), "title": title, "description": description}
 
 
 class MockOpenVASScanner:
@@ -151,10 +138,7 @@ class MockOpenVASScanner:
 
     def start_task(self, task_id: str) -> Dict:
         """Mock task start"""
-        return {
-            "status": "running",
-            "report_id": f"report-{uuid4().hex[:8]}"
-        }
+        return {"status": "running", "report_id": f"report-{uuid4().hex[:8]}"}
 
     def get_results(self, task_id: str) -> Dict:
         """Mock get scan results"""
@@ -168,9 +152,9 @@ class MockOpenVASScanner:
                     "severity": 7.5,
                     "threat": "High",
                     "port": "443/tcp",
-                    "description": "Test vulnerability"
+                    "description": "Test vulnerability",
                 }
-            ]
+            ],
         }
 
 
@@ -196,20 +180,16 @@ class MockTrivyScanner:
                             "InstalledVersion": "3.1.0-r0",
                             "FixedVersion": "3.1.1-r0",
                             "Severity": "HIGH",
-                            "Title": "Test vulnerability in OpenSSL"
+                            "Title": "Test vulnerability in OpenSSL",
                         }
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
 
     def scan_filesystem(self, path: str) -> Dict:
         """Mock filesystem scan"""
-        return {
-            "ArtifactName": path,
-            "ArtifactType": "filesystem",
-            "Results": []
-        }
+        return {"ArtifactName": path, "ArtifactType": "filesystem", "Results": []}
 
 
 class MockTheHiveClient:
@@ -227,7 +207,7 @@ class MockTheHiveClient:
             "description": description,
             "severity": severity,
             "status": "Open",
-            "createdAt": int(datetime.utcnow().timestamp() * 1000)
+            "createdAt": int(datetime.utcnow().timestamp() * 1000),
         }
 
     def create_alert(self, title: str, description: str, source: str) -> Dict:
@@ -238,17 +218,12 @@ class MockTheHiveClient:
             "description": description,
             "source": source,
             "status": "New",
-            "createdAt": int(datetime.utcnow().timestamp() * 1000)
+            "createdAt": int(datetime.utcnow().timestamp() * 1000),
         }
 
     def add_observable(self, case_id: str, dataType: str, data: str) -> Dict:
         """Mock observable addition"""
-        return {
-            "_id": str(uuid4()),
-            "dataType": dataType,
-            "data": data,
-            "case_id": case_id
-        }
+        return {"_id": str(uuid4()), "dataType": dataType, "data": data, "case_id": case_id}
 
 
 class MockJiraClient:
@@ -259,7 +234,9 @@ class MockJiraClient:
         self.username = username
         self.api_token = api_token
 
-    def create_issue(self, project: str, summary: str, description: str, issue_type: str = "Task") -> Dict:
+    def create_issue(
+        self, project: str, summary: str, description: str, issue_type: str = "Task"
+    ) -> Dict:
         """Mock issue creation"""
         return {
             "id": str(random.randint(10000, 99999)),
@@ -270,8 +247,8 @@ class MockJiraClient:
                 "summary": summary,
                 "description": description,
                 "issuetype": {"name": issue_type},
-                "status": {"name": "Open"}
-            }
+                "status": {"name": "Open"},
+            },
         }
 
     def get_issue(self, issue_key: str) -> Dict:
@@ -281,8 +258,8 @@ class MockJiraClient:
             "fields": {
                 "summary": "Test Issue",
                 "description": "Test description",
-                "status": {"name": "Open"}
-            }
+                "status": {"name": "Open"},
+            },
         }
 
 
@@ -302,8 +279,8 @@ class MockVirusTotalClient:
             "permalink": f"https://virustotal.com/file/{file_hash}",
             "scans": {
                 "Microsoft": {"detected": True, "result": "Trojan:Win32/Test"},
-                "Kaspersky": {"detected": False, "result": None}
-            }
+                "Kaspersky": {"detected": False, "result": None},
+            },
         }
 
     def scan_url(self, url: str) -> Dict:
@@ -312,7 +289,7 @@ class MockVirusTotalClient:
             "scan_id": str(uuid4()),
             "url": url,
             "permalink": f"https://virustotal.com/url/{uuid4()}",
-            "scan_date": datetime.utcnow().isoformat()
+            "scan_date": datetime.utcnow().isoformat(),
         }
 
 
@@ -333,7 +310,7 @@ class MockAbuseIPDBClient:
             "usageType": "Data Center/Web Hosting/Transit",
             "totalReports": 42,
             "numDistinctUsers": 12,
-            "lastReportedAt": datetime.utcnow().isoformat()
+            "lastReportedAt": datetime.utcnow().isoformat(),
         }
 
 
@@ -348,7 +325,7 @@ def create_mock_siem_client(siem_type: str, **kwargs):
         "elastic": MockElasticClient,
         "elasticsearch": MockElasticClient,
         "opensearch": MockElasticClient,
-        "graylog": MockGraylogClient
+        "graylog": MockGraylogClient,
     }
 
     client_class = siem_clients.get(siem_type.lower())
@@ -360,10 +337,7 @@ def create_mock_siem_client(siem_type: str, **kwargs):
 
 def create_mock_scanner(scanner_type: str, **kwargs):
     """Factory function to create mock scanner clients"""
-    scanner_clients = {
-        "openvas": MockOpenVASScanner,
-        "trivy": MockTrivyScanner
-    }
+    scanner_clients = {"openvas": MockOpenVASScanner, "trivy": MockTrivyScanner}
 
     scanner_class = scanner_clients.get(scanner_type.lower())
     if not scanner_class:
@@ -374,10 +348,7 @@ def create_mock_scanner(scanner_type: str, **kwargs):
 
 def create_mock_ticketing_client(system_type: str, **kwargs):
     """Factory function to create mock ticketing system clients"""
-    ticketing_clients = {
-        "thehive": MockTheHiveClient,
-        "jira": MockJiraClient
-    }
+    ticketing_clients = {"thehive": MockTheHiveClient, "jira": MockJiraClient}
 
     client_class = ticketing_clients.get(system_type.lower())
     if not client_class:

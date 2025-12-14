@@ -41,9 +41,7 @@ class TestUbuntuHardeningScript:
     def test_help_message(self, script_path: Path):
         """Test that --help displays usage information."""
         result = subprocess.run(
-            ["bash", str(script_path), "--help"],
-            capture_output=True,
-            text=True
+            ["bash", str(script_path), "--help"], capture_output=True, text=True
         )
         assert "Usage:" in result.stdout or "usage:" in result.stdout.lower()
         assert "--level" in result.stdout
@@ -55,7 +53,7 @@ class TestUbuntuHardeningScript:
         result = subprocess.run(
             ["bash", str(script_path), "--level", "1", "--dry-run", "--no-backup"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         # Should complete without errors
@@ -71,7 +69,7 @@ class TestUbuntuHardeningScript:
         result = subprocess.run(
             ["bash", str(script_path), "--level", level, "--dry-run", "--no-backup"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         # Should complete successfully
@@ -80,9 +78,7 @@ class TestUbuntuHardeningScript:
     def test_invalid_level(self, script_path: Path):
         """Test that invalid hardening level is rejected."""
         result = subprocess.run(
-            ["bash", str(script_path), "--level", "99", "--dry-run"],
-            capture_output=True,
-            text=True
+            ["bash", str(script_path), "--level", "99", "--dry-run"], capture_output=True, text=True
         )
 
         # Should fail or show error
@@ -91,15 +87,11 @@ class TestUbuntuHardeningScript:
 
     def test_script_structure(self, script_path: Path):
         """Test that script has required functions and structure."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for essential functions
-        required_functions = [
-            "harden_ssh",
-            "configure_firewall",
-            "harden_kernel"
-        ]
+        required_functions = ["harden_ssh", "configure_firewall", "harden_kernel"]
 
         for func in required_functions:
             assert func in content, f"Missing function: {func}"
@@ -112,22 +104,18 @@ class TestUbuntuHardeningScript:
 
     def test_ssh_hardening_commands(self, script_path: Path):
         """Test that SSH hardening includes key security settings."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for critical SSH settings
-        ssh_settings = [
-            "PermitRootLogin",
-            "MaxAuthTries",
-            "X11Forwarding"
-        ]
+        ssh_settings = ["PermitRootLogin", "MaxAuthTries", "X11Forwarding"]
 
         for setting in ssh_settings:
             assert setting in content, f"Missing SSH setting: {setting}"
 
     def test_firewall_configuration(self, script_path: Path):
         """Test that firewall (UFW) configuration is present."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for UFW commands
@@ -139,46 +127,42 @@ class TestUbuntuHardeningScript:
 
     def test_kernel_hardening(self, script_path: Path):
         """Test that kernel parameter hardening is included."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for sysctl configuration
         assert "sysctl" in content.lower()
 
         # Check for key kernel parameters
-        kernel_params = [
-            "ip_forward",
-            "accept_redirects",
-            "tcp_syncookies"
-        ]
+        kernel_params = ["ip_forward", "accept_redirects", "tcp_syncookies"]
 
         for param in kernel_params:
             assert param in content, f"Missing kernel parameter: {param}"
 
     def test_aide_configuration(self, script_path: Path):
         """Test that AIDE file integrity monitoring is configured."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         assert "aide" in content.lower() or "AIDE" in content
 
     def test_fail2ban_configuration(self, script_path: Path):
         """Test that Fail2ban intrusion prevention is included."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         assert "fail2ban" in content.lower()
 
     def test_apparmor_configuration(self, script_path: Path):
         """Test that AppArmor mandatory access control is configured."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         assert "apparmor" in content.lower()
 
     def test_password_policy(self, script_path: Path):
         """Test that password policies are configured."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for PAM or password settings
@@ -186,7 +170,7 @@ class TestUbuntuHardeningScript:
 
     def test_automatic_updates(self, script_path: Path):
         """Test that automatic security updates are configured."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         assert "unattended-upgrades" in content.lower() or "auto" in content.lower()
@@ -194,9 +178,7 @@ class TestUbuntuHardeningScript:
     def test_backup_functionality(self, script_path: Path):
         """Test that backup option is supported."""
         result = subprocess.run(
-            ["bash", str(script_path), "--no-backup", "--dry-run"],
-            capture_output=True,
-            text=True
+            ["bash", str(script_path), "--no-backup", "--dry-run"], capture_output=True, text=True
         )
 
         # Should accept no-backup flag
@@ -204,7 +186,7 @@ class TestUbuntuHardeningScript:
 
     def test_logging_present(self, script_path: Path):
         """Test that script includes logging functionality."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for logging
@@ -212,7 +194,7 @@ class TestUbuntuHardeningScript:
 
     def test_error_handling(self, script_path: Path):
         """Test that script has error handling."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for error handling patterns
@@ -220,7 +202,7 @@ class TestUbuntuHardeningScript:
 
     def test_root_check(self, script_path: Path):
         """Test that script checks for root privileges."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for root/EUID check
@@ -228,7 +210,7 @@ class TestUbuntuHardeningScript:
 
     def test_level2_password_auth_disabled(self, script_path: Path):
         """Test that Level 2+ disables password authentication."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Level 2 should disable password auth
@@ -236,7 +218,7 @@ class TestUbuntuHardeningScript:
 
     def test_level2_strong_ciphers(self, script_path: Path):
         """Test that Level 2+ uses strong ciphers."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for strong ciphers
@@ -244,7 +226,7 @@ class TestUbuntuHardeningScript:
 
     def test_service_management(self, script_path: Path):
         """Test that script manages services appropriately."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check for systemctl commands
@@ -276,7 +258,7 @@ class TestUbuntuScriptIntegration:
         readme = HARDENING_DIR / "README.md"
         assert readme.exists()
 
-        with open(readme, 'r') as f:
+        with open(readme, "r") as f:
             content = f.read()
 
         assert "Ubuntu" in content
@@ -290,7 +272,7 @@ class TestUbuntuScriptIntegration:
             "audit-security-posture.sh",
             "backup-security-settings.sh",
             "restore-security-settings.sh",
-            "check-compliance.sh"
+            "check-compliance.sh",
         ]
 
         for script_name in required_scripts:
@@ -308,7 +290,7 @@ class TestHardeningScriptOutput:
             ["bash", str(UBUNTU_SCRIPT), "--level", "1", "--dry-run", "--no-backup"],
             capture_output=True,
             text=True,
-            cwd=tmp_path
+            cwd=tmp_path,
         )
 
         output = result.stdout + result.stderr
@@ -320,9 +302,7 @@ class TestHardeningScriptOutput:
     def test_script_provides_feedback(self):
         """Test that script provides user feedback."""
         result = subprocess.run(
-            ["bash", str(UBUNTU_SCRIPT), "--dry-run", "--no-backup"],
-            capture_output=True,
-            text=True
+            ["bash", str(UBUNTU_SCRIPT), "--dry-run", "--no-backup"], capture_output=True, text=True
         )
 
         output = result.stdout + result.stderr
@@ -330,7 +310,7 @@ class TestHardeningScriptOutput:
         # Should have informative output
         assert len(output) > 50
         # Should have status indicators
-        assert any(marker in output for marker in ['[', '+', '-', '*', '>', 'OK', 'FAIL'])
+        assert any(marker in output for marker in ["[", "+", "-", "*", ">", "OK", "FAIL"])
 
 
 class TestHardeningScriptValidation:
@@ -338,30 +318,21 @@ class TestHardeningScriptValidation:
 
     def test_bash_syntax_valid(self):
         """Test that script has valid bash syntax."""
-        result = subprocess.run(
-            ["bash", "-n", str(UBUNTU_SCRIPT)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", "-n", str(UBUNTU_SCRIPT)], capture_output=True, text=True)
 
         assert result.returncode == 0, f"Syntax error: {result.stderr}"
 
     def test_shellcheck_if_available(self):
         """Run shellcheck if available (optional)."""
         # Check if shellcheck is available
-        shellcheck_available = subprocess.run(
-            ["which", "shellcheck"],
-            capture_output=True
-        ).returncode == 0
+        shellcheck_available = (
+            subprocess.run(["which", "shellcheck"], capture_output=True).returncode == 0
+        )
 
         if not shellcheck_available:
             pytest.skip("shellcheck not available")
 
-        result = subprocess.run(
-            ["shellcheck", str(UBUNTU_SCRIPT)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["shellcheck", str(UBUNTU_SCRIPT)], capture_output=True, text=True)
 
         # Collect warnings/errors but don't fail on them
         if result.returncode != 0:
@@ -369,24 +340,20 @@ class TestHardeningScriptValidation:
 
     def test_no_hardcoded_credentials(self):
         """Test that script doesn't contain hardcoded credentials."""
-        with open(UBUNTU_SCRIPT, 'r') as f:
+        with open(UBUNTU_SCRIPT, "r") as f:
             content = f.read()
 
         # Check for common credential patterns
-        forbidden_patterns = [
-            "password=",
-            "passwd=",
-            "api_key=",
-            "secret=",
-            "token="
-        ]
+        forbidden_patterns = ["password=", "passwd=", "api_key=", "secret=", "token="]
 
         for pattern in forbidden_patterns:
-            assert pattern.lower() not in content.lower(), f"Possible hardcoded credential: {pattern}"
+            assert (
+                pattern.lower() not in content.lower()
+            ), f"Possible hardcoded credential: {pattern}"
 
     def test_safe_file_operations(self):
         """Test that script uses safe file operations."""
-        with open(UBUNTU_SCRIPT, 'r') as f:
+        with open(UBUNTU_SCRIPT, "r") as f:
             content = f.read()
 
         # Should not use dangerous operations without checks

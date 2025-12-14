@@ -29,7 +29,7 @@ def sample_wazuh_connection():
         "use_ssl": True,
         "verify_ssl": False,
         "index_pattern": "wazuh-alerts-*",
-        "enabled": True
+        "enabled": True,
     }
 
 
@@ -47,7 +47,7 @@ def sample_elastic_connection():
         "use_ssl": True,
         "verify_ssl": False,
         "index_pattern": ".siem-signals-*",
-        "enabled": True
+        "enabled": True,
     }
 
 
@@ -66,9 +66,7 @@ class TestSIEMConnections:
     def test_create_wazuh_connection(self, auth_headers, sample_wazuh_connection):
         """Test creating a Wazuh connection"""
         response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -83,9 +81,7 @@ class TestSIEMConnections:
     def test_create_elastic_connection(self, auth_headers, sample_elastic_connection):
         """Test creating an Elastic connection"""
         response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_elastic_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_elastic_connection, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -95,11 +91,7 @@ class TestSIEMConnections:
     def test_list_connections_after_create(self, auth_headers, sample_wazuh_connection):
         """Test listing connections after creation"""
         # Create a connection first
-        client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
-        )
+        client.post("/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers)
 
         response = client.get("/api/v1/siem/connections", headers=auth_headers)
         assert response.status_code == 200
@@ -110,17 +102,12 @@ class TestSIEMConnections:
         """Test getting a specific connection"""
         # Create connection
         create_response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers
         )
         connection_id = create_response.json()["connection_id"]
 
         # Get the connection
-        response = client.get(
-            f"/api/v1/siem/connections/{connection_id}",
-            headers=auth_headers
-        )
+        response = client.get(f"/api/v1/siem/connections/{connection_id}", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["connection_id"] == connection_id
@@ -128,19 +115,14 @@ class TestSIEMConnections:
 
     def test_get_nonexistent_connection(self, auth_headers):
         """Test getting a connection that doesn't exist"""
-        response = client.get(
-            "/api/v1/siem/connections/nonexistent-id",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/siem/connections/nonexistent-id", headers=auth_headers)
         assert response.status_code == 404
 
     def test_update_connection(self, auth_headers, sample_wazuh_connection):
         """Test updating a connection"""
         # Create connection
         create_response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers
         )
         connection_id = create_response.json()["connection_id"]
 
@@ -150,9 +132,7 @@ class TestSIEMConnections:
         updated_config["port"] = 55001
 
         response = client.put(
-            f"/api/v1/siem/connections/{connection_id}",
-            json=updated_config,
-            headers=auth_headers
+            f"/api/v1/siem/connections/{connection_id}", json=updated_config, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -163,34 +143,23 @@ class TestSIEMConnections:
         """Test deleting a connection"""
         # Create connection
         create_response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers
         )
         connection_id = create_response.json()["connection_id"]
 
         # Delete connection
-        response = client.delete(
-            f"/api/v1/siem/connections/{connection_id}",
-            headers=auth_headers
-        )
+        response = client.delete(f"/api/v1/siem/connections/{connection_id}", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
 
         # Verify deletion
-        get_response = client.get(
-            f"/api/v1/siem/connections/{connection_id}",
-            headers=auth_headers
-        )
+        get_response = client.get(f"/api/v1/siem/connections/{connection_id}", headers=auth_headers)
         assert get_response.status_code == 404
 
     def test_delete_nonexistent_connection(self, auth_headers):
         """Test deleting a connection that doesn't exist"""
-        response = client.delete(
-            "/api/v1/siem/connections/nonexistent-id",
-            headers=auth_headers
-        )
+        response = client.delete("/api/v1/siem/connections/nonexistent-id", headers=auth_headers)
         assert response.status_code == 404
 
 
@@ -201,16 +170,13 @@ class TestSIEMConnectionStatus:
         """Test getting connection status (will fail connectivity but return status)"""
         # Create connection
         create_response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers
         )
         connection_id = create_response.json()["connection_id"]
 
         # Get status - will fail since no actual SIEM is running
         response = client.get(
-            f"/api/v1/siem/connections/{connection_id}/status",
-            headers=auth_headers
+            f"/api/v1/siem/connections/{connection_id}/status", headers=auth_headers
         )
         # Should return 200 with error status, or handle connection error
         assert response.status_code in [200, 500, 503]
@@ -235,22 +201,16 @@ class TestSIEMQuerying:
         query_request = {
             "connection_id": "nonexistent-id",
             "time_from": (datetime.utcnow() - timedelta(hours=24)).isoformat(),
-            "size": 10
+            "size": 10,
         }
-        response = client.post(
-            "/api/v1/siem/query",
-            json=query_request,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/siem/query", json=query_request, headers=auth_headers)
         assert response.status_code == 404
 
     def test_query_alerts_with_connection(self, auth_headers, sample_wazuh_connection):
         """Test querying alerts (connection will fail but validates request handling)"""
         # Create connection
         create_response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers
         )
         connection_id = create_response.json()["connection_id"]
 
@@ -260,13 +220,9 @@ class TestSIEMQuerying:
             "time_to": datetime.utcnow().isoformat(),
             "query": "severity:high",
             "size": 10,
-            "from_offset": 0
+            "from_offset": 0,
         }
-        response = client.post(
-            "/api/v1/siem/query",
-            json=query_request,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/siem/query", json=query_request, headers=auth_headers)
         # Will fail to connect but should handle gracefully
         assert response.status_code in [200, 500, 502, 503]
 
@@ -277,13 +233,9 @@ class TestSIEMQuerying:
             "time_from": (datetime.utcnow() - timedelta(hours=24)).isoformat(),
             "aggregation_type": "terms",
             "field": "rule.id",
-            "size": 10
+            "size": 10,
         }
-        response = client.post(
-            "/api/v1/siem/aggregate",
-            json=agg_request,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/siem/aggregate", json=agg_request, headers=auth_headers)
         assert response.status_code == 404
 
 
@@ -293,32 +245,26 @@ class TestSIEMAgentsAndRules:
     def test_list_agents_missing_connection(self, auth_headers):
         """Test listing agents with non-existent connection"""
         response = client.get(
-            "/api/v1/siem/connections/nonexistent-id/agents",
-            headers=auth_headers
+            "/api/v1/siem/connections/nonexistent-id/agents", headers=auth_headers
         )
         assert response.status_code == 404
 
     def test_list_rules_missing_connection(self, auth_headers):
         """Test listing rules with non-existent connection"""
-        response = client.get(
-            "/api/v1/siem/connections/nonexistent-id/rules",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/siem/connections/nonexistent-id/rules", headers=auth_headers)
         assert response.status_code == 404
 
     def test_list_indices_missing_connection(self, auth_headers):
         """Test listing indices with non-existent connection"""
         response = client.get(
-            "/api/v1/siem/connections/nonexistent-id/indices",
-            headers=auth_headers
+            "/api/v1/siem/connections/nonexistent-id/indices", headers=auth_headers
         )
         assert response.status_code == 404
 
     def test_get_dashboard_stats_missing_connection(self, auth_headers):
         """Test getting dashboard stats with non-existent connection"""
         response = client.get(
-            "/api/v1/siem/connections/nonexistent-id/dashboard",
-            headers=auth_headers
+            "/api/v1/siem/connections/nonexistent-id/dashboard", headers=auth_headers
         )
         assert response.status_code == 404
 
@@ -365,10 +311,7 @@ class TestSIEMAuthentication:
 
     def test_create_connection_requires_auth(self, sample_wazuh_connection):
         """Test that creating connections requires authentication"""
-        response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection
-        )
+        response = client.post("/api/v1/siem/connections", json=sample_wazuh_connection)
         assert response.status_code == 401
 
     def test_health_check_requires_auth(self):
@@ -381,7 +324,7 @@ class TestSIEMAuthentication:
         query_request = {
             "connection_id": "test-id",
             "time_from": datetime.utcnow().isoformat(),
-            "size": 10
+            "size": 10,
         }
         response = client.post("/api/v1/siem/query", json=query_request)
         assert response.status_code == 401
@@ -396,12 +339,10 @@ class TestSIEMValidation:
             "name": "Invalid Platform",
             "platform": "invalid_platform",
             "host": "localhost",
-            "port": 9200
+            "port": 9200,
         }
         response = client.post(
-            "/api/v1/siem/connections",
-            json=invalid_config,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=invalid_config, headers=auth_headers
         )
         assert response.status_code == 422
 
@@ -412,9 +353,7 @@ class TestSIEMValidation:
             # Missing platform, host, port
         }
         response = client.post(
-            "/api/v1/siem/connections",
-            json=invalid_config,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=invalid_config, headers=auth_headers
         )
         assert response.status_code == 422
 
@@ -422,9 +361,7 @@ class TestSIEMValidation:
         """Test querying with invalid time range"""
         # Create connection first
         create_response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers
         )
         connection_id = create_response.json()["connection_id"]
 
@@ -432,29 +369,22 @@ class TestSIEMValidation:
         query_request = {
             "connection_id": connection_id,
             "time_from": "invalid-datetime",
-            "size": 10
+            "size": 10,
         }
-        response = client.post(
-            "/api/v1/siem/query",
-            json=query_request,
-            headers=auth_headers
-        )
+        response = client.post("/api/v1/siem/query", json=query_request, headers=auth_headers)
         assert response.status_code == 422
 
     def test_list_agents_invalid_limit(self, auth_headers, sample_wazuh_connection):
         """Test listing agents with invalid limit"""
         # Create connection
         create_response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers
         )
         connection_id = create_response.json()["connection_id"]
 
         # Request with invalid limit
         response = client.get(
-            f"/api/v1/siem/connections/{connection_id}/agents?limit=10000",
-            headers=auth_headers
+            f"/api/v1/siem/connections/{connection_id}/agents?limit=10000", headers=auth_headers
         )
         assert response.status_code == 422
 
@@ -462,15 +392,12 @@ class TestSIEMValidation:
         """Test dashboard stats with invalid hours parameter"""
         # Create connection
         create_response = client.post(
-            "/api/v1/siem/connections",
-            json=sample_wazuh_connection,
-            headers=auth_headers
+            "/api/v1/siem/connections", json=sample_wazuh_connection, headers=auth_headers
         )
         connection_id = create_response.json()["connection_id"]
 
         # Request with invalid hours
         response = client.get(
-            f"/api/v1/siem/connections/{connection_id}/dashboard?hours=10000",
-            headers=auth_headers
+            f"/api/v1/siem/connections/{connection_id}/dashboard?hours=10000", headers=auth_headers
         )
         assert response.status_code == 422

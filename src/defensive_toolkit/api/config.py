@@ -31,10 +31,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
 
     # Security - JWT Configuration
-    secret_key: str = os.getenv(
-        "SECRET_KEY",
-        "CHANGE_THIS_TO_A_SECURE_RANDOM_KEY_IN_PRODUCTION"
-    )
+    secret_key: str = os.getenv("SECRET_KEY", "CHANGE_THIS_TO_A_SECURE_RANDOM_KEY_IN_PRODUCTION")
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 15  # Short-lived tokens per 2025 best practices
     refresh_token_expire_days: int = 30
@@ -81,9 +78,17 @@ class Settings(BaseSettings):
     # File Upload Limits
     max_upload_size_mb: int = 100
     allowed_upload_extensions: List[str] = [
-        ".yml", ".yaml", ".yar", ".yara",
-        ".json", ".xml", ".log", ".pcap",
-        ".evtx", ".csv", ".txt"
+        ".yml",
+        ".yaml",
+        ".yar",
+        ".yara",
+        ".json",
+        ".xml",
+        ".log",
+        ".pcap",
+        ".evtx",
+        ".csv",
+        ".txt",
     ]
 
     # Paths
@@ -94,6 +99,7 @@ class Settings(BaseSettings):
 
     class Config:
         """Pydantic configuration"""
+
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False

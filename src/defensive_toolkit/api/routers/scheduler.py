@@ -261,7 +261,10 @@ JOB_TYPE_INFO: Dict[ScheduledJobTypeEnum, Dict[str, Any]] = {
         "required_parameters": ["destination"],
         "optional_parameters": ["metrics", "format"],
         "parameter_schema": {
-            "destination": {"type": "string", "enum": ["prometheus", "influxdb", "elasticsearch", "file"]},
+            "destination": {
+                "type": "string",
+                "enum": ["prometheus", "influxdb", "elasticsearch", "file"],
+            },
             "metrics": {"type": "array", "items": {"type": "string"}},
             "format": {"type": "string", "enum": ["json", "csv", "prometheus"]},
         },
@@ -389,9 +392,11 @@ JOB_TYPE_INFO: Dict[ScheduledJobTypeEnum, Dict[str, Any]] = {
 # Helper Functions
 # ============================================================================
 
+
 def generate_job_id() -> str:
     """Generate unique job ID"""
     import uuid
+
     timestamp = datetime.utcnow().strftime("%Y%m%d")
     short_uuid = str(uuid.uuid4())[:8].upper()
     return f"JOB-{timestamp}-{short_uuid}"
@@ -400,6 +405,7 @@ def generate_job_id() -> str:
 def generate_execution_id() -> str:
     """Generate unique execution ID"""
     import uuid
+
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     short_uuid = str(uuid.uuid4())[:6].upper()
     return f"EXEC-{timestamp}-{short_uuid}"
@@ -492,6 +498,7 @@ async def execute_job(job: ScheduledJobConfig, execution: JobExecution) -> Dict[
 # Job Management Endpoints
 # ============================================================================
 
+
 @router.get("/jobs", response_model=ScheduledJobListResponse)
 async def list_scheduled_jobs(
     status: Optional[ScheduledJobStatusEnum] = None,
@@ -513,13 +520,19 @@ async def list_scheduled_jobs(
         jobs_list = [j for j in jobs_list if tag in j.tags]
 
     # Calculate counts
-    active_count = len([j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.ACTIVE])
-    paused_count = len([j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.PAUSED])
-    disabled_count = len([j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.DISABLED])
+    active_count = len(
+        [j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.ACTIVE]
+    )
+    paused_count = len(
+        [j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.PAUSED]
+    )
+    disabled_count = len(
+        [j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.DISABLED]
+    )
 
     # Paginate
     total = len(jobs_list)
-    jobs_list = jobs_list[offset:offset + limit]
+    jobs_list = jobs_list[offset : offset + limit]
 
     # Convert to response format
     job_responses = []
@@ -535,27 +548,29 @@ async def list_scheduled_jobs(
             last_exec = last_exec_obj.completed_at or last_exec_obj.started_at
             last_status = last_exec_obj.status
 
-        job_responses.append(ScheduledJobResponse(
-            job_id=job.job_id,
-            name=job.name,
-            description=job.description,
-            job_type=job.job_type,
-            status=job.status,
-            priority=job.priority,
-            schedule_type=job.schedule_type,
-            cron_expression=job.cron_expression,
-            interval_seconds=job.interval_seconds,
-            timezone=job.timezone,
-            next_run_at=get_next_run_time(job),
-            last_run_at=last_exec,
-            last_run_status=last_status,
-            total_runs=stats["total"],
-            successful_runs=stats["success"],
-            failed_runs=stats["failed"],
-            created_at=job.created_at or datetime.utcnow(),
-            updated_at=job.updated_at,
-            created_by=job.created_by,
-        ))
+        job_responses.append(
+            ScheduledJobResponse(
+                job_id=job.job_id,
+                name=job.name,
+                description=job.description,
+                job_type=job.job_type,
+                status=job.status,
+                priority=job.priority,
+                schedule_type=job.schedule_type,
+                cron_expression=job.cron_expression,
+                interval_seconds=job.interval_seconds,
+                timezone=job.timezone,
+                next_run_at=get_next_run_time(job),
+                last_run_at=last_exec,
+                last_run_status=last_status,
+                total_runs=stats["total"],
+                successful_runs=stats["success"],
+                failed_runs=stats["failed"],
+                created_at=job.created_at or datetime.utcnow(),
+                updated_at=job.updated_at,
+                created_by=job.created_by,
+            )
+        )
 
     return ScheduledJobListResponse(
         jobs=job_responses,
@@ -573,10 +588,7 @@ async def get_scheduled_job(
 ):
     """Get details of a specific scheduled job."""
     if job_id not in scheduled_jobs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job {job_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
     job = scheduled_jobs[job_id]
     job.next_run_at = get_next_run_time(job)
@@ -594,33 +606,31 @@ async def create_scheduled_job(
         if not request.cron_expression:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="cron_expression required for cron schedule type"
+                detail="cron_expression required for cron schedule type",
             )
         try:
             parse_cron_expression(request.cron_expression)
         except ValueError as e:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid cron expression: {str(e)}"
+                status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid cron expression: {str(e)}"
             )
 
     elif request.schedule_type == ScheduleTypeEnum.INTERVAL:
         if not request.interval_seconds:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="interval_seconds required for interval schedule type"
+                detail="interval_seconds required for interval schedule type",
             )
 
     elif request.schedule_type == ScheduleTypeEnum.ONCE:
         if not request.run_at:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="run_at required for one-time schedule"
+                detail="run_at required for one-time schedule",
             )
         if request.run_at <= datetime.utcnow():
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="run_at must be in the future"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="run_at must be in the future"
             )
 
     # Create job
@@ -691,10 +701,7 @@ async def update_scheduled_job(
 ):
     """Update an existing scheduled job."""
     if job_id not in scheduled_jobs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job {job_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
     job = scheduled_jobs[job_id]
     now = datetime.utcnow()
@@ -714,8 +721,7 @@ async def update_scheduled_job(
             job.cron_expression = request.cron_expression
         except ValueError as e:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid cron expression: {str(e)}"
+                status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid cron expression: {str(e)}"
             )
     if request.interval_seconds is not None:
         job.interval_seconds = request.interval_seconds
@@ -784,18 +790,18 @@ async def delete_scheduled_job(
 ):
     """Delete a scheduled job."""
     if job_id not in scheduled_jobs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job {job_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
     # Check for running executions
-    running = [e for e in job_executions.values()
-               if e.job_id == job_id and e.status == JobExecutionStatusEnum.RUNNING]
+    running = [
+        e
+        for e in job_executions.values()
+        if e.job_id == job_id and e.status == JobExecutionStatusEnum.RUNNING
+    ]
     if running:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Cannot delete job with running executions. Cancel them first."
+            detail="Cannot delete job with running executions. Cancel them first.",
         )
 
     job = scheduled_jobs.pop(job_id)
@@ -803,10 +809,7 @@ async def delete_scheduled_job(
 
     logger.info(f"Deleted scheduled job {job_id}: {job.name}")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message=f"Job {job_id} deleted successfully"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message=f"Job {job_id} deleted successfully")
 
 
 @router.post("/jobs/{job_id}/pause", response_model=APIResponse)
@@ -816,10 +819,7 @@ async def pause_job(
 ):
     """Pause a scheduled job."""
     if job_id not in scheduled_jobs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job {job_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
     job = scheduled_jobs[job_id]
     job.status = ScheduledJobStatusEnum.PAUSED
@@ -827,10 +827,7 @@ async def pause_job(
 
     logger.info(f"Paused job {job_id}")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message=f"Job {job_id} paused"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message=f"Job {job_id} paused")
 
 
 @router.post("/jobs/{job_id}/resume", response_model=APIResponse)
@@ -840,16 +837,13 @@ async def resume_job(
 ):
     """Resume a paused scheduled job."""
     if job_id not in scheduled_jobs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job {job_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
     job = scheduled_jobs[job_id]
     if job.status != ScheduledJobStatusEnum.PAUSED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Job is not paused (current status: {job.status})"
+            detail=f"Job is not paused (current status: {job.status})",
         )
 
     job.status = ScheduledJobStatusEnum.ACTIVE
@@ -857,15 +851,13 @@ async def resume_job(
 
     logger.info(f"Resumed job {job_id}")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message=f"Job {job_id} resumed"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message=f"Job {job_id} resumed")
 
 
 # ============================================================================
 # Job Execution Endpoints
 # ============================================================================
+
 
 @router.post("/jobs/{job_id}/run", response_model=JobExecutionResponse)
 async def trigger_job(
@@ -877,21 +869,21 @@ async def trigger_job(
 ):
     """Manually trigger a job execution."""
     if job_id not in scheduled_jobs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job {job_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
     job = scheduled_jobs[job_id]
 
     # Check if concurrent execution is allowed
     if not job.concurrent_allowed:
-        running = [e for e in job_executions.values()
-                   if e.job_id == job_id and e.status == JobExecutionStatusEnum.RUNNING]
+        running = [
+            e
+            for e in job_executions.values()
+            if e.job_id == job_id and e.status == JobExecutionStatusEnum.RUNNING
+        ]
         if running:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Job is already running and concurrent execution is disabled"
+                detail="Job is already running and concurrent execution is disabled",
             )
 
     # Create execution record
@@ -958,7 +950,7 @@ async def trigger_job(
         job_name=job.name,
         status=JobExecutionStatusEnum.PENDING,
         scheduled_at=now,
-        message="Job triggered successfully"
+        message="Job triggered successfully",
     )
 
 
@@ -988,7 +980,7 @@ async def list_executions(
     running_count = len([e for e in execs if e.status == JobExecutionStatusEnum.RUNNING])
     pending_count = len([e for e in execs if e.status == JobExecutionStatusEnum.PENDING])
 
-    execs = execs[offset:offset + limit]
+    execs = execs[offset : offset + limit]
 
     return JobExecutionListResponse(
         executions=execs,
@@ -1006,8 +998,7 @@ async def get_execution(
     """Get details of a specific execution."""
     if execution_id not in job_executions:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Execution {execution_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Execution {execution_id} not found"
         )
 
     return job_executions[execution_id]
@@ -1022,8 +1013,7 @@ async def cancel_execution(
     """Cancel a running or pending execution."""
     if execution_id not in job_executions:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Execution {execution_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Execution {execution_id} not found"
         )
 
     execution = job_executions[execution_id]
@@ -1032,7 +1022,7 @@ async def cancel_execution(
     if execution.status not in [JobExecutionStatusEnum.PENDING, JobExecutionStatusEnum.RUNNING]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot cancel execution in status {execution.status}"
+            detail=f"Cannot cancel execution in status {execution.status}",
         )
 
     execution.status = JobExecutionStatusEnum.CANCELLED
@@ -1053,6 +1043,7 @@ async def cancel_execution(
 # ============================================================================
 # Scheduler Management Endpoints
 # ============================================================================
+
 
 @router.get("/stats", response_model=SchedulerStats)
 async def get_scheduler_stats(
@@ -1097,23 +1088,37 @@ async def get_scheduler_stats(
         scheduler_status=scheduler_state["status"],
         uptime_seconds=int(uptime),
         jobs_total=len(scheduled_jobs),
-        jobs_active=len([j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.ACTIVE]),
-        jobs_paused=len([j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.PAUSED]),
-        jobs_disabled=len([j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.DISABLED]),
+        jobs_active=len(
+            [j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.ACTIVE]
+        ),
+        jobs_paused=len(
+            [j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.PAUSED]
+        ),
+        jobs_disabled=len(
+            [j for j in scheduled_jobs.values() if j.status == ScheduledJobStatusEnum.DISABLED]
+        ),
         executions_today=len(today_execs),
         executions_this_hour=len(hour_execs),
-        successful_today=len([e for e in today_execs if e.status == JobExecutionStatusEnum.COMPLETED]),
+        successful_today=len(
+            [e for e in today_execs if e.status == JobExecutionStatusEnum.COMPLETED]
+        ),
         failed_today=len([e for e in today_execs if e.status == JobExecutionStatusEnum.FAILED]),
-        cancelled_today=len([e for e in today_execs if e.status == JobExecutionStatusEnum.CANCELLED]),
+        cancelled_today=len(
+            [e for e in today_execs if e.status == JobExecutionStatusEnum.CANCELLED]
+        ),
         queue_length=len(execution_queue),
         running_jobs=len(running_executions),
-        pending_jobs=len([e for e in job_executions.values() if e.status == JobExecutionStatusEnum.PENDING]),
+        pending_jobs=len(
+            [e for e in job_executions.values() if e.status == JobExecutionStatusEnum.PENDING]
+        ),
         average_execution_time_seconds=avg_execution_time,
         average_wait_time_seconds=0.0,  # Would need queue timing
         jobs_per_hour=len(hour_execs),
         executions_by_type=executions_by_type,
         failures_by_type=failures_by_type,
-        last_execution_at=max((e.completed_at for e in job_executions.values() if e.completed_at), default=None),
+        last_execution_at=max(
+            (e.completed_at for e in job_executions.values() if e.completed_at), default=None
+        ),
         next_scheduled_job=next_job,
         next_scheduled_at=next_time,
     )
@@ -1154,8 +1159,7 @@ async def pause_scheduler(
     logger.info("Scheduler paused")
 
     return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Scheduler paused. Running jobs will complete."
+        status=StatusEnum.SUCCESS, message="Scheduler paused. Running jobs will complete."
     )
 
 
@@ -1168,15 +1172,13 @@ async def resume_scheduler(
     scheduler_state["last_heartbeat"] = datetime.utcnow()
     logger.info("Scheduler resumed")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Scheduler resumed"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Scheduler resumed")
 
 
 # ============================================================================
 # Utility Endpoints
 # ============================================================================
+
 
 @router.post("/cron/validate", response_model=CronValidationResponse)
 async def validate_cron(
@@ -1223,18 +1225,20 @@ async def list_job_types(
 
     for job_type, info in JOB_TYPE_INFO.items():
         categories.add(info["category"])
-        job_types.append(JobTypeInfo(
-            job_type=job_type,
-            name=info["name"],
-            description=info["description"],
-            category=info["category"],
-            required_parameters=info["required_parameters"],
-            optional_parameters=info["optional_parameters"],
-            parameter_schema=info["parameter_schema"],
-            default_timeout_seconds=info["default_timeout_seconds"],
-            supports_concurrent=info["supports_concurrent"],
-            example_parameters=info["example_parameters"],
-        ))
+        job_types.append(
+            JobTypeInfo(
+                job_type=job_type,
+                name=info["name"],
+                description=info["description"],
+                category=info["category"],
+                required_parameters=info["required_parameters"],
+                optional_parameters=info["optional_parameters"],
+                parameter_schema=info["parameter_schema"],
+                default_timeout_seconds=info["default_timeout_seconds"],
+                supports_concurrent=info["supports_concurrent"],
+                example_parameters=info["example_parameters"],
+            )
+        )
 
     return JobTypeListResponse(
         job_types=job_types,
@@ -1292,6 +1296,7 @@ async def bulk_job_action(
 # Job Dependencies
 # ============================================================================
 
+
 @router.get("/jobs/{job_id}/dependencies", response_model=JobDependencyResponse)
 async def get_job_dependencies(
     job_id: str,
@@ -1299,10 +1304,7 @@ async def get_job_dependencies(
 ):
     """Get job dependencies."""
     if job_id not in scheduled_jobs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job {job_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
     dependencies = job_dependencies.get(job_id, [])
 
@@ -1328,15 +1330,12 @@ async def add_job_dependency(
 ):
     """Add a dependency to a job."""
     if job_id not in scheduled_jobs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job {job_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
     if dependency.depends_on_job_id not in scheduled_jobs:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dependency job {dependency.depends_on_job_id} not found"
+            detail=f"Dependency job {dependency.depends_on_job_id} not found",
         )
 
     if job_id not in job_dependencies:
@@ -1356,8 +1355,7 @@ async def add_job_dependency(
 
     if has_circular(dependency.depends_on_job_id, job_id, set()):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Circular dependency detected"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Circular dependency detected"
         )
 
     dependency.job_id = job_id
@@ -1365,7 +1363,7 @@ async def add_job_dependency(
 
     return APIResponse(
         status=StatusEnum.SUCCESS,
-        message=f"Dependency added: {job_id} depends on {dependency.depends_on_job_id}"
+        message=f"Dependency added: {job_id} depends on {dependency.depends_on_job_id}",
     )
 
 
@@ -1378,8 +1376,7 @@ async def remove_job_dependency(
     """Remove a dependency from a job."""
     if job_id not in job_dependencies:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No dependencies found for job {job_id}"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"No dependencies found for job {job_id}"
         )
 
     deps = job_dependencies[job_id]
@@ -1389,10 +1386,7 @@ async def remove_job_dependency(
     if len(job_dependencies[job_id]) == original_len:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dependency on {depends_on_job_id} not found"
+            detail=f"Dependency on {depends_on_job_id} not found",
         )
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Dependency removed"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Dependency removed")

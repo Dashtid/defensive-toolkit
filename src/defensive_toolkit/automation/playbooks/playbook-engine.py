@@ -28,12 +28,13 @@ from typing import Any, Dict
 
 try:
     import yaml
+
     YAML_AVAILABLE = True
 except ImportError:
     YAML_AVAILABLE = False
     logging.error("PyYAML required. Install: pip install pyyaml")
 
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -50,11 +51,11 @@ class PlaybookEngine:
     def _register_builtin_actions(self):
         """Register built-in actions"""
         self.actions_registry = {
-            'log': self._action_log,
-            'set_variable': self._action_set_variable,
-            'sleep': self._action_sleep,
-            'conditional': self._action_conditional,
-            'loop': self._action_loop
+            "log": self._action_log,
+            "set_variable": self._action_set_variable,
+            "sleep": self._action_sleep,
+            "conditional": self._action_conditional,
+            "loop": self._action_loop,
         }
 
     def load_playbook(self, playbook_file: Path) -> Dict:
@@ -62,11 +63,11 @@ class PlaybookEngine:
         logger.info(f"[+] Loading playbook: {playbook_file}")
 
         try:
-            with open(playbook_file, 'r') as f:
+            with open(playbook_file, "r") as f:
                 playbook = yaml.safe_load(f)
 
             # Validate playbook structure
-            required_fields = ['name', 'description', 'tasks']
+            required_fields = ["name", "description", "tasks"]
             for field in required_fields:
                 if field not in playbook:
                     raise ValueError(f"Missing required field: {field}")
@@ -80,9 +81,9 @@ class PlaybookEngine:
 
     def execute_playbook(self, playbook: Dict) -> bool:
         """Execute playbook"""
-        logger.info("\n" + "="*70)
+        logger.info("\n" + "=" * 70)
         logger.info(f"Executing Playbook: {playbook['name']}")
-        logger.info("="*70)
+        logger.info("=" * 70)
         logger.info(f"Description: {playbook['description']}")
 
         if self.dry_run:
@@ -92,7 +93,7 @@ class PlaybookEngine:
 
         try:
             # Execute tasks
-            tasks = playbook.get('tasks', [])
+            tasks = playbook.get("tasks", [])
             for i, task in enumerate(tasks, 1):
                 logger.info(f"\n[+] Task {i}/{len(tasks)}: {task.get('name', 'Unnamed')}")
 
@@ -100,17 +101,17 @@ class PlaybookEngine:
                     logger.error(f"[X] Task {i} failed")
 
                     # Check if we should continue on failure
-                    if not task.get('continue_on_failure', False):
+                    if not task.get("continue_on_failure", False):
                         logger.error("[X] Playbook execution stopped due to task failure")
                         return False
 
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
 
-            logger.info("\n" + "="*70)
+            logger.info("\n" + "=" * 70)
             logger.info("[OK] Playbook execution completed successfully")
             logger.info(f"Duration: {duration:.2f} seconds")
-            logger.info("="*70)
+            logger.info("=" * 70)
 
             return True
 
@@ -120,7 +121,7 @@ class PlaybookEngine:
 
     def execute_task(self, task: Dict) -> bool:
         """Execute single task"""
-        action = task.get('action')
+        action = task.get("action")
         if not action:
             logger.error("[X] Task missing 'action' field")
             return False
@@ -130,14 +131,14 @@ class PlaybookEngine:
             logger.warning(f"[!] Action '{action}' not in registry, attempting module import")
             # Try to import action module
             try:
-                action_result = self.execute_external_action(action, task.get('parameters', {}))
+                action_result = self.execute_external_action(action, task.get("parameters", {}))
                 return action_result
             except Exception as e:
                 logger.error(f"[X] Failed to execute action '{action}': {e}")
                 return False
 
         # Execute registered action
-        parameters = task.get('parameters', {})
+        parameters = task.get("parameters", {})
 
         # Substitute variables
         parameters = self._substitute_variables(parameters)
@@ -152,28 +153,32 @@ class PlaybookEngine:
             result = self.actions_registry[action](parameters)
 
             # Log execution
-            self.execution_log.append({
-                'timestamp': datetime.now().isoformat(),
-                'task': task.get('name'),
-                'action': action,
-                'parameters': parameters,
-                'result': result,
-                'success': True
-            })
+            self.execution_log.append(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "task": task.get("name"),
+                    "action": action,
+                    "parameters": parameters,
+                    "result": result,
+                    "success": True,
+                }
+            )
 
             return result
 
         except Exception as e:
             logger.error(f"[X] Action execution failed: {e}")
 
-            self.execution_log.append({
-                'timestamp': datetime.now().isoformat(),
-                'task': task.get('name'),
-                'action': action,
-                'parameters': parameters,
-                'error': str(e),
-                'success': False
-            })
+            self.execution_log.append(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "task": task.get("name"),
+                    "action": action,
+                    "parameters": parameters,
+                    "error": str(e),
+                    "success": False,
+                }
+            )
 
             return False
 
@@ -181,13 +186,13 @@ class PlaybookEngine:
         """Execute external action by importing module"""
         # Map action names to module paths
         action_modules = {
-            'isolate_host': 'actions.containment',
-            'block_ip': 'actions.containment',
-            'quarantine_file': 'actions.containment',
-            'enrich_ioc': 'actions.enrichment',
-            'send_email': 'actions.notification',
-            'create_ticket': 'integrations.ticket_connector',
-            'analyze_email': 'integrations.email_connector'
+            "isolate_host": "actions.containment",
+            "block_ip": "actions.containment",
+            "quarantine_file": "actions.containment",
+            "enrich_ioc": "actions.enrichment",
+            "send_email": "actions.notification",
+            "create_ticket": "integrations.ticket_connector",
+            "analyze_email": "integrations.email_connector",
         }
 
         module_path = action_modules.get(action)
@@ -197,8 +202,8 @@ class PlaybookEngine:
 
         try:
             # Dynamic import
-            module_name, function_name = module_path.rsplit('.', 1)
-            module = __import__(f'automation.{module_path}', fromlist=[function_name])
+            module_name, function_name = module_path.rsplit(".", 1)
+            module = __import__(f"automation.{module_path}", fromlist=[function_name])
 
             # Get function
             func = getattr(module, action)
@@ -216,7 +221,8 @@ class PlaybookEngine:
         if isinstance(obj, str):
             # Simple variable substitution: ${variable_name}
             import re
-            pattern = r'\$\{(\w+)\}'
+
+            pattern = r"\$\{(\w+)\}"
 
             def replace_var(match):
                 var_name = match.group(1)
@@ -235,22 +241,22 @@ class PlaybookEngine:
     # Built-in actions
     def _action_log(self, parameters: Dict) -> bool:
         """Log message"""
-        message = parameters.get('message', '')
-        level = parameters.get('level', 'info').lower()
+        message = parameters.get("message", "")
+        level = parameters.get("level", "info").lower()
 
-        if level == 'info':
+        if level == "info":
             logger.info(f"    {message}")
-        elif level == 'warning':
+        elif level == "warning":
             logger.warning(f"    {message}")
-        elif level == 'error':
+        elif level == "error":
             logger.error(f"    {message}")
 
         return True
 
     def _action_set_variable(self, parameters: Dict) -> bool:
         """Set variable"""
-        name = parameters.get('name')
-        value = parameters.get('value')
+        name = parameters.get("name")
+        value = parameters.get("value")
 
         if not name:
             logger.error("[X] Variable name required")
@@ -262,16 +268,16 @@ class PlaybookEngine:
 
     def _action_sleep(self, parameters: Dict) -> bool:
         """Sleep for specified duration"""
-        duration = parameters.get('seconds', 1)
+        duration = parameters.get("seconds", 1)
         logger.info(f"    Sleeping for {duration} seconds...")
         time.sleep(duration)
         return True
 
     def _action_conditional(self, parameters: Dict) -> bool:
         """Conditional execution"""
-        condition = parameters.get('condition')
-        if_true = parameters.get('if_true', [])
-        if_false = parameters.get('if_false', [])
+        condition = parameters.get("condition")
+        if_true = parameters.get("if_true", [])
+        if_false = parameters.get("if_false", [])
 
         # Simple condition evaluation
         result = self._evaluate_condition(condition)
@@ -288,9 +294,9 @@ class PlaybookEngine:
 
     def _action_loop(self, parameters: Dict) -> bool:
         """Loop execution"""
-        items = parameters.get('items', [])
-        tasks = parameters.get('tasks', [])
-        var_name = parameters.get('variable', 'item')
+        items = parameters.get("items", [])
+        tasks = parameters.get("tasks", [])
+        var_name = parameters.get("variable", "item")
 
         for item in items:
             logger.info(f"    Processing: {item}")
@@ -325,24 +331,24 @@ class PlaybookEngine:
         logger.info(f"\n[+] Saving execution log to: {output_file}")
 
         log_data = {
-            'timestamp': datetime.now().isoformat(),
-            'dry_run': self.dry_run,
-            'variables': self.variables,
-            'execution_log': self.execution_log
+            "timestamp": datetime.now().isoformat(),
+            "dry_run": self.dry_run,
+            "variables": self.variables,
+            "execution_log": self.execution_log,
         }
 
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(log_data, f, indent=2)
 
         logger.info(f"[OK] Log saved: {output_file}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Security automation playbook engine')
-    parser.add_argument('--playbook', type=Path, required=True, help='Playbook YAML file')
-    parser.add_argument('--variables', type=Path, help='Variables JSON file')
-    parser.add_argument('--dry-run', action='store_true', help='Dry run (no actions executed)')
-    parser.add_argument('--log-output', type=Path, help='Save execution log to file')
+    parser = argparse.ArgumentParser(description="Security automation playbook engine")
+    parser.add_argument("--playbook", type=Path, required=True, help="Playbook YAML file")
+    parser.add_argument("--variables", type=Path, help="Variables JSON file")
+    parser.add_argument("--dry-run", action="store_true", help="Dry run (no actions executed)")
+    parser.add_argument("--log-output", type=Path, help="Save execution log to file")
 
     args = parser.parse_args()
 
@@ -358,7 +364,7 @@ def main():
 
     # Load variables if provided
     if args.variables and args.variables.exists():
-        with open(args.variables, 'r') as f:
+        with open(args.variables, "r") as f:
             engine.variables = json.load(f)
         logger.info(f"[+] Loaded {len(engine.variables)} variables")
 
@@ -378,5 +384,5 @@ def main():
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

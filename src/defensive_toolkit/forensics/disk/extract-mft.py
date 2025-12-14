@@ -27,7 +27,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -53,18 +53,10 @@ class MFTAnalyzer:
 
         try:
             # Use analyzeMFT to parse MFT
-            cmd = [
-                'analyzeMFT.py',
-                '-f', str(self.mft_file),
-                '-o', str(output_csv),
-                '--csv'
-            ]
+            cmd = ["analyzeMFT.py", "-f", str(self.mft_file), "-o", str(output_csv), "--csv"]
 
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=600  # 10 minute timeout
+                cmd, capture_output=True, text=True, timeout=600  # 10 minute timeout
             )
 
             if result.returncode == 0 and output_csv.exists():
@@ -91,22 +83,39 @@ class MFTAnalyzer:
         logger.info("Analyzing for suspicious files...")
 
         suspicious_paths = [
-            'temp', 'appdata', 'programdata', 'users\\public', 'downloads',
-            'recycle.bin', '$recycle.bin', 'windows\\temp'
+            "temp",
+            "appdata",
+            "programdata",
+            "users\\public",
+            "downloads",
+            "recycle.bin",
+            "$recycle.bin",
+            "windows\\temp",
         ]
 
         suspicious_extensions = [
-            '.exe', '.dll', '.ps1', '.bat', '.cmd', '.vbs', '.js', '.hta',
-            '.scr', '.com', '.pif', '.msi', '.reg'
+            ".exe",
+            ".dll",
+            ".ps1",
+            ".bat",
+            ".cmd",
+            ".vbs",
+            ".js",
+            ".hta",
+            ".scr",
+            ".com",
+            ".pif",
+            ".msi",
+            ".reg",
         ]
 
         try:
-            with open(parsed_csv, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(parsed_csv, "r", encoding="utf-8", errors="ignore") as f:
                 reader = csv.DictReader(f)
 
                 for row in reader:
-                    filename = row.get('Filename', '').lower()
-                    filepath = row.get('Path', '').lower()
+                    filename = row.get("Filename", "").lower()
+                    filepath = row.get("Path", "").lower()
 
                     # Check for suspicious paths
                     for susp_path in suspicious_paths:
@@ -114,52 +123,62 @@ class MFTAnalyzer:
                             # Check for executable extensions
                             for ext in suspicious_extensions:
                                 if filename.endswith(ext):
-                                    self.suspicious_findings.append({
-                                        'type': 'Suspicious File Location',
-                                        'severity': 'medium',
-                                        'filename': row.get('Filename', ''),
-                                        'path': row.get('Path', ''),
-                                        'created': row.get('Standard Information Created', ''),
-                                        'modified': row.get('Standard Information Modified', ''),
-                                        'size': row.get('File Size', ''),
-                                        'reason': f'Executable in suspicious location: {susp_path}'
-                                    })
+                                    self.suspicious_findings.append(
+                                        {
+                                            "type": "Suspicious File Location",
+                                            "severity": "medium",
+                                            "filename": row.get("Filename", ""),
+                                            "path": row.get("Path", ""),
+                                            "created": row.get("Standard Information Created", ""),
+                                            "modified": row.get(
+                                                "Standard Information Modified", ""
+                                            ),
+                                            "size": row.get("File Size", ""),
+                                            "reason": f"Executable in suspicious location: {susp_path}",
+                                        }
+                                    )
                                     break
 
                     # Check for hidden files with executable extensions
-                    if filename.startswith('.') or row.get('Flags', '').lower() == 'hidden':
+                    if filename.startswith(".") or row.get("Flags", "").lower() == "hidden":
                         for ext in suspicious_extensions:
                             if filename.endswith(ext):
-                                self.suspicious_findings.append({
-                                    'type': 'Hidden Executable',
-                                    'severity': 'high',
-                                    'filename': row.get('Filename', ''),
-                                    'path': row.get('Path', ''),
-                                    'created': row.get('Standard Information Created', ''),
-                                    'modified': row.get('Standard Information Modified', ''),
-                                    'size': row.get('File Size', ''),
-                                    'reason': 'Hidden file with executable extension'
-                                })
+                                self.suspicious_findings.append(
+                                    {
+                                        "type": "Hidden Executable",
+                                        "severity": "high",
+                                        "filename": row.get("Filename", ""),
+                                        "path": row.get("Path", ""),
+                                        "created": row.get("Standard Information Created", ""),
+                                        "modified": row.get("Standard Information Modified", ""),
+                                        "size": row.get("File Size", ""),
+                                        "reason": "Hidden file with executable extension",
+                                    }
+                                )
                                 break
 
                     # Check for recently created executables
-                    created_date = row.get('Standard Information Created', '')
+                    created_date = row.get("Standard Information Created", "")
                     if created_date:
                         try:
                             # Check if created in last 7 days (if timestamp parseable)
                             # Simplified check - just flag recent dates
                             for ext in suspicious_extensions:
                                 if filename.endswith(ext):
-                                    self.suspicious_findings.append({
-                                        'type': 'Recent Executable',
-                                        'severity': 'low',
-                                        'filename': row.get('Filename', ''),
-                                        'path': row.get('Path', ''),
-                                        'created': created_date,
-                                        'modified': row.get('Standard Information Modified', ''),
-                                        'size': row.get('File Size', ''),
-                                        'reason': 'Recently created executable'
-                                    })
+                                    self.suspicious_findings.append(
+                                        {
+                                            "type": "Recent Executable",
+                                            "severity": "low",
+                                            "filename": row.get("Filename", ""),
+                                            "path": row.get("Path", ""),
+                                            "created": created_date,
+                                            "modified": row.get(
+                                                "Standard Information Modified", ""
+                                            ),
+                                            "size": row.get("File Size", ""),
+                                            "reason": "Recently created executable",
+                                        }
+                                    )
                                     break
                         except:
                             pass
@@ -182,52 +201,58 @@ class MFTAnalyzer:
         timeline_entries = []
 
         try:
-            with open(parsed_csv, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(parsed_csv, "r", encoding="utf-8", errors="ignore") as f:
                 reader = csv.DictReader(f)
 
                 for row in reader:
-                    filename = row.get('Filename', '')
-                    filepath = row.get('Path', '')
+                    filename = row.get("Filename", "")
+                    filepath = row.get("Path", "")
 
                     # Add creation time
-                    created = row.get('Standard Information Created', '')
+                    created = row.get("Standard Information Created", "")
                     if created:
-                        timeline_entries.append({
-                            'timestamp': created,
-                            'event': 'File Created',
-                            'filename': filename,
-                            'path': filepath,
-                            'size': row.get('File Size', '')
-                        })
+                        timeline_entries.append(
+                            {
+                                "timestamp": created,
+                                "event": "File Created",
+                                "filename": filename,
+                                "path": filepath,
+                                "size": row.get("File Size", ""),
+                            }
+                        )
 
                     # Add modification time
-                    modified = row.get('Standard Information Modified', '')
+                    modified = row.get("Standard Information Modified", "")
                     if modified:
-                        timeline_entries.append({
-                            'timestamp': modified,
-                            'event': 'File Modified',
-                            'filename': filename,
-                            'path': filepath,
-                            'size': row.get('File Size', '')
-                        })
+                        timeline_entries.append(
+                            {
+                                "timestamp": modified,
+                                "event": "File Modified",
+                                "filename": filename,
+                                "path": filepath,
+                                "size": row.get("File Size", ""),
+                            }
+                        )
 
                     # Add access time
-                    accessed = row.get('Standard Information Accessed', '')
+                    accessed = row.get("Standard Information Accessed", "")
                     if accessed:
-                        timeline_entries.append({
-                            'timestamp': accessed,
-                            'event': 'File Accessed',
-                            'filename': filename,
-                            'path': filepath,
-                            'size': row.get('File Size', '')
-                        })
+                        timeline_entries.append(
+                            {
+                                "timestamp": accessed,
+                                "event": "File Accessed",
+                                "filename": filename,
+                                "path": filepath,
+                                "size": row.get("File Size", ""),
+                            }
+                        )
 
             # Sort by timestamp
-            timeline_entries.sort(key=lambda x: x['timestamp'])
+            timeline_entries.sort(key=lambda x: x["timestamp"])
 
             # Write timeline
-            with open(output_file, 'w', newline='', encoding='utf-8') as f:
-                fieldnames = ['timestamp', 'event', 'filename', 'path', 'size']
+            with open(output_file, "w", newline="", encoding="utf-8") as f:
+                fieldnames = ["timestamp", "event", "filename", "path", "size"]
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(timeline_entries)
@@ -239,15 +264,15 @@ class MFTAnalyzer:
 
     def generate_report(self) -> None:
         """Generate analysis report"""
-        logger.info("\n" + "="*70)
+        logger.info("\n" + "=" * 70)
         logger.info("MFT Analysis Report")
-        logger.info("="*70)
+        logger.info("=" * 70)
 
         # Group by severity
-        critical = [f for f in self.suspicious_findings if f['severity'] == 'critical']
-        high = [f for f in self.suspicious_findings if f['severity'] == 'high']
-        medium = [f for f in self.suspicious_findings if f['severity'] == 'medium']
-        low = [f for f in self.suspicious_findings if f['severity'] == 'low']
+        critical = [f for f in self.suspicious_findings if f["severity"] == "critical"]
+        high = [f for f in self.suspicious_findings if f["severity"] == "high"]
+        medium = [f for f in self.suspicious_findings if f["severity"] == "medium"]
+        low = [f for f in self.suspicious_findings if f["severity"] == "low"]
 
         logger.info("\nSuspicious Files Summary:")
         logger.info(f"  Critical: {len(critical)}")
@@ -266,34 +291,40 @@ class MFTAnalyzer:
                 logger.info(f"   Size: {finding['size']}\n")
 
             # Save to JSON
-            report_file = self.output_dir / 'suspicious_files.json'
-            with open(report_file, 'w') as f:
-                json.dump({
-                    'timestamp': datetime.now().isoformat(),
-                    'mft_file': str(self.mft_file),
-                    'total_findings': len(self.suspicious_findings),
-                    'severity_counts': {
-                        'critical': len(critical),
-                        'high': len(high),
-                        'medium': len(medium),
-                        'low': len(low)
+            report_file = self.output_dir / "suspicious_files.json"
+            with open(report_file, "w") as f:
+                json.dump(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "mft_file": str(self.mft_file),
+                        "total_findings": len(self.suspicious_findings),
+                        "severity_counts": {
+                            "critical": len(critical),
+                            "high": len(high),
+                            "medium": len(medium),
+                            "low": len(low),
+                        },
+                        "findings": self.suspicious_findings,
                     },
-                    'findings': self.suspicious_findings
-                }, f, indent=2)
+                    f,
+                    indent=2,
+                )
 
             logger.info(f"[OK] Report saved to: {report_file}")
         else:
             logger.info("\n[OK] No suspicious files found")
 
-        logger.info("="*70)
+        logger.info("=" * 70)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='MFT Parser and Analyzer')
-    parser.add_argument('--mft', type=Path, required=True, help='MFT file ($MFT)')
-    parser.add_argument('--output', type=Path, default=Path('mft_analysis'), help='Output directory')
-    parser.add_argument('--timeline', type=Path, help='Generate timeline CSV')
-    parser.add_argument('--suspicious-only', action='store_true', help='Only show suspicious files')
+    parser = argparse.ArgumentParser(description="MFT Parser and Analyzer")
+    parser.add_argument("--mft", type=Path, required=True, help="MFT file ($MFT)")
+    parser.add_argument(
+        "--output", type=Path, default=Path("mft_analysis"), help="Output directory"
+    )
+    parser.add_argument("--timeline", type=Path, help="Generate timeline CSV")
+    parser.add_argument("--suspicious-only", action="store_true", help="Only show suspicious files")
 
     args = parser.parse_args()
 
@@ -322,5 +353,5 @@ def main():
     return 0 if not analyzer.suspicious_findings else 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

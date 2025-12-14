@@ -56,12 +56,14 @@ ioc_cache: Dict[str, Dict[str, Any]] = {}
 CACHE_TTL_SECONDS = 3600  # 1 hour default
 
 # Rate limiting tracking per source
-rate_limit_tracker: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
-    "minute_count": 0,
-    "minute_reset": datetime.utcnow(),
-    "day_count": 0,
-    "day_reset": datetime.utcnow(),
-})
+rate_limit_tracker: Dict[str, Dict[str, Any]] = defaultdict(
+    lambda: {
+        "minute_count": 0,
+        "minute_reset": datetime.utcnow(),
+        "day_count": 0,
+        "day_reset": datetime.utcnow(),
+    }
+)
 
 # Query statistics
 query_stats: Dict[str, Any] = {
@@ -154,6 +156,7 @@ source_configs: Dict[ThreatIntelSourceEnum, ThreatIntelSourceConfig] = {
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def _detect_ioc_type(ioc: str) -> IOCTypeEnum:
     """Auto-detect the type of an IOC."""
@@ -307,7 +310,7 @@ def _generate_recommendations(
     ioc_type: IOCTypeEnum,
     reputation: ReputationScoreEnum,
     risk_score: int,
-    categories: List[ThreatCategoryEnum]
+    categories: List[ThreatCategoryEnum],
 ) -> Tuple[List[str], bool]:
     """Generate action recommendations based on enrichment results."""
     recommendations = []
@@ -323,7 +326,11 @@ def _generate_recommendations(
         elif ioc_type == IOCTypeEnum.DOMAIN:
             recommendations.append("Add domain to DNS sinkhole")
             recommendations.append("Block at web proxy")
-        elif ioc_type in [IOCTypeEnum.FILE_HASH_MD5, IOCTypeEnum.FILE_HASH_SHA1, IOCTypeEnum.FILE_HASH_SHA256]:
+        elif ioc_type in [
+            IOCTypeEnum.FILE_HASH_MD5,
+            IOCTypeEnum.FILE_HASH_SHA1,
+            IOCTypeEnum.FILE_HASH_SHA256,
+        ]:
             recommendations.append("Add hash to EDR blocklist")
             recommendations.append("Search endpoints for this file hash")
 
@@ -354,10 +361,9 @@ def _generate_recommendations(
 # Source-Specific Query Functions
 # ============================================================================
 
+
 async def _query_virustotal(
-    client: httpx.AsyncClient,
-    ioc: str,
-    ioc_type: IOCTypeEnum
+    client: httpx.AsyncClient, ioc: str, ioc_type: IOCTypeEnum
 ) -> SourceResult:
     """Query VirusTotal for IOC information."""
     api_key = os.getenv("VIRUSTOTAL_API_KEY")
@@ -382,7 +388,11 @@ async def _query_virustotal(
             # URL needs to be base64 encoded
             url_id = base64.urlsafe_b64encode(ioc.encode()).decode().rstrip("=")
             url = f"{base_url}/urls/{url_id}"
-        elif ioc_type in [IOCTypeEnum.FILE_HASH_MD5, IOCTypeEnum.FILE_HASH_SHA1, IOCTypeEnum.FILE_HASH_SHA256]:
+        elif ioc_type in [
+            IOCTypeEnum.FILE_HASH_MD5,
+            IOCTypeEnum.FILE_HASH_SHA1,
+            IOCTypeEnum.FILE_HASH_SHA256,
+        ]:
             url = f"{base_url}/files/{ioc}"
         else:
             return SourceResult(
@@ -478,9 +488,7 @@ async def _query_virustotal(
 
 
 async def _query_abuseipdb(
-    client: httpx.AsyncClient,
-    ioc: str,
-    ioc_type: IOCTypeEnum
+    client: httpx.AsyncClient, ioc: str, ioc_type: IOCTypeEnum
 ) -> SourceResult:
     """Query AbuseIPDB for IP reputation."""
     if ioc_type != IOCTypeEnum.IP:
@@ -575,9 +583,7 @@ async def _query_abuseipdb(
 
 
 async def _query_alienvault_otx(
-    client: httpx.AsyncClient,
-    ioc: str,
-    ioc_type: IOCTypeEnum
+    client: httpx.AsyncClient, ioc: str, ioc_type: IOCTypeEnum
 ) -> SourceResult:
     """Query AlienVault OTX for threat intelligence."""
     api_key = os.getenv("OTX_API_KEY")
@@ -600,7 +606,11 @@ async def _query_alienvault_otx(
             url = f"{base_url}/indicators/domain/{ioc}/general"
         elif ioc_type == IOCTypeEnum.URL:
             url = f"{base_url}/indicators/url/{ioc}/general"
-        elif ioc_type in [IOCTypeEnum.FILE_HASH_MD5, IOCTypeEnum.FILE_HASH_SHA1, IOCTypeEnum.FILE_HASH_SHA256]:
+        elif ioc_type in [
+            IOCTypeEnum.FILE_HASH_MD5,
+            IOCTypeEnum.FILE_HASH_SHA1,
+            IOCTypeEnum.FILE_HASH_SHA256,
+        ]:
             url = f"{base_url}/indicators/file/{ioc}/general"
         else:
             return SourceResult(
@@ -681,9 +691,7 @@ async def _query_alienvault_otx(
 
 
 async def _query_greynoise(
-    client: httpx.AsyncClient,
-    ioc: str,
-    ioc_type: IOCTypeEnum
+    client: httpx.AsyncClient, ioc: str, ioc_type: IOCTypeEnum
 ) -> SourceResult:
     """Query GreyNoise for IP reputation (scanners, bots, etc.)."""
     if ioc_type != IOCTypeEnum.IP:
@@ -790,12 +798,14 @@ async def _enrich_single_ioc(
 
         for source in sources:
             if not _check_rate_limit(source):
-                source_results.append(SourceResult(
-                    source=source,
-                    queried_at=datetime.utcnow(),
-                    success=False,
-                    error_message="Rate limited",
-                ))
+                source_results.append(
+                    SourceResult(
+                        source=source,
+                        queried_at=datetime.utcnow(),
+                        success=False,
+                        error_message="Rate limited",
+                    )
+                )
                 continue
 
             config = source_configs.get(source)
@@ -867,6 +877,7 @@ async def _enrich_single_ioc(
 # ============================================================================
 # API Endpoints
 # ============================================================================
+
 
 @router.post("/enrich", response_model=BulkEnrichmentResponse)
 async def enrich_iocs(
@@ -953,10 +964,11 @@ async def enrich_iocs(
 @router.get("/enrich/{ioc}", response_model=IOCEnrichmentResult)
 async def enrich_single_ioc(
     ioc: str,
-    ioc_type: Optional[IOCTypeEnum] = Query(None, description="IOC type (auto-detected if not specified)"),
+    ioc_type: Optional[IOCTypeEnum] = Query(
+        None, description="IOC type (auto-detected if not specified)"
+    ),
     sources: Optional[str] = Query(
-        "virustotal,abuseipdb",
-        description="Comma-separated list of sources to query"
+        "virustotal,abuseipdb", description="Comma-separated list of sources to query"
     ),
     current_user: str = Depends(get_current_active_user),
 ):
@@ -1018,14 +1030,16 @@ async def get_source_status(
         queries_remaining_minute = max(0, config.rate_limit_per_minute - tracker["minute_count"])
         queries_remaining_day = max(0, config.rate_limit_per_day - tracker["day_count"])
 
-        statuses.append(ThreatIntelSourceStatus(
-            source=source,
-            enabled=config.enabled,
-            api_key_configured=config.api_key_configured,
-            queries_today=tracker["day_count"],
-            queries_remaining=min(queries_remaining_minute, queries_remaining_day),
-            rate_limited=(queries_remaining_minute == 0 or queries_remaining_day == 0),
-        ))
+        statuses.append(
+            ThreatIntelSourceStatus(
+                source=source,
+                enabled=config.enabled,
+                api_key_configured=config.api_key_configured,
+                queries_today=tracker["day_count"],
+                queries_remaining=min(queries_remaining_minute, queries_remaining_day),
+                rate_limited=(queries_remaining_minute == 0 or queries_remaining_day == 0),
+            )
+        )
 
     return statuses
 
@@ -1056,14 +1070,16 @@ async def get_stats(
     source_statuses = []
     for source, config in source_configs.items():
         tracker = rate_limit_tracker[source.value]
-        source_statuses.append(ThreatIntelSourceStatus(
-            source=source,
-            enabled=config.enabled,
-            api_key_configured=config.api_key_configured,
-            queries_today=tracker["day_count"],
-            queries_remaining=max(0, config.rate_limit_per_day - tracker["day_count"]),
-            rate_limited=tracker["day_count"] >= config.rate_limit_per_day,
-        ))
+        source_statuses.append(
+            ThreatIntelSourceStatus(
+                source=source,
+                enabled=config.enabled,
+                api_key_configured=config.api_key_configured,
+                queries_today=tracker["day_count"],
+                queries_remaining=max(0, config.rate_limit_per_day - tracker["day_count"]),
+                rate_limited=tracker["day_count"] >= config.rate_limit_per_day,
+            )
+        )
 
     # Calculate cache hit rate
     total_queries = query_stats["total_queries"]
@@ -1110,6 +1126,7 @@ async def clear_cache(
 # ============================================================================
 # Threat Intel Feed Management
 # ============================================================================
+
 
 @router.get("/feeds", response_model=ThreatIntelFeedList)
 async def list_feeds(
@@ -1166,6 +1183,7 @@ async def delete_feed(
 # ============================================================================
 # IOC Type Detection Endpoint
 # ============================================================================
+
 
 @router.get("/detect-type/{ioc}")
 async def detect_ioc_type(

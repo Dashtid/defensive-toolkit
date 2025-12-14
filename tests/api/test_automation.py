@@ -14,7 +14,9 @@ def auth_headers(auth_token):
 
 @pytest.fixture
 def auth_token():
-    response = client.post("/api/v1/auth/token", data={"username": "admin", "password": "changeme123"})
+    response = client.post(
+        "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
+    )
     return response.json()["access_token"]
 
 
@@ -34,16 +36,20 @@ class TestAutomationEndpoints:
             "trigger_data": {
                 "email_subject": "Urgent: Update credentials",
                 "sender": "attacker@evil.com",
-                "recipients": ["user@example.com"]
+                "recipients": ["user@example.com"],
             },
-            "auto_approve": False
+            "auto_approve": False,
         }
-        response = client.post("/api/v1/automation/workflows/execute", json=workflow_data, headers=auth_headers)
+        response = client.post(
+            "/api/v1/automation/workflows/execute", json=workflow_data, headers=auth_headers
+        )
         assert response.status_code == 200
 
     def test_get_workflow_status(self, auth_headers):
         """Test getting workflow execution status"""
-        response = client.get("/api/v1/automation/workflows/status?workflow_id=12345", headers=auth_headers)
+        response = client.get(
+            "/api/v1/automation/workflows/status?workflow_id=12345", headers=auth_headers
+        )
         assert response.status_code == 200
 
     def test_create_integration(self, auth_headers):
@@ -55,9 +61,11 @@ class TestAutomationEndpoints:
                 "host": "wazuh.example.com",
                 "port": 55000,
                 "username": "api-user",
-                "password": "test-password"
+                "password": "test-password",
             },
-            "enabled": True
+            "enabled": True,
         }
-        response = client.post("/api/v1/automation/integrations", json=integration_data, headers=auth_headers)
+        response = client.post(
+            "/api/v1/automation/integrations", json=integration_data, headers=auth_headers
+        )
         assert response.status_code == 201 or response.status_code == 200

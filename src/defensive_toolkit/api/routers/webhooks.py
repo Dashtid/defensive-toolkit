@@ -67,6 +67,7 @@ def _get_runbook_executor():
     global _execute_runbook
     if _execute_runbook is None:
         from api.routers.incident_response import execute_runbook
+
         _execute_runbook = execute_runbook
     return _execute_runbook
 
@@ -74,6 +75,7 @@ def _get_runbook_executor():
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def _generate_webhook_id() -> str:
     """Generate unique webhook ID."""
@@ -86,10 +88,7 @@ def _generate_rule_id() -> str:
 
 
 def _verify_signature(
-    payload: bytes,
-    signature: str,
-    secret: str,
-    algorithm: str = "sha256"
+    payload: bytes, signature: str, secret: str, algorithm: str = "sha256"
 ) -> bool:
     """
     Verify HMAC signature of webhook payload.
@@ -110,17 +109,9 @@ def _verify_signature(
 
     # Calculate expected signature
     if algo == "sha256":
-        expected = hmac.new(
-            secret.encode(),
-            payload,
-            hashlib.sha256
-        ).hexdigest()
+        expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
     elif algo == "sha1":
-        expected = hmac.new(
-            secret.encode(),
-            payload,
-            hashlib.sha1
-        ).hexdigest()
+        expected = hmac.new(secret.encode(), payload, hashlib.sha1).hexdigest()
     else:
         logger.warning(f"[!] Unsupported signature algorithm: {algo}")
         return False
@@ -175,10 +166,7 @@ def _get_nested_value(data: Dict[str, Any], path: str) -> Any:
     return value
 
 
-def _parse_alert(
-    payload: Dict[str, Any],
-    config: WebhookConfig
-) -> IncomingAlert:
+def _parse_alert(payload: Dict[str, Any], config: WebhookConfig) -> IncomingAlert:
     """Parse incoming alert payload using webhook configuration."""
 
     # Extract fields using configured paths
@@ -213,11 +201,7 @@ def _parse_alert(
     )
 
 
-def _match_rule(
-    alert: IncomingAlert,
-    rule: WebhookTriggerRule,
-    payload: Dict[str, Any]
-) -> bool:
+def _match_rule(alert: IncomingAlert, rule: WebhookTriggerRule, payload: Dict[str, Any]) -> bool:
     """Check if alert matches a trigger rule."""
 
     if not rule.enabled:
@@ -261,7 +245,9 @@ def _check_rate_limit(webhook_id: str, rule_id: str, rule: WebhookTriggerRule) -
     if last_trigger:
         elapsed = (now - last_trigger).total_seconds()
         if elapsed < rule.cooldown_seconds:
-            logger.info(f"[i] Rule {rule_id} in cooldown ({elapsed:.0f}s < {rule.cooldown_seconds}s)")
+            logger.info(
+                f"[i] Rule {rule_id} in cooldown ({elapsed:.0f}s < {rule.cooldown_seconds}s)"
+            )
             return False
 
     # Check hourly limit
@@ -270,7 +256,9 @@ def _check_rate_limit(webhook_id: str, rule_id: str, rule: WebhookTriggerRule) -
     recent_triggers = [t for t in triggers if t.get("timestamp", datetime.min) > hour_ago]
 
     if len(recent_triggers) >= rule.max_triggers_per_hour:
-        logger.info(f"[i] Rule {rule_id} hit hourly limit ({len(recent_triggers)} >= {rule.max_triggers_per_hour})")
+        logger.info(
+            f"[i] Rule {rule_id} hit hourly limit ({len(recent_triggers)} >= {rule.max_triggers_per_hour})"
+        )
         return False
 
     return True
@@ -282,16 +270,17 @@ def _record_trigger(webhook_id: str, rule_id: str, alert_id: str):
     key = f"{webhook_id}:{rule_id}"
 
     rate_limit_tracker[key]["last_trigger"] = now
-    trigger_history[key].append({
-        "timestamp": now,
-        "alert_id": alert_id,
-    })
+    trigger_history[key].append(
+        {
+            "timestamp": now,
+            "alert_id": alert_id,
+        }
+    )
 
     # Cleanup old entries (keep last 24h)
     day_ago = now - timedelta(hours=24)
     trigger_history[key] = [
-        t for t in trigger_history[key]
-        if t.get("timestamp", datetime.min) > day_ago
+        t for t in trigger_history[key] if t.get("timestamp", datetime.min) > day_ago
     ]
 
 
@@ -301,7 +290,7 @@ def _update_stats(
     processed: bool = False,
     triggered: bool = False,
     skipped: bool = False,
-    error: bool = False
+    error: bool = False,
 ):
     """Update webhook statistics."""
     if webhook_id not in webhook_stats:
@@ -333,10 +322,7 @@ def _update_stats(
         stats["total_errors"] += 1
 
 
-def _extract_variables(
-    payload: Dict[str, Any],
-    mappings: Dict[str, str]
-) -> Dict[str, Any]:
+def _extract_variables(payload: Dict[str, Any], mappings: Dict[str, str]) -> Dict[str, Any]:
     """Extract variables from payload using mappings."""
     variables = {}
 
@@ -351,6 +337,7 @@ def _extract_variables(
 # ============================================================================
 # Webhook Configuration Endpoints
 # ============================================================================
+
 
 @router.get("", response_model=WebhookConfigList)
 async def list_webhooks(
@@ -388,15 +375,16 @@ async def get_webhook(
     """
     if webhook_id not in webhooks_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Webhook '{webhook_id}' not found"
         )
 
     webhook = webhooks_db[webhook_id].model_copy()
 
     # Mask secret key
     if webhook.secret_key:
-        webhook.secret_key = "***" + webhook.secret_key[-4:] if len(webhook.secret_key) > 4 else "****"
+        webhook.secret_key = (
+            "***" + webhook.secret_key[-4:] if len(webhook.secret_key) > 4 else "****"
+        )
 
     return webhook
 
@@ -433,7 +421,7 @@ async def create_webhook(
             "webhook_id": config.webhook_id,
             "endpoint": f"/api/v1/webhooks/{config.webhook_id}/trigger",
             "rules_count": len(config.trigger_rules),
-        }
+        },
     )
 
 
@@ -450,8 +438,7 @@ async def update_webhook(
     """
     if webhook_id not in webhooks_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Webhook '{webhook_id}' not found"
         )
 
     existing = webhooks_db[webhook_id]
@@ -475,10 +462,7 @@ async def update_webhook(
 
     logger.info(f"[+] Webhook updated: {webhook_id}")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Webhook configuration updated"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Webhook configuration updated")
 
 
 @router.delete("/{webhook_id}", response_model=APIResponse)
@@ -489,8 +473,7 @@ async def delete_webhook(
     """Delete a webhook configuration."""
     if webhook_id not in webhooks_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Webhook '{webhook_id}' not found"
         )
 
     del webhooks_db[webhook_id]
@@ -501,15 +484,13 @@ async def delete_webhook(
 
     logger.info(f"[+] Webhook deleted: {webhook_id}")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Webhook configuration deleted"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Webhook configuration deleted")
 
 
 # ============================================================================
 # Webhook Trigger Endpoint (receives alerts)
 # ============================================================================
+
 
 @router.post("/{webhook_id}/trigger", response_model=WebhookTriggerResult)
 async def trigger_webhook(
@@ -536,8 +517,7 @@ async def trigger_webhook(
     # Get webhook config
     if webhook_id not in webhooks_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Webhook '{webhook_id}' not found"
         )
 
     config = webhooks_db[webhook_id]
@@ -560,10 +540,7 @@ async def trigger_webhook(
     if not _check_ip_allowed(client_ip, config.allowed_ips):
         _update_stats(webhook_id, received=True, error=True)
         logger.warning(f"[!] Webhook {webhook_id}: IP {client_ip} not allowed")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Source IP not allowed"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Source IP not allowed")
 
     # Get raw body for signature verification
     body = await request.body()
@@ -574,16 +551,14 @@ async def trigger_webhook(
         if not signature:
             _update_stats(webhook_id, received=True, error=True)
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Signature required"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Signature required"
             )
 
         if not _verify_signature(body, signature, config.secret_key):
             _update_stats(webhook_id, received=True, error=True)
             logger.warning(f"[!] Webhook {webhook_id}: Invalid signature")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid signature"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid signature"
             )
 
     # Parse JSON payload
@@ -591,10 +566,7 @@ async def trigger_webhook(
         payload = json.loads(body)
     except json.JSONDecodeError as e:
         _update_stats(webhook_id, received=True, error=True)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid JSON: {e}"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid JSON: {e}")
 
     _update_stats(webhook_id, received=True)
 
@@ -754,6 +726,7 @@ async def trigger_webhook(
 # Testing and Statistics Endpoints
 # ============================================================================
 
+
 @router.post("/{webhook_id}/test", response_model=WebhookTestResult)
 async def test_webhook(
     webhook_id: str,
@@ -767,8 +740,7 @@ async def test_webhook(
     """
     if webhook_id not in webhooks_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Webhook '{webhook_id}' not found"
         )
 
     config = webhooks_db[webhook_id]
@@ -838,8 +810,7 @@ async def get_webhook_stats(
     """Get statistics for a webhook endpoint."""
     if webhook_id not in webhooks_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Webhook '{webhook_id}' not found"
         )
 
     config = webhooks_db[webhook_id]
@@ -867,7 +838,7 @@ async def get_webhook_stats(
     top_rules = sorted(
         [{"rule_id": k, "count": v} for k, v in rule_triggers.items()],
         key=lambda x: x["count"],
-        reverse=True
+        reverse=True,
     )[:5]
 
     return WebhookStats(
@@ -890,6 +861,7 @@ async def get_webhook_stats(
 # Trigger Rule Management
 # ============================================================================
 
+
 @router.post("/{webhook_id}/rules", response_model=APIResponse)
 async def add_trigger_rule(
     webhook_id: str,
@@ -899,8 +871,7 @@ async def add_trigger_rule(
     """Add a new trigger rule to webhook."""
     if webhook_id not in webhooks_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Webhook '{webhook_id}' not found"
         )
 
     config = webhooks_db[webhook_id]
@@ -914,8 +885,7 @@ async def add_trigger_rule(
             re.compile(rule.match_pattern)
         except re.error as e:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid regex pattern: {e}"
+                status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid regex pattern: {e}"
             )
 
     config.trigger_rules.append(rule)
@@ -924,9 +894,7 @@ async def add_trigger_rule(
     logger.info(f"[+] Rule added to webhook {webhook_id}: {rule.rule_id}")
 
     return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Trigger rule added",
-        data={"rule_id": rule.rule_id}
+        status=StatusEnum.SUCCESS, message="Trigger rule added", data={"rule_id": rule.rule_id}
     )
 
 
@@ -939,8 +907,7 @@ async def delete_trigger_rule(
     """Remove a trigger rule from webhook."""
     if webhook_id not in webhooks_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Webhook '{webhook_id}' not found"
         )
 
     config = webhooks_db[webhook_id]
@@ -951,23 +918,20 @@ async def delete_trigger_rule(
 
     if len(config.trigger_rules) == original_count:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Rule '{rule_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule '{rule_id}' not found"
         )
 
     config.updated_at = datetime.utcnow()
 
     logger.info(f"[+] Rule removed from webhook {webhook_id}: {rule_id}")
 
-    return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message="Trigger rule deleted"
-    )
+    return APIResponse(status=StatusEnum.SUCCESS, message="Trigger rule deleted")
 
 
 # ============================================================================
 # Preset Configurations
 # ============================================================================
+
 
 @router.get("/presets/{source}", response_model=WebhookConfig)
 async def get_webhook_preset(
@@ -1079,7 +1043,7 @@ async def get_webhook_preset(
     if source not in presets:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No preset available for source '{source.value}'"
+            detail=f"No preset available for source '{source.value}'",
         )
 
     return presets[source]

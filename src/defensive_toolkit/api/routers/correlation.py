@@ -94,28 +94,84 @@ ingested_alerts_db: List[Dict[str, Any]] = []
 
 # MITRE ATT&CK reference data (subset for demonstration)
 mitre_tactics_db: Dict[str, MitreTactic] = {
-    "TA0001": MitreTactic(id="TA0001", name="Initial Access", description="Techniques for gaining initial entry to a network"),
-    "TA0002": MitreTactic(id="TA0002", name="Execution", description="Techniques for running malicious code"),
-    "TA0003": MitreTactic(id="TA0003", name="Persistence", description="Techniques for maintaining foothold"),
-    "TA0004": MitreTactic(id="TA0004", name="Privilege Escalation", description="Techniques for gaining higher-level permissions"),
-    "TA0005": MitreTactic(id="TA0005", name="Defense Evasion", description="Techniques for avoiding detection"),
-    "TA0006": MitreTactic(id="TA0006", name="Credential Access", description="Techniques for stealing credentials"),
-    "TA0007": MitreTactic(id="TA0007", name="Discovery", description="Techniques for exploring the environment"),
-    "TA0008": MitreTactic(id="TA0008", name="Lateral Movement", description="Techniques for moving through the environment"),
-    "TA0009": MitreTactic(id="TA0009", name="Collection", description="Techniques for gathering data"),
-    "TA0010": MitreTactic(id="TA0010", name="Exfiltration", description="Techniques for stealing data"),
-    "TA0011": MitreTactic(id="TA0011", name="Command and Control", description="Techniques for communicating with compromised systems"),
-    "TA0040": MitreTactic(id="TA0040", name="Impact", description="Techniques for disrupting availability or integrity"),
+    "TA0001": MitreTactic(
+        id="TA0001",
+        name="Initial Access",
+        description="Techniques for gaining initial entry to a network",
+    ),
+    "TA0002": MitreTactic(
+        id="TA0002", name="Execution", description="Techniques for running malicious code"
+    ),
+    "TA0003": MitreTactic(
+        id="TA0003", name="Persistence", description="Techniques for maintaining foothold"
+    ),
+    "TA0004": MitreTactic(
+        id="TA0004",
+        name="Privilege Escalation",
+        description="Techniques for gaining higher-level permissions",
+    ),
+    "TA0005": MitreTactic(
+        id="TA0005", name="Defense Evasion", description="Techniques for avoiding detection"
+    ),
+    "TA0006": MitreTactic(
+        id="TA0006", name="Credential Access", description="Techniques for stealing credentials"
+    ),
+    "TA0007": MitreTactic(
+        id="TA0007", name="Discovery", description="Techniques for exploring the environment"
+    ),
+    "TA0008": MitreTactic(
+        id="TA0008",
+        name="Lateral Movement",
+        description="Techniques for moving through the environment",
+    ),
+    "TA0009": MitreTactic(
+        id="TA0009", name="Collection", description="Techniques for gathering data"
+    ),
+    "TA0010": MitreTactic(
+        id="TA0010", name="Exfiltration", description="Techniques for stealing data"
+    ),
+    "TA0011": MitreTactic(
+        id="TA0011",
+        name="Command and Control",
+        description="Techniques for communicating with compromised systems",
+    ),
+    "TA0040": MitreTactic(
+        id="TA0040",
+        name="Impact",
+        description="Techniques for disrupting availability or integrity",
+    ),
 }
 
 mitre_techniques_db: Dict[str, MitreTechnique] = {
-    "T1566": MitreTechnique(id="T1566", name="Phishing", tactic_ids=["TA0001"], platforms=["Windows", "macOS", "Linux"]),
-    "T1566.001": MitreTechnique(id="T1566.001", name="Spearphishing Attachment", tactic_ids=["TA0001"], is_subtechnique=True, parent_technique_id="T1566"),
-    "T1059": MitreTechnique(id="T1059", name="Command and Scripting Interpreter", tactic_ids=["TA0002"]),
-    "T1059.001": MitreTechnique(id="T1059.001", name="PowerShell", tactic_ids=["TA0002"], is_subtechnique=True, parent_technique_id="T1059"),
-    "T1053": MitreTechnique(id="T1053", name="Scheduled Task/Job", tactic_ids=["TA0002", "TA0003", "TA0004"]),
-    "T1547": MitreTechnique(id="T1547", name="Boot or Logon Autostart Execution", tactic_ids=["TA0003", "TA0004"]),
-    "T1078": MitreTechnique(id="T1078", name="Valid Accounts", tactic_ids=["TA0001", "TA0003", "TA0004", "TA0005"]),
+    "T1566": MitreTechnique(
+        id="T1566", name="Phishing", tactic_ids=["TA0001"], platforms=["Windows", "macOS", "Linux"]
+    ),
+    "T1566.001": MitreTechnique(
+        id="T1566.001",
+        name="Spearphishing Attachment",
+        tactic_ids=["TA0001"],
+        is_subtechnique=True,
+        parent_technique_id="T1566",
+    ),
+    "T1059": MitreTechnique(
+        id="T1059", name="Command and Scripting Interpreter", tactic_ids=["TA0002"]
+    ),
+    "T1059.001": MitreTechnique(
+        id="T1059.001",
+        name="PowerShell",
+        tactic_ids=["TA0002"],
+        is_subtechnique=True,
+        parent_technique_id="T1059",
+    ),
+    "T1053": MitreTechnique(
+        id="T1053", name="Scheduled Task/Job", tactic_ids=["TA0002", "TA0003", "TA0004"]
+    ),
+    "T1547": MitreTechnique(
+        id="T1547", name="Boot or Logon Autostart Execution", tactic_ids=["TA0003", "TA0004"]
+    ),
+    "T1078": MitreTechnique(
+        id="T1078", name="Valid Accounts", tactic_ids=["TA0001", "TA0003", "TA0004", "TA0005"]
+    ),
     "T1110": MitreTechnique(id="T1110", name="Brute Force", tactic_ids=["TA0006"]),
     "T1021": MitreTechnique(id="T1021", name="Remote Services", tactic_ids=["TA0008"]),
     "T1071": MitreTechnique(id="T1071", name="Application Layer Protocol", tactic_ids=["TA0011"]),
@@ -135,6 +191,7 @@ correlation_stats = {
 # Helper Functions
 # =============================================================================
 
+
 def generate_id() -> str:
     """Generate a unique ID"""
     return str(uuid.uuid4())
@@ -147,7 +204,11 @@ def evaluate_condition(condition: CorrelationCondition, alert_data: Dict[str, An
         return False
 
     compare_value = condition.value
-    if not condition.case_sensitive and isinstance(field_value, str) and isinstance(compare_value, str):
+    if (
+        not condition.case_sensitive
+        and isinstance(field_value, str)
+        and isinstance(compare_value, str)
+    ):
         field_value = field_value.lower()
         compare_value = compare_value.lower()
 
@@ -184,7 +245,9 @@ def evaluate_condition(condition: CorrelationCondition, alert_data: Dict[str, An
     return False
 
 
-def calculate_similarity(alert1: Dict[str, Any], alert2: Dict[str, Any], features: List[str]) -> float:
+def calculate_similarity(
+    alert1: Dict[str, Any], alert2: Dict[str, Any], features: List[str]
+) -> float:
     """Calculate similarity score between two alerts based on specified features"""
     if not features:
         return 0.0
@@ -231,10 +294,10 @@ def map_to_kill_chain(mitre_techniques: List[str]) -> List[KillChainPhaseEnum]:
 # Correlation Rules Endpoints
 # =============================================================================
 
+
 @router.post("/rules", response_model=CorrelationRule, status_code=status.HTTP_201_CREATED)
 async def create_correlation_rule(
-    rule: CorrelationRuleCreate,
-    current_user: str = Depends(get_current_active_user)
+    rule: CorrelationRuleCreate, current_user: str = Depends(get_current_active_user)
 ):
     """
     Create a new correlation rule.
@@ -256,7 +319,9 @@ async def create_correlation_rule(
         severity=rule.severity,
         mitre_mapping=rule.mitre_mapping,
         tags=rule.tags,
-        status=CorrelationRuleStatusEnum.ACTIVE if rule.enabled else CorrelationRuleStatusEnum.DISABLED,
+        status=(
+            CorrelationRuleStatusEnum.ACTIVE if rule.enabled else CorrelationRuleStatusEnum.DISABLED
+        ),
         enabled=rule.enabled,
         actions=rule.actions,
         created_at=now,
@@ -298,8 +363,12 @@ async def list_correlation_rules(
         rules = [r for r in rules if tag in r.tags]
     if search:
         search_lower = search.lower()
-        rules = [r for r in rules if search_lower in r.name.lower() or
-                 (r.description and search_lower in r.description.lower())]
+        rules = [
+            r
+            for r in rules
+            if search_lower in r.name.lower()
+            or (r.description and search_lower in r.description.lower())
+        ]
 
     # Calculate counts
     active_count = len([r for r in rules if r.status == CorrelationRuleStatusEnum.ACTIVE])
@@ -307,7 +376,7 @@ async def list_correlation_rules(
 
     # Pagination
     total = len(rules)
-    rules = rules[skip:skip + limit]
+    rules = rules[skip : skip + limit]
 
     return CorrelationRuleListResponse(
         rules=rules,
@@ -332,7 +401,7 @@ async def get_correlation_rule(rule_id: str):
 async def update_correlation_rule(
     rule_id: str,
     update: CorrelationRuleUpdate,
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     Update a correlation rule.
@@ -355,8 +424,7 @@ async def update_correlation_rule(
 
 @router.delete("/rules/{rule_id}", response_model=APIResponse)
 async def delete_correlation_rule(
-    rule_id: str,
-    current_user: str = Depends(get_current_active_user)
+    rule_id: str, current_user: str = Depends(get_current_active_user)
 ):
     """
     Delete a correlation rule.
@@ -368,15 +436,13 @@ async def delete_correlation_rule(
     logger.info(f"Deleted correlation rule: {rule_id}")
 
     return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message=f"Correlation rule {rule_id} deleted successfully"
+        status=StatusEnum.SUCCESS, message=f"Correlation rule {rule_id} deleted successfully"
     )
 
 
 @router.post("/rules/{rule_id}/enable", response_model=CorrelationRule)
 async def enable_correlation_rule(
-    rule_id: str,
-    current_user: str = Depends(get_current_active_user)
+    rule_id: str, current_user: str = Depends(get_current_active_user)
 ):
     """
     Enable a correlation rule.
@@ -395,8 +461,7 @@ async def enable_correlation_rule(
 
 @router.post("/rules/{rule_id}/disable", response_model=CorrelationRule)
 async def disable_correlation_rule(
-    rule_id: str,
-    current_user: str = Depends(get_current_active_user)
+    rule_id: str, current_user: str = Depends(get_current_active_user)
 ):
     """
     Disable a correlation rule.
@@ -421,13 +486,16 @@ async def test_correlation_rule(request: RuleTestRequest):
     Can test either an existing rule by ID or a new rule definition.
     """
     import time
+
     start_time = time.time()
 
     # Get the rule to test
     if request.rule_id:
         rule = correlation_rules_db.get(request.rule_id)
         if not rule:
-            raise HTTPException(status_code=404, detail=f"Correlation rule {request.rule_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Correlation rule {request.rule_id} not found"
+            )
         conditions = rule.conditions
         threshold = rule.threshold
     elif request.rule:
@@ -457,15 +525,19 @@ async def test_correlation_rule(request: RuleTestRequest):
         matched_conditions = []
         for condition in conditions:
             if evaluate_condition(condition, alert_data):
-                matched_conditions.append(f"{condition.field} {condition.operator} {condition.value}")
+                matched_conditions.append(
+                    f"{condition.field} {condition.operator} {condition.value}"
+                )
             else:
                 all_match = False
 
         if all_match:
-            matching_alerts.append({
-                "alert": alert_data,
-                "matched_conditions": matched_conditions,
-            })
+            matching_alerts.append(
+                {
+                    "alert": alert_data,
+                    "matched_conditions": matched_conditions,
+                }
+            )
 
     execution_time_ms = int((time.time() - start_time) * 1000)
     would_trigger = len(matching_alerts) >= threshold
@@ -490,10 +562,10 @@ async def test_correlation_rule(request: RuleTestRequest):
 # Correlated Alerts Endpoints
 # =============================================================================
 
+
 @router.post("/alerts", response_model=CorrelatedAlert, status_code=status.HTTP_201_CREATED)
 async def create_correlated_alert(
-    alert: CorrelatedAlertCreate,
-    current_user: str = Depends(get_current_active_user)
+    alert: CorrelatedAlertCreate, current_user: str = Depends(get_current_active_user)
 ):
     """
     Manually create a correlated alert group.
@@ -511,22 +583,18 @@ async def create_correlated_alert(
     last_seen = max(timestamps)
     time_span = int((last_seen - first_seen).total_seconds())
 
-    source_ips = list(set(
-        a.raw_data.get("source_ip") for a in alert.alerts
-        if a.raw_data.get("source_ip")
-    ))
-    dest_ips = list(set(
-        a.raw_data.get("destination_ip") for a in alert.alerts
-        if a.raw_data.get("destination_ip")
-    ))
-    users = list(set(
-        a.raw_data.get("user") for a in alert.alerts
-        if a.raw_data.get("user")
-    ))
-    hosts = list(set(
-        a.raw_data.get("host") for a in alert.alerts
-        if a.raw_data.get("host")
-    ))
+    source_ips = list(
+        set(a.raw_data.get("source_ip") for a in alert.alerts if a.raw_data.get("source_ip"))
+    )
+    dest_ips = list(
+        set(
+            a.raw_data.get("destination_ip")
+            for a in alert.alerts
+            if a.raw_data.get("destination_ip")
+        )
+    )
+    users = list(set(a.raw_data.get("user") for a in alert.alerts if a.raw_data.get("user")))
+    hosts = list(set(a.raw_data.get("host") for a in alert.alerts if a.raw_data.get("host")))
 
     # Generate group key
     group_key = f"{alert.rule_id}:{':'.join(sorted(source_ips))}:{first_seen.isoformat()}"
@@ -543,7 +611,11 @@ async def create_correlated_alert(
         severity=rule.severity,
         status=CorrelatedAlertStatusEnum.OPEN,
         mitre_mapping=rule.mitre_mapping,
-        kill_chain_phase=rule.mitre_mapping.kill_chain_phases[0] if rule.mitre_mapping and rule.mitre_mapping.kill_chain_phases else None,
+        kill_chain_phase=(
+            rule.mitre_mapping.kill_chain_phases[0]
+            if rule.mitre_mapping and rule.mitre_mapping.kill_chain_phases
+            else None
+        ),
         summary=alert.summary or f"Correlated alert group from rule: {rule.name}",
         group_key=group_key,
         source_ips=source_ips,
@@ -603,7 +675,7 @@ async def list_correlated_alerts(
 
     # Pagination
     total = len(alerts)
-    alerts = alerts[skip:skip + limit]
+    alerts = alerts[skip : skip + limit]
 
     return CorrelatedAlertListResponse(
         correlated_alerts=alerts,
@@ -628,7 +700,7 @@ async def get_correlated_alert(alert_id: str):
 async def update_correlated_alert(
     alert_id: str,
     update: CorrelatedAlertUpdate,
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     Update a correlated alert (status, assignment, notes).
@@ -657,7 +729,7 @@ async def update_correlated_alert(
 async def resolve_correlated_alert(
     alert_id: str,
     resolution_notes: Optional[str] = None,
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     Resolve a correlated alert.
@@ -680,10 +752,10 @@ async def resolve_correlated_alert(
 # Alert Ingestion Endpoints
 # =============================================================================
 
+
 @router.post("/ingest", response_model=AlertIngestResponse)
 async def ingest_alerts(
-    batch: AlertIngestBatch,
-    current_user: str = Depends(get_current_active_user)
+    batch: AlertIngestBatch, current_user: str = Depends(get_current_active_user)
 ):
     """
     Ingest alerts for correlation processing.
@@ -692,6 +764,7 @@ async def ingest_alerts(
     through active correlation rules to detect patterns.
     """
     import time
+
     start_time = time.time()
 
     alerts_processed = 0
@@ -739,9 +812,10 @@ async def ingest_alerts(
                     # Check if we have enough alerts in time window for threshold
                     window_start = alert.timestamp - timedelta(seconds=rule.time_window_seconds)
                     matching_in_window = [
-                        a for a in ingested_alerts_db
-                        if a["timestamp"] >= window_start and
-                        all(evaluate_condition(c, a) for c in rule.conditions)
+                        a
+                        for a in ingested_alerts_db
+                        if a["timestamp"] >= window_start
+                        and all(evaluate_condition(c, a) for c in rule.conditions)
                     ]
 
                     if len(matching_in_window) >= rule.threshold:
@@ -763,7 +837,9 @@ async def ingest_alerts(
                         now = datetime.utcnow()
 
                         timestamps = [a.timestamp for a in alert_members]
-                        source_ips = list(set(a["source_ip"] for a in matching_in_window if a.get("source_ip")))
+                        source_ips = list(
+                            set(a["source_ip"] for a in matching_in_window if a.get("source_ip"))
+                        )
 
                         correlated = CorrelatedAlert(
                             id=correlated_id,
@@ -773,7 +849,9 @@ async def ingest_alerts(
                             alert_count=len(alert_members),
                             first_seen=min(timestamps),
                             last_seen=max(timestamps),
-                            time_span_seconds=int((max(timestamps) - min(timestamps)).total_seconds()),
+                            time_span_seconds=int(
+                                (max(timestamps) - min(timestamps)).total_seconds()
+                            ),
                             severity=rule.severity,
                             status=CorrelatedAlertStatusEnum.OPEN,
                             mitre_mapping=rule.mitre_mapping,
@@ -824,10 +902,10 @@ async def ingest_alerts(
 # Alert Clustering Endpoints
 # =============================================================================
 
+
 @router.post("/cluster", response_model=ClusteringResponse)
 async def cluster_alerts(
-    request: ClusteringRequest,
-    current_user: str = Depends(get_current_active_user)
+    request: ClusteringRequest, current_user: str = Depends(get_current_active_user)
 ):
     """
     Cluster alerts based on similarity.
@@ -835,6 +913,7 @@ async def cluster_alerts(
     Groups similar alerts together to reduce alert fatigue and identify patterns.
     """
     import time
+
     start_time = time.time()
 
     config = request.config or ClusterConfig()
@@ -842,15 +921,9 @@ async def cluster_alerts(
     # Get alerts to cluster
     cutoff = datetime.utcnow() - timedelta(hours=request.time_range_hours)
     if request.alert_ids:
-        alerts_to_cluster = [
-            a for a in ingested_alerts_db
-            if a["id"] in request.alert_ids
-        ]
+        alerts_to_cluster = [a for a in ingested_alerts_db if a["id"] in request.alert_ids]
     else:
-        alerts_to_cluster = [
-            a for a in ingested_alerts_db
-            if a["timestamp"] >= cutoff
-        ]
+        alerts_to_cluster = [a for a in ingested_alerts_db if a["timestamp"] >= cutoff]
 
     if not alerts_to_cluster:
         return ClusteringResponse(
@@ -913,7 +986,9 @@ async def cluster_alerts(
 
         # Determine highest severity
         severity_order = ["critical", "high", "medium", "low", "info"]
-        highest_severity = min(severities, key=lambda s: severity_order.index(s) if s in severity_order else 999)
+        highest_severity = min(
+            severities, key=lambda s: severity_order.index(s) if s in severity_order else 999
+        )
 
         alert_members = [
             CorrelatedAlertMember(
@@ -979,17 +1054,17 @@ async def list_clusters(
     clusters = [c for c in alert_clusters_db.values() if c.created_at >= cutoff]
     clusters.sort(key=lambda x: x.created_at, reverse=True)
 
-    return clusters[skip:skip + limit]
+    return clusters[skip : skip + limit]
 
 
 # =============================================================================
 # Attack Pattern Endpoints
 # =============================================================================
 
+
 @router.post("/patterns", response_model=AttackPattern, status_code=status.HTTP_201_CREATED)
 async def create_attack_pattern(
-    pattern: AttackPatternCreate,
-    current_user: str = Depends(get_current_active_user)
+    pattern: AttackPatternCreate, current_user: str = Depends(get_current_active_user)
 ):
     """
     Create an attack pattern definition for multi-stage attack detection.
@@ -1044,11 +1119,16 @@ async def list_attack_patterns(
     if severity:
         patterns = [p for p in patterns if p.severity == severity]
     if active_only:
-        patterns = [p for p in patterns if p.status in [
-            AttackPatternStatusEnum.DETECTED,
-            AttackPatternStatusEnum.CONFIRMED,
-            AttackPatternStatusEnum.IN_PROGRESS,
-        ]]
+        patterns = [
+            p
+            for p in patterns
+            if p.status
+            in [
+                AttackPatternStatusEnum.DETECTED,
+                AttackPatternStatusEnum.CONFIRMED,
+                AttackPatternStatusEnum.IN_PROGRESS,
+            ]
+        ]
 
     patterns.sort(key=lambda x: x.last_activity, reverse=True)
 
@@ -1058,14 +1138,21 @@ async def list_attack_patterns(
         by_status[p.status.value] += 1
         by_severity[p.severity.value] += 1
 
-    active_attacks = len([p for p in patterns if p.status in [
-        AttackPatternStatusEnum.DETECTED,
-        AttackPatternStatusEnum.CONFIRMED,
-        AttackPatternStatusEnum.IN_PROGRESS,
-    ]])
+    active_attacks = len(
+        [
+            p
+            for p in patterns
+            if p.status
+            in [
+                AttackPatternStatusEnum.DETECTED,
+                AttackPatternStatusEnum.CONFIRMED,
+                AttackPatternStatusEnum.IN_PROGRESS,
+            ]
+        ]
+    )
 
     total = len(patterns)
-    patterns = patterns[skip:skip + limit]
+    patterns = patterns[skip : skip + limit]
 
     return AttackPatternListResponse(
         patterns=patterns,
@@ -1091,7 +1178,7 @@ async def get_attack_pattern(pattern_id: str):
 async def update_attack_pattern(
     pattern_id: str,
     update: AttackPatternUpdate,
-    current_user: str = Depends(get_current_active_user)
+    current_user: str = Depends(get_current_active_user),
 ):
     """
     Update an attack pattern.
@@ -1113,6 +1200,7 @@ async def update_attack_pattern(
 # =============================================================================
 # MITRE ATT&CK Endpoints
 # =============================================================================
+
 
 @router.get("/mitre/tactics", response_model=List[MitreTactic])
 async def list_mitre_tactics():
@@ -1166,10 +1254,10 @@ async def get_mitre_technique(technique_id: str):
 # Kill Chain Analysis Endpoints
 # =============================================================================
 
+
 @router.post("/killchain/analyze", response_model=KillChainAnalysis)
 async def analyze_kill_chain(
-    request: KillChainAnalysisRequest,
-    current_user: str = Depends(get_current_active_user)
+    request: KillChainAnalysisRequest, current_user: str = Depends(get_current_active_user)
 ):
     """
     Analyze kill chain progression for a source IP or target host.
@@ -1230,7 +1318,9 @@ async def analyze_kill_chain(
     if KillChainPhaseEnum.COMMAND_AND_CONTROL in detected_phases:
         recommendations.append("Block identified C2 infrastructure immediately")
     if potential_progression:
-        recommendations.append("URGENT: Multi-stage attack in progress - initiate incident response")
+        recommendations.append(
+            "URGENT: Multi-stage attack in progress - initiate incident response"
+        )
 
     # High risk indicators
     high_risk = []
@@ -1246,7 +1336,14 @@ async def analyze_kill_chain(
         phases_detected=list(detected_phases),
         phases_missing=missing_phases,
         coverage_percent=round(coverage, 2),
-        phase_details={k: {**v, "first_seen": v["first_seen"].isoformat(), "last_seen": v["last_seen"].isoformat()} for k, v in phase_details.items()},
+        phase_details={
+            k: {
+                **v,
+                "first_seen": v["first_seen"].isoformat(),
+                "last_seen": v["last_seen"].isoformat(),
+            }
+            for k, v in phase_details.items()
+        },
         potential_attack_progression=potential_progression,
         high_risk_indicators=high_risk,
         recommendations=recommendations,
@@ -1261,13 +1358,34 @@ async def list_kill_chain_phases():
     List all kill chain phases with descriptions.
     """
     phases = [
-        {"phase": KillChainPhaseEnum.RECONNAISSANCE.value, "description": "Attacker gathers information about the target"},
-        {"phase": KillChainPhaseEnum.WEAPONIZATION.value, "description": "Attacker creates malicious payload"},
-        {"phase": KillChainPhaseEnum.DELIVERY.value, "description": "Attacker transmits the weapon to the target"},
-        {"phase": KillChainPhaseEnum.EXPLOITATION.value, "description": "Attacker exploits a vulnerability"},
-        {"phase": KillChainPhaseEnum.INSTALLATION.value, "description": "Attacker installs malware on the target"},
-        {"phase": KillChainPhaseEnum.COMMAND_AND_CONTROL.value, "description": "Attacker establishes command channel"},
-        {"phase": KillChainPhaseEnum.ACTIONS_ON_OBJECTIVES.value, "description": "Attacker achieves their goals"},
+        {
+            "phase": KillChainPhaseEnum.RECONNAISSANCE.value,
+            "description": "Attacker gathers information about the target",
+        },
+        {
+            "phase": KillChainPhaseEnum.WEAPONIZATION.value,
+            "description": "Attacker creates malicious payload",
+        },
+        {
+            "phase": KillChainPhaseEnum.DELIVERY.value,
+            "description": "Attacker transmits the weapon to the target",
+        },
+        {
+            "phase": KillChainPhaseEnum.EXPLOITATION.value,
+            "description": "Attacker exploits a vulnerability",
+        },
+        {
+            "phase": KillChainPhaseEnum.INSTALLATION.value,
+            "description": "Attacker installs malware on the target",
+        },
+        {
+            "phase": KillChainPhaseEnum.COMMAND_AND_CONTROL.value,
+            "description": "Attacker establishes command channel",
+        },
+        {
+            "phase": KillChainPhaseEnum.ACTIONS_ON_OBJECTIVES.value,
+            "description": "Attacker achieves their goals",
+        },
     ]
     return phases
 
@@ -1276,10 +1394,12 @@ async def list_kill_chain_phases():
 # Suppression Endpoints
 # =============================================================================
 
-@router.post("/suppressions", response_model=CorrelationSuppression, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/suppressions", response_model=CorrelationSuppression, status_code=status.HTTP_201_CREATED
+)
 async def create_suppression(
-    suppression: SuppressionCreateRequest,
-    current_user: str = Depends(get_current_active_user)
+    suppression: SuppressionCreateRequest, current_user: str = Depends(get_current_active_user)
 ):
     """
     Create a suppression rule to temporarily suppress correlation alerts.
@@ -1320,13 +1440,12 @@ async def list_suppressions(
     if enabled_only:
         now = datetime.utcnow()
         suppressions = [
-            s for s in suppressions
-            if s.enabled and (s.expires_at is None or s.expires_at > now)
+            s for s in suppressions if s.enabled and (s.expires_at is None or s.expires_at > now)
         ]
 
     total = len(suppressions)
     active_count = len([s for s in suppressions if s.enabled])
-    suppressions = suppressions[skip:skip + limit]
+    suppressions = suppressions[skip : skip + limit]
 
     return SuppressionListResponse(
         suppressions=suppressions,
@@ -1337,8 +1456,7 @@ async def list_suppressions(
 
 @router.delete("/suppressions/{suppression_id}", response_model=APIResponse)
 async def delete_suppression(
-    suppression_id: str,
-    current_user: str = Depends(get_current_active_user)
+    suppression_id: str, current_user: str = Depends(get_current_active_user)
 ):
     """
     Delete a suppression rule.
@@ -1348,14 +1466,14 @@ async def delete_suppression(
 
     del suppressions_db[suppression_id]
     return APIResponse(
-        status=StatusEnum.SUCCESS,
-        message=f"Suppression {suppression_id} deleted successfully"
+        status=StatusEnum.SUCCESS, message=f"Suppression {suppression_id} deleted successfully"
     )
 
 
 # =============================================================================
 # Statistics and Health Endpoints
 # =============================================================================
+
 
 @router.get("/stats", response_model=CorrelationStats)
 async def get_correlation_stats():
@@ -1378,7 +1496,9 @@ async def get_correlation_stats():
 
     # Top triggered rules
     top_rules = sorted(rules, key=lambda r: r.trigger_count, reverse=True)[:5]
-    top_triggered = [{"rule_id": r.id, "name": r.name, "trigger_count": r.trigger_count} for r in top_rules]
+    top_triggered = [
+        {"rule_id": r.id, "name": r.name, "trigger_count": r.trigger_count} for r in top_rules
+    ]
 
     # MITRE technique frequency
     mitre_freq = defaultdict(int)
@@ -1388,7 +1508,9 @@ async def get_correlation_stats():
                 mitre_freq[technique] += 1
 
     # Average processing time
-    avg_time = sum(correlation_stats["processing_times_ms"][-100:]) / max(len(correlation_stats["processing_times_ms"][-100:]), 1)
+    avg_time = sum(correlation_stats["processing_times_ms"][-100:]) / max(
+        len(correlation_stats["processing_times_ms"][-100:]), 1
+    )
 
     # Deduplication rate
     total_processed = correlation_stats["alerts_processed"] or 1
@@ -1399,16 +1521,25 @@ async def get_correlation_stats():
         active_rules=len([r for r in rules if r.enabled]),
         disabled_rules=len([r for r in rules if not r.enabled]),
         total_correlated_alerts=len(alerts),
-        open_correlated_alerts=len([a for a in alerts if a.status == CorrelatedAlertStatusEnum.OPEN]),
+        open_correlated_alerts=len(
+            [a for a in alerts if a.status == CorrelatedAlertStatusEnum.OPEN]
+        ),
         alerts_processed_24h=correlation_stats["alerts_processed"],
         correlations_triggered_24h=correlation_stats["correlations_triggered"],
         alerts_deduplicated_24h=correlation_stats["alerts_deduplicated"],
         deduplication_rate_percent=round(dedup_rate, 2),
         avg_correlation_time_ms=round(avg_time, 2),
-        active_attack_patterns=len([p for p in patterns if p.status in [
-            AttackPatternStatusEnum.DETECTED,
-            AttackPatternStatusEnum.IN_PROGRESS,
-        ]]),
+        active_attack_patterns=len(
+            [
+                p
+                for p in patterns
+                if p.status
+                in [
+                    AttackPatternStatusEnum.DETECTED,
+                    AttackPatternStatusEnum.IN_PROGRESS,
+                ]
+            ]
+        ),
         kill_chain_coverage=dict(kill_chain_coverage),
         top_triggered_rules=top_triggered,
         mitre_technique_frequency=dict(mitre_freq),

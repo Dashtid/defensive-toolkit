@@ -16,8 +16,10 @@ from pydantic import BaseModel, Field
 # Authentication Models
 # ============================================================================
 
+
 class Token(BaseModel):
     """JWT token response"""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -26,18 +28,21 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     """Data encoded in JWT token"""
+
     username: Optional[str] = None
     scopes: List[str] = []
 
 
 class UserLogin(BaseModel):
     """User login credentials"""
+
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8)
 
 
 class RefreshTokenRequest(BaseModel):
     """Request to refresh access token"""
+
     refresh_token: str
 
 
@@ -45,8 +50,10 @@ class RefreshTokenRequest(BaseModel):
 # Common Response Models
 # ============================================================================
 
+
 class StatusEnum(str, Enum):
     """Operation status"""
+
     SUCCESS = "success"
     FAILED = "failed"
     PENDING = "pending"
@@ -55,6 +62,7 @@ class StatusEnum(str, Enum):
 
 class APIResponse(BaseModel):
     """Standard API response wrapper"""
+
     status: StatusEnum
     message: str
     data: Optional[Any] = None
@@ -63,6 +71,7 @@ class APIResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Error response model"""
+
     status: str = "error"
     error: str
     detail: Optional[str] = None
@@ -71,6 +80,7 @@ class ErrorResponse(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     """Health check response"""
+
     status: str = "healthy"
     version: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -81,8 +91,10 @@ class HealthCheckResponse(BaseModel):
 # Detection Rules Models
 # ============================================================================
 
+
 class RuleTypeEnum(str, Enum):
     """Detection rule types"""
+
     SIGMA = "sigma"
     YARA = "yara"
     SNORT = "snort"
@@ -91,6 +103,7 @@ class RuleTypeEnum(str, Enum):
 
 class DetectionRule(BaseModel):
     """Detection rule model"""
+
     id: Optional[str] = None
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
@@ -106,12 +119,14 @@ class DetectionRule(BaseModel):
 
 class DetectionRuleList(BaseModel):
     """List of detection rules"""
+
     rules: List[DetectionRule]
     total: int
 
 
 class DeployRuleRequest(BaseModel):
     """Request to deploy rule to open-source SIEM"""
+
     rule_id: str
     siem_platform: str = Field(..., pattern="^(wazuh|elastic|opensearch|graylog)$")
     workspace_id: Optional[str] = None
@@ -121,8 +136,10 @@ class DeployRuleRequest(BaseModel):
 # Incident Response Models
 # ============================================================================
 
+
 class SeverityEnum(str, Enum):
     """Incident severity levels"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -131,6 +148,7 @@ class SeverityEnum(str, Enum):
 
 class IncidentStatusEnum(str, Enum):
     """Incident status"""
+
     NEW = "new"
     INVESTIGATING = "investigating"
     CONTAINED = "contained"
@@ -141,6 +159,7 @@ class IncidentStatusEnum(str, Enum):
 
 class Incident(BaseModel):
     """Incident model"""
+
     id: Optional[str] = None
     title: str = Field(..., min_length=1, max_length=200)
     description: str
@@ -156,6 +175,7 @@ class Incident(BaseModel):
 
 class PlaybookExecutionRequest(BaseModel):
     """Request to execute IR playbook"""
+
     playbook_name: str
     incident_id: Optional[str] = None
     parameters: Dict[str, Any] = {}
@@ -163,6 +183,7 @@ class PlaybookExecutionRequest(BaseModel):
 
 class PlaybookExecutionResponse(BaseModel):
     """Playbook execution result"""
+
     execution_id: str
     playbook_name: str
     status: StatusEnum
@@ -177,8 +198,10 @@ class PlaybookExecutionResponse(BaseModel):
 # Threat Hunting Models
 # ============================================================================
 
+
 class SIEMPlatformEnum(str, Enum):
     """Supported open-source SIEM platforms"""
+
     WAZUH = "wazuh"
     ELASTIC = "elastic"
     OPENSEARCH = "opensearch"
@@ -187,6 +210,7 @@ class SIEMPlatformEnum(str, Enum):
 
 class ThreatHuntQuery(BaseModel):
     """Threat hunting query"""
+
     name: str
     description: Optional[str] = None
     platform: SIEMPlatformEnum
@@ -197,6 +221,7 @@ class ThreatHuntQuery(BaseModel):
 
 class ThreatHuntResult(BaseModel):
     """Threat hunting query result"""
+
     query_name: str
     platform: str
     results_count: int
@@ -209,8 +234,10 @@ class ThreatHuntResult(BaseModel):
 # Hardening Models
 # ============================================================================
 
+
 class OSTypeEnum(str, Enum):
     """Operating system types"""
+
     WINDOWS = "windows"
     LINUX = "linux"
     MACOS = "macos"
@@ -218,6 +245,7 @@ class OSTypeEnum(str, Enum):
 
 class CISLevelEnum(str, Enum):
     """CIS Benchmark levels"""
+
     LEVEL_1 = "level_1"
     LEVEL_2 = "level_2"
     LEVEL_3 = "level_3"
@@ -225,6 +253,7 @@ class CISLevelEnum(str, Enum):
 
 class HardeningProfile(BaseModel):
     """Security hardening profile"""
+
     os_type: OSTypeEnum
     cis_level: CISLevelEnum
     custom_rules: List[str] = []
@@ -232,6 +261,7 @@ class HardeningProfile(BaseModel):
 
 class HardeningScanRequest(BaseModel):
     """Request to scan system for hardening compliance"""
+
     target: str = "localhost"
     os_type: OSTypeEnum
     cis_level: CISLevelEnum
@@ -239,6 +269,7 @@ class HardeningScanRequest(BaseModel):
 
 class HardeningResult(BaseModel):
     """Hardening scan result"""
+
     target: str
     os_type: str
     cis_level: str
@@ -254,8 +285,10 @@ class HardeningResult(BaseModel):
 # Vulnerability Management Models
 # ============================================================================
 
+
 class VulnerabilityScanRequest(BaseModel):
     """Request to scan for vulnerabilities"""
+
     target: str = Field(..., description="IP, hostname, or CIDR range")
     scan_type: str = Field(..., pattern="^(quick|full|comprehensive)$")
     ports: Optional[str] = None  # e.g., "80,443,8080" or "1-65535"
@@ -263,6 +296,7 @@ class VulnerabilityScanRequest(BaseModel):
 
 class VulnerabilitySeverityEnum(str, Enum):
     """Vulnerability severity levels (CVSS)"""
+
     NONE = "none"
     LOW = "low"
     MEDIUM = "medium"
@@ -272,6 +306,7 @@ class VulnerabilitySeverityEnum(str, Enum):
 
 class Vulnerability(BaseModel):
     """Vulnerability finding"""
+
     cve_id: Optional[str] = None
     title: str
     description: str
@@ -283,6 +318,7 @@ class Vulnerability(BaseModel):
 
 class VulnerabilityScanResult(BaseModel):
     """Vulnerability scan results"""
+
     scan_id: str
     target: str
     scan_type: str
@@ -296,8 +332,10 @@ class VulnerabilityScanResult(BaseModel):
 # Forensics Models
 # ============================================================================
 
+
 class ForensicsArtifactTypeEnum(str, Enum):
     """Forensics artifact types"""
+
     MEMORY = "memory"
     DISK = "disk"
     NETWORK = "network"
@@ -309,6 +347,7 @@ class ForensicsArtifactTypeEnum(str, Enum):
 
 class ForensicsAnalysisRequest(BaseModel):
     """Request for forensics analysis"""
+
     artifact_type: ForensicsArtifactTypeEnum
     artifact_path: str
     analysis_modules: List[str] = []
@@ -316,6 +355,7 @@ class ForensicsAnalysisRequest(BaseModel):
 
 class ForensicsAnalysisResult(BaseModel):
     """Forensics analysis result"""
+
     analysis_id: str
     artifact_type: str
     artifact_path: str
@@ -329,8 +369,10 @@ class ForensicsAnalysisResult(BaseModel):
 # Automation (SOAR) Models
 # ============================================================================
 
+
 class AutomationAction(BaseModel):
     """SOAR automation action"""
+
     action_name: str
     parameters: Dict[str, Any]
     timeout_seconds: int = 300
@@ -338,6 +380,7 @@ class AutomationAction(BaseModel):
 
 class AutomationPlaybook(BaseModel):
     """SOAR playbook definition"""
+
     name: str
     description: Optional[str] = None
     trigger_conditions: Dict[str, Any]
@@ -347,6 +390,7 @@ class AutomationPlaybook(BaseModel):
 
 class AutomationExecutionStatus(BaseModel):
     """Automation execution status"""
+
     execution_id: str
     playbook_name: str
     status: StatusEnum
@@ -361,8 +405,10 @@ class AutomationExecutionStatus(BaseModel):
 # Compliance Models
 # ============================================================================
 
+
 class ComplianceFrameworkEnum(str, Enum):
     """Supported compliance frameworks"""
+
     CIS = "cis"
     NIST_800_53 = "nist_800_53"
     ISO_27001 = "iso_27001"
@@ -373,6 +419,7 @@ class ComplianceFrameworkEnum(str, Enum):
 
 class ComplianceCheckRequest(BaseModel):
     """Request for compliance check"""
+
     framework: ComplianceFrameworkEnum
     target: str = "localhost"
     custom_controls: List[str] = []
@@ -380,6 +427,7 @@ class ComplianceCheckRequest(BaseModel):
 
 class ComplianceControl(BaseModel):
     """Individual compliance control"""
+
     control_id: str
     title: str
     description: str
@@ -389,6 +437,7 @@ class ComplianceControl(BaseModel):
 
 class ComplianceReport(BaseModel):
     """Compliance assessment report"""
+
     framework: str
     target: str
     total_controls: int
@@ -404,8 +453,10 @@ class ComplianceReport(BaseModel):
 # Log Analysis Models
 # ============================================================================
 
+
 class LogSourceEnum(str, Enum):
     """Log source types"""
+
     SYSLOG = "syslog"
     WINDOWS_EVENT = "windows_event"
     APACHE = "apache"
@@ -417,6 +468,7 @@ class LogSourceEnum(str, Enum):
 
 class LogAnalysisRequest(BaseModel):
     """Request for log analysis"""
+
     log_source: LogSourceEnum
     log_data: str  # Raw log data or file path
     analysis_type: str = Field(..., pattern="^(parse|anomaly|baseline)$")
@@ -424,6 +476,7 @@ class LogAnalysisRequest(BaseModel):
 
 class LogEntry(BaseModel):
     """Parsed log entry"""
+
     timestamp: datetime
     source: str
     severity: str
@@ -433,6 +486,7 @@ class LogEntry(BaseModel):
 
 class LogAnalysisResult(BaseModel):
     """Log analysis result"""
+
     analysis_id: str
     log_source: str
     analysis_type: str
@@ -447,8 +501,10 @@ class LogAnalysisResult(BaseModel):
 # Monitoring Models
 # ============================================================================
 
+
 class MonitoringMetrics(BaseModel):
     """System monitoring metrics"""
+
     cpu_usage_percent: float
     memory_usage_percent: float
     disk_usage_percent: float
@@ -460,6 +516,7 @@ class MonitoringMetrics(BaseModel):
 
 class AlertConfiguration(BaseModel):
     """Monitoring alert configuration"""
+
     alert_name: str
     metric: str
     threshold: float
@@ -472,15 +529,18 @@ class AlertConfiguration(BaseModel):
 # Runbook Models (v1.7.1)
 # ============================================================================
 
+
 class RunbookExecutionModeEnum(str, Enum):
     """Runbook execution modes"""
-    NORMAL = "normal"       # Interactive with approval prompts
-    DRY_RUN = "dry_run"     # Simulate without executing
-    AUTO_APPROVE = "auto"   # Auto-approve based on severity level
+
+    NORMAL = "normal"  # Interactive with approval prompts
+    DRY_RUN = "dry_run"  # Simulate without executing
+    AUTO_APPROVE = "auto"  # Auto-approve based on severity level
 
 
 class RunbookStepStatusEnum(str, Enum):
     """Individual step execution status"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -491,6 +551,7 @@ class RunbookStepStatusEnum(str, Enum):
 
 class RunbookSummary(BaseModel):
     """Summary of available runbook"""
+
     id: str
     name: str
     description: str
@@ -507,6 +568,7 @@ class RunbookSummary(BaseModel):
 
 class RunbookDetail(BaseModel):
     """Detailed runbook information including steps"""
+
     id: str
     name: str
     description: str
@@ -520,29 +582,31 @@ class RunbookDetail(BaseModel):
 
 class RunbookListResponse(BaseModel):
     """List of available runbooks"""
+
     runbooks: List[RunbookSummary]
     total: int
 
 
 class RunbookExecuteRequest(BaseModel):
     """Request to execute a runbook"""
+
     runbook_id: str = Field(..., description="Runbook identifier (filename without extension)")
     incident_id: Optional[str] = Field(None, description="Link to existing incident")
     mode: RunbookExecutionModeEnum = RunbookExecutionModeEnum.DRY_RUN
     auto_approve_level: Optional[str] = Field(
         None,
         pattern="^(low|medium|high)$",
-        description="Auto-approve actions up to this severity level"
+        description="Auto-approve actions up to this severity level",
     )
     variables: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Runtime variables to pass to the runbook"
+        default_factory=dict, description="Runtime variables to pass to the runbook"
     )
     target_host: str = Field("localhost", description="Target host for containment actions")
 
 
 class RunbookStepResult(BaseModel):
     """Result of a single runbook step"""
+
     step_name: str
     action: str
     status: RunbookStepStatusEnum
@@ -555,6 +619,7 @@ class RunbookStepResult(BaseModel):
 
 class RunbookExecutionStatus(BaseModel):
     """Current status of runbook execution"""
+
     execution_id: str
     runbook_name: str
     runbook_version: str
@@ -578,6 +643,7 @@ class RunbookExecutionStatus(BaseModel):
 
 class RunbookExecutionResponse(BaseModel):
     """Response after initiating runbook execution"""
+
     execution_id: str
     incident_id: str
     runbook_name: str
@@ -588,6 +654,7 @@ class RunbookExecutionResponse(BaseModel):
 
 class PendingApproval(BaseModel):
     """Pending approval request for high-severity action"""
+
     approval_id: str
     execution_id: str
     step_name: str
@@ -601,12 +668,14 @@ class PendingApproval(BaseModel):
 
 class ApprovalDecision(BaseModel):
     """Analyst decision on pending approval"""
+
     approved: bool
     reason: Optional[str] = None
 
 
 class EvidenceItem(BaseModel):
     """Evidence item in chain of custody"""
+
     evidence_id: str
     incident_id: str
     evidence_type: str
@@ -622,6 +691,7 @@ class EvidenceItem(BaseModel):
 
 class EvidenceChainResponse(BaseModel):
     """Chain of custody for collected evidence"""
+
     incident_id: str
     created_at: datetime
     evidence_count: int
@@ -630,6 +700,7 @@ class EvidenceChainResponse(BaseModel):
 
 class RollbackRequest(BaseModel):
     """Request to rollback executed actions"""
+
     execution_id: str
     confirm: bool = Field(..., description="Must be true to confirm rollback")
 
@@ -638,8 +709,10 @@ class RollbackRequest(BaseModel):
 # Webhook Models (v1.7.2)
 # ============================================================================
 
+
 class WebhookSourceEnum(str, Enum):
     """Supported webhook sources"""
+
     WAZUH = "wazuh"
     ELASTIC = "elastic"
     OPENSEARCH = "opensearch"
@@ -650,6 +723,7 @@ class WebhookSourceEnum(str, Enum):
 
 class WebhookStatusEnum(str, Enum):
     """Webhook configuration status"""
+
     ACTIVE = "active"
     DISABLED = "disabled"
     TESTING = "testing"
@@ -657,27 +731,30 @@ class WebhookStatusEnum(str, Enum):
 
 class AlertSeverityMapping(BaseModel):
     """Maps alert severity to runbook execution mode"""
-    alert_severity: str = Field(..., description="Source alert severity (e.g., 'critical', 'high', '15')")
+
+    alert_severity: str = Field(
+        ..., description="Source alert severity (e.g., 'critical', 'high', '15')"
+    )
     runbook_mode: RunbookExecutionModeEnum = Field(
-        default=RunbookExecutionModeEnum.DRY_RUN,
-        description="Execution mode for this severity"
+        default=RunbookExecutionModeEnum.DRY_RUN, description="Execution mode for this severity"
     )
     auto_approve_level: Optional[str] = Field(
-        None,
-        pattern="^(low|medium|high)$",
-        description="Auto-approve level when mode is 'auto'"
+        None, pattern="^(low|medium|high)$", description="Auto-approve level when mode is 'auto'"
     )
 
 
 class WebhookTriggerRule(BaseModel):
     """Rule for mapping alerts to runbooks"""
+
     rule_id: Optional[str] = None
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     enabled: bool = True
 
     # Matching conditions (all must match)
-    match_field: str = Field(..., description="Alert field to match (e.g., 'rule.id', 'alert.signature')")
+    match_field: str = Field(
+        ..., description="Alert field to match (e.g., 'rule.id', 'alert.signature')"
+    )
     match_pattern: str = Field(..., description="Regex pattern or exact value to match")
     match_type: str = Field("regex", pattern="^(regex|exact|contains)$")
 
@@ -693,16 +770,19 @@ class WebhookTriggerRule(BaseModel):
     # Variable mapping from alert to runbook
     variable_mappings: Dict[str, str] = Field(
         default_factory=dict,
-        description="Map alert fields to runbook variables (e.g., {'compromised_user': 'data.user'})"
+        description="Map alert fields to runbook variables (e.g., {'compromised_user': 'data.user'})",
     )
 
     # Rate limiting
-    cooldown_seconds: int = Field(300, ge=0, description="Minimum seconds between triggers for same rule")
+    cooldown_seconds: int = Field(
+        300, ge=0, description="Minimum seconds between triggers for same rule"
+    )
     max_triggers_per_hour: int = Field(10, ge=1, le=100, description="Maximum triggers per hour")
 
 
 class WebhookConfig(BaseModel):
     """Webhook endpoint configuration"""
+
     webhook_id: Optional[str] = None
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
@@ -711,7 +791,9 @@ class WebhookConfig(BaseModel):
 
     # Security
     secret_key: Optional[str] = Field(None, description="HMAC secret for signature verification")
-    allowed_ips: List[str] = Field(default_factory=list, description="Allowed source IPs (empty = all)")
+    allowed_ips: List[str] = Field(
+        default_factory=list, description="Allowed source IPs (empty = all)"
+    )
 
     # Alert parsing
     alert_id_field: str = Field("id", description="JSON path to alert ID")
@@ -735,12 +817,14 @@ class WebhookConfig(BaseModel):
 
 class WebhookConfigList(BaseModel):
     """List of webhook configurations"""
+
     webhooks: List[WebhookConfig]
     total: int
 
 
 class IncomingAlert(BaseModel):
     """Parsed incoming alert from webhook"""
+
     alert_id: str
     source: WebhookSourceEnum
     severity: str
@@ -754,6 +838,7 @@ class IncomingAlert(BaseModel):
 
 class WebhookTriggerResult(BaseModel):
     """Result of webhook trigger processing"""
+
     webhook_id: str
     alert_id: str
     received_at: datetime
@@ -769,12 +854,14 @@ class WebhookTriggerResult(BaseModel):
 
 class WebhookTestRequest(BaseModel):
     """Request to test webhook configuration"""
+
     webhook_id: str
     test_payload: Dict[str, Any] = Field(..., description="Sample alert payload to test")
 
 
 class WebhookTestResult(BaseModel):
     """Result of webhook configuration test"""
+
     webhook_id: str
     test_passed: bool
     parsed_alert: Optional[IncomingAlert] = None
@@ -787,6 +874,7 @@ class WebhookTestResult(BaseModel):
 
 class WebhookStats(BaseModel):
     """Statistics for a webhook endpoint"""
+
     webhook_id: str
     webhook_name: str
     total_received: int
@@ -805,8 +893,10 @@ class WebhookStats(BaseModel):
 # Threat Intelligence Models (v1.7.3)
 # ============================================================================
 
+
 class IOCTypeEnum(str, Enum):
     """Types of Indicators of Compromise"""
+
     IP = "ip"
     DOMAIN = "domain"
     URL = "url"
@@ -819,6 +909,7 @@ class IOCTypeEnum(str, Enum):
 
 class ThreatIntelSourceEnum(str, Enum):
     """Supported threat intelligence sources"""
+
     VIRUSTOTAL = "virustotal"
     ABUSEIPDB = "abuseipdb"
     ALIENVAULT_OTX = "alienvault_otx"
@@ -832,6 +923,7 @@ class ThreatIntelSourceEnum(str, Enum):
 
 class ThreatCategoryEnum(str, Enum):
     """Threat categories for IOCs"""
+
     MALWARE = "malware"
     PHISHING = "phishing"
     BOTNET = "botnet"
@@ -849,6 +941,7 @@ class ThreatCategoryEnum(str, Enum):
 
 class ReputationScoreEnum(str, Enum):
     """IOC reputation classification"""
+
     MALICIOUS = "malicious"
     SUSPICIOUS = "suspicious"
     NEUTRAL = "neutral"
@@ -858,11 +951,14 @@ class ReputationScoreEnum(str, Enum):
 
 class IOCEnrichmentRequest(BaseModel):
     """Request to enrich one or more IOCs"""
+
     iocs: List[str] = Field(..., min_items=1, max_items=100, description="List of IOCs to enrich")
-    ioc_type: Optional[IOCTypeEnum] = Field(None, description="IOC type (auto-detected if not specified)")
+    ioc_type: Optional[IOCTypeEnum] = Field(
+        None, description="IOC type (auto-detected if not specified)"
+    )
     sources: List[ThreatIntelSourceEnum] = Field(
         default_factory=lambda: [ThreatIntelSourceEnum.VIRUSTOTAL, ThreatIntelSourceEnum.ABUSEIPDB],
-        description="Intelligence sources to query"
+        description="Intelligence sources to query",
     )
     include_whois: bool = Field(False, description="Include WHOIS data for domains/IPs")
     include_passive_dns: bool = Field(False, description="Include passive DNS records")
@@ -871,6 +967,7 @@ class IOCEnrichmentRequest(BaseModel):
 
 class SourceResult(BaseModel):
     """Result from a single intelligence source"""
+
     source: ThreatIntelSourceEnum
     queried_at: datetime
     success: bool
@@ -902,6 +999,7 @@ class SourceResult(BaseModel):
 
 class WhoisData(BaseModel):
     """WHOIS registration data"""
+
     registrar: Optional[str] = None
     registrant: Optional[str] = None
     registrant_country: Optional[str] = None
@@ -915,6 +1013,7 @@ class WhoisData(BaseModel):
 
 class PassiveDNSRecord(BaseModel):
     """Passive DNS record"""
+
     record_type: str = Field(..., description="A, AAAA, CNAME, MX, etc.")
     value: str
     first_seen: Optional[datetime] = None
@@ -924,6 +1023,7 @@ class PassiveDNSRecord(BaseModel):
 
 class RelatedSample(BaseModel):
     """Related malware sample"""
+
     sha256: str
     file_name: Optional[str] = None
     file_type: Optional[str] = None
@@ -935,6 +1035,7 @@ class RelatedSample(BaseModel):
 
 class GeoIPData(BaseModel):
     """Geographic IP data"""
+
     country: Optional[str] = None
     country_code: Optional[str] = None
     city: Optional[str] = None
@@ -948,6 +1049,7 @@ class GeoIPData(BaseModel):
 
 class IOCEnrichmentResult(BaseModel):
     """Enrichment result for a single IOC"""
+
     ioc: str
     ioc_type: IOCTypeEnum
     enriched_at: datetime
@@ -982,6 +1084,7 @@ class IOCEnrichmentResult(BaseModel):
 
 class BulkEnrichmentResponse(BaseModel):
     """Response for bulk IOC enrichment"""
+
     request_id: str
     total_iocs: int
     enriched_count: int
@@ -993,6 +1096,7 @@ class BulkEnrichmentResponse(BaseModel):
 
 class ThreatIntelSourceConfig(BaseModel):
     """Configuration for a threat intelligence source"""
+
     source: ThreatIntelSourceEnum
     enabled: bool = True
     api_key_configured: bool = False
@@ -1005,6 +1109,7 @@ class ThreatIntelSourceConfig(BaseModel):
 
 class ThreatIntelSourceStatus(BaseModel):
     """Status of a threat intelligence source"""
+
     source: ThreatIntelSourceEnum
     enabled: bool
     api_key_configured: bool
@@ -1018,6 +1123,7 @@ class ThreatIntelSourceStatus(BaseModel):
 
 class ThreatIntelFeed(BaseModel):
     """Threat intelligence feed configuration"""
+
     feed_id: Optional[str] = None
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
@@ -1045,24 +1151,31 @@ class ThreatIntelFeed(BaseModel):
 
 class ThreatIntelFeedList(BaseModel):
     """List of threat intelligence feeds"""
+
     feeds: List[ThreatIntelFeed]
     total: int
 
 
 class IOCSearchRequest(BaseModel):
     """Search for IOCs in local threat intel database"""
+
     query: str = Field(..., min_length=1, description="Search query (IOC value or partial match)")
     ioc_types: List[IOCTypeEnum] = Field(default_factory=list, description="Filter by IOC types")
-    categories: List[ThreatCategoryEnum] = Field(default_factory=list, description="Filter by categories")
+    categories: List[ThreatCategoryEnum] = Field(
+        default_factory=list, description="Filter by categories"
+    )
     min_risk_score: Optional[int] = Field(None, ge=0, le=100)
     max_age_days: Optional[int] = Field(None, ge=1, description="Maximum age of IOC data")
-    sources: List[ThreatIntelSourceEnum] = Field(default_factory=list, description="Filter by sources")
+    sources: List[ThreatIntelSourceEnum] = Field(
+        default_factory=list, description="Filter by sources"
+    )
     limit: int = Field(100, ge=1, le=1000)
     offset: int = Field(0, ge=0)
 
 
 class IOCSearchResult(BaseModel):
     """Local IOC search result"""
+
     ioc: str
     ioc_type: IOCTypeEnum
     reputation: ReputationScoreEnum
@@ -1076,6 +1189,7 @@ class IOCSearchResult(BaseModel):
 
 class IOCSearchResponse(BaseModel):
     """Response for IOC search"""
+
     query: str
     total_matches: int
     results: List[IOCSearchResult]
@@ -1084,6 +1198,7 @@ class IOCSearchResponse(BaseModel):
 
 class ThreatIntelStats(BaseModel):
     """Threat intelligence system statistics"""
+
     total_iocs_cached: int
     iocs_by_type: Dict[str, int]
     iocs_by_category: Dict[str, int]
@@ -1099,8 +1214,10 @@ class ThreatIntelStats(BaseModel):
 # WebSocket Real-Time Updates Models (v1.7.4)
 # ============================================================================
 
+
 class WebSocketEventTypeEnum(str, Enum):
     """Types of real-time events"""
+
     # Connection events
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
@@ -1143,17 +1260,19 @@ class WebSocketEventTypeEnum(str, Enum):
 
 class WebSocketChannelEnum(str, Enum):
     """Subscription channels for events"""
-    ALL = "all"                          # All events
-    RUNBOOKS = "runbooks"                # Runbook execution events
-    INCIDENTS = "incidents"              # Incident updates
-    ALERTS = "alerts"                    # Webhook/alert events
-    THREAT_INTEL = "threat_intel"        # IOC enrichment events
-    SYSTEM = "system"                    # System alerts and errors
-    EXECUTION = "execution"              # Specific execution ID (requires param)
+
+    ALL = "all"  # All events
+    RUNBOOKS = "runbooks"  # Runbook execution events
+    INCIDENTS = "incidents"  # Incident updates
+    ALERTS = "alerts"  # Webhook/alert events
+    THREAT_INTEL = "threat_intel"  # IOC enrichment events
+    SYSTEM = "system"  # System alerts and errors
+    EXECUTION = "execution"  # Specific execution ID (requires param)
 
 
 class WebSocketMessage(BaseModel):
     """Base WebSocket message format"""
+
     event_type: WebSocketEventTypeEnum
     channel: WebSocketChannelEnum
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -1163,23 +1282,22 @@ class WebSocketMessage(BaseModel):
 
 class WebSocketAuthRequest(BaseModel):
     """Authentication request for WebSocket connection"""
+
     token: str = Field(..., description="JWT access token or API key")
     subscribe_channels: List[WebSocketChannelEnum] = Field(
-        default_factory=lambda: [WebSocketChannelEnum.ALL],
-        description="Channels to subscribe to"
+        default_factory=lambda: [WebSocketChannelEnum.ALL], description="Channels to subscribe to"
     )
     subscribe_executions: List[str] = Field(
-        default_factory=list,
-        description="Specific execution IDs to monitor"
+        default_factory=list, description="Specific execution IDs to monitor"
     )
     subscribe_incidents: List[str] = Field(
-        default_factory=list,
-        description="Specific incident IDs to monitor"
+        default_factory=list, description="Specific incident IDs to monitor"
     )
 
 
 class WebSocketAuthResponse(BaseModel):
     """Authentication response"""
+
     success: bool
     message: str
     user: Optional[str] = None
@@ -1190,6 +1308,7 @@ class WebSocketAuthResponse(BaseModel):
 
 class WebSocketSubscribeRequest(BaseModel):
     """Request to modify subscriptions"""
+
     action: str = Field(..., pattern="^(subscribe|unsubscribe)$")
     channels: List[WebSocketChannelEnum] = []
     execution_ids: List[str] = []
@@ -1198,6 +1317,7 @@ class WebSocketSubscribeRequest(BaseModel):
 
 class WebSocketSubscribeResponse(BaseModel):
     """Subscription modification response"""
+
     success: bool
     message: str
     current_subscriptions: Dict[str, List[str]] = {}
@@ -1205,6 +1325,7 @@ class WebSocketSubscribeResponse(BaseModel):
 
 class WebSocketHeartbeat(BaseModel):
     """Heartbeat message for connection keep-alive"""
+
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     sequence: int
     connection_uptime_seconds: int
@@ -1212,6 +1333,7 @@ class WebSocketHeartbeat(BaseModel):
 
 class WebSocketConnectionInfo(BaseModel):
     """Information about a WebSocket connection"""
+
     connection_id: str
     user: str
     connected_at: datetime
@@ -1227,6 +1349,7 @@ class WebSocketConnectionInfo(BaseModel):
 
 class WebSocketConnectionStats(BaseModel):
     """Statistics for WebSocket connections"""
+
     active_connections: int
     total_connections_today: int
     total_messages_sent: int
@@ -1239,6 +1362,7 @@ class WebSocketConnectionStats(BaseModel):
 
 class RunbookProgressEvent(BaseModel):
     """Real-time progress update for runbook execution"""
+
     execution_id: str
     runbook_name: str
     incident_id: str
@@ -1257,6 +1381,7 @@ class RunbookProgressEvent(BaseModel):
 
 class RunbookStepEvent(BaseModel):
     """Event for individual runbook step status change"""
+
     execution_id: str
     runbook_name: str
     incident_id: str
@@ -1274,6 +1399,7 @@ class RunbookStepEvent(BaseModel):
 
 class ApprovalRequestEvent(BaseModel):
     """Event when a runbook step requires approval"""
+
     execution_id: str
     runbook_name: str
     incident_id: str
@@ -1290,6 +1416,7 @@ class ApprovalRequestEvent(BaseModel):
 
 class IncidentEvent(BaseModel):
     """Event for incident status changes"""
+
     incident_id: str
     title: str
     previous_status: Optional[IncidentStatusEnum] = None
@@ -1304,6 +1431,7 @@ class IncidentEvent(BaseModel):
 
 class AlertEvent(BaseModel):
     """Event for incoming alerts from webhooks"""
+
     webhook_id: str
     webhook_name: str
     alert_id: str
@@ -1319,6 +1447,7 @@ class AlertEvent(BaseModel):
 
 class IOCEnrichmentEvent(BaseModel):
     """Event for IOC enrichment progress"""
+
     request_id: str
     ioc: str
     ioc_type: IOCTypeEnum
@@ -1335,6 +1464,7 @@ class IOCEnrichmentEvent(BaseModel):
 
 class SystemAlertEvent(BaseModel):
     """System-level alert event"""
+
     alert_type: str  # rate_limit_warning, api_error, connection_limit, etc.
     severity: str  # info, warning, error, critical
     title: str
@@ -1347,8 +1477,10 @@ class SystemAlertEvent(BaseModel):
 # SIEM Integration Models (v1.7.5)
 # ============================================================================
 
+
 class SIEMPlatformTypeEnum(str, Enum):
     """Supported SIEM platform types"""
+
     WAZUH = "wazuh"
     ELASTIC = "elastic"
     OPENSEARCH = "opensearch"
@@ -1358,6 +1490,7 @@ class SIEMPlatformTypeEnum(str, Enum):
 
 class SIEMConnectionStatusEnum(str, Enum):
     """SIEM connection status"""
+
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     CONNECTING = "connecting"
@@ -1367,6 +1500,7 @@ class SIEMConnectionStatusEnum(str, Enum):
 
 class SIEMAuthTypeEnum(str, Enum):
     """SIEM authentication types"""
+
     BASIC = "basic"
     API_KEY = "api_key"
     TOKEN = "token"
@@ -1375,6 +1509,7 @@ class SIEMAuthTypeEnum(str, Enum):
 
 class SIEMConnectionConfig(BaseModel):
     """Configuration for connecting to a SIEM platform"""
+
     connection_id: Optional[str] = None
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
@@ -1413,12 +1548,14 @@ class SIEMConnectionConfig(BaseModel):
 
 class SIEMConnectionConfigList(BaseModel):
     """List of SIEM connections"""
+
     connections: List[SIEMConnectionConfig]
     total: int
 
 
 class SIEMConnectionStatus(BaseModel):
     """Current status of a SIEM connection"""
+
     connection_id: str
     name: str
     platform: SIEMPlatformTypeEnum
@@ -1435,6 +1572,7 @@ class SIEMConnectionStatus(BaseModel):
 
 class SIEMQueryRequest(BaseModel):
     """Request to query SIEM for alerts/events"""
+
     connection_id: str = Field(..., description="SIEM connection to query")
     query: Optional[str] = Field(None, description="Query string (Lucene/KQL syntax)")
     query_dsl: Optional[Dict[str, Any]] = Field(None, description="Full DSL query object")
@@ -1467,6 +1605,7 @@ class SIEMQueryRequest(BaseModel):
 
 class SIEMAlert(BaseModel):
     """Normalized alert from SIEM"""
+
     alert_id: str
     timestamp: datetime
     platform: SIEMPlatformTypeEnum
@@ -1526,6 +1665,7 @@ class SIEMAlert(BaseModel):
 
 class SIEMQueryResponse(BaseModel):
     """Response from SIEM query"""
+
     connection_id: str
     platform: SIEMPlatformTypeEnum
     query_time_ms: int
@@ -1538,6 +1678,7 @@ class SIEMQueryResponse(BaseModel):
 
 class SIEMAggregationRequest(BaseModel):
     """Request for SIEM aggregation query"""
+
     connection_id: str
     time_from: datetime
     time_to: Optional[datetime] = None
@@ -1545,8 +1686,7 @@ class SIEMAggregationRequest(BaseModel):
 
     # Aggregation type
     aggregation_type: str = Field(
-        ...,
-        pattern="^(terms|date_histogram|histogram|stats|cardinality|top_hits)$"
+        ..., pattern="^(terms|date_histogram|histogram|stats|cardinality|top_hits)$"
     )
     field: str = Field(..., description="Field to aggregate on")
 
@@ -1562,6 +1702,7 @@ class SIEMAggregationRequest(BaseModel):
 
 class SIEMAggregationBucket(BaseModel):
     """Single aggregation bucket"""
+
     key: Any
     key_as_string: Optional[str] = None
     doc_count: int
@@ -1570,6 +1711,7 @@ class SIEMAggregationBucket(BaseModel):
 
 class SIEMAggregationResponse(BaseModel):
     """Response from SIEM aggregation"""
+
     connection_id: str
     platform: SIEMPlatformTypeEnum
     query_time_ms: int
@@ -1581,6 +1723,7 @@ class SIEMAggregationResponse(BaseModel):
 
 class SIEMAgentInfo(BaseModel):
     """Information about a SIEM agent"""
+
     agent_id: str
     name: str
     ip: Optional[str] = None
@@ -1598,6 +1741,7 @@ class SIEMAgentInfo(BaseModel):
 
 class SIEMAgentListResponse(BaseModel):
     """List of SIEM agents"""
+
     connection_id: str
     platform: SIEMPlatformTypeEnum
     total_agents: int
@@ -1608,6 +1752,7 @@ class SIEMAgentListResponse(BaseModel):
 
 class SIEMRuleInfo(BaseModel):
     """Information about a SIEM detection rule"""
+
     rule_id: str
     level: int
     description: str
@@ -1627,6 +1772,7 @@ class SIEMRuleInfo(BaseModel):
 
 class SIEMRuleListResponse(BaseModel):
     """List of SIEM rules"""
+
     connection_id: str
     platform: SIEMPlatformTypeEnum
     total_rules: int
@@ -1635,6 +1781,7 @@ class SIEMRuleListResponse(BaseModel):
 
 class SIEMIndexInfo(BaseModel):
     """Information about a SIEM index"""
+
     index_name: str
     status: str  # open, closed
     health: str  # green, yellow, red
@@ -1648,6 +1795,7 @@ class SIEMIndexInfo(BaseModel):
 
 class SIEMIndexListResponse(BaseModel):
     """List of SIEM indices"""
+
     connection_id: str
     platform: SIEMPlatformTypeEnum
     total_indices: int
@@ -1659,6 +1807,7 @@ class SIEMIndexListResponse(BaseModel):
 
 class SIEMDashboardStats(BaseModel):
     """Dashboard statistics from SIEM"""
+
     connection_id: str
     platform: SIEMPlatformTypeEnum
     time_range_hours: int
@@ -1688,6 +1837,7 @@ class SIEMDashboardStats(BaseModel):
 
 class SIEMHealthCheck(BaseModel):
     """SIEM platform health check result"""
+
     connection_id: str
     name: str
     platform: SIEMPlatformTypeEnum
@@ -1702,6 +1852,7 @@ class SIEMHealthCheck(BaseModel):
 
 class SIEMBulkHealthCheck(BaseModel):
     """Bulk health check for all SIEM connections"""
+
     total_connections: int
     healthy_count: int
     unhealthy_count: int
@@ -1711,6 +1862,7 @@ class SIEMBulkHealthCheck(BaseModel):
 
 class SIEMAlertAcknowledge(BaseModel):
     """Request to acknowledge alerts in SIEM"""
+
     connection_id: str
     alert_ids: List[str] = Field(..., min_items=1, max_items=100)
     acknowledged_by: str
@@ -1719,6 +1871,7 @@ class SIEMAlertAcknowledge(BaseModel):
 
 class SIEMAlertAcknowledgeResponse(BaseModel):
     """Response from alert acknowledgment"""
+
     connection_id: str
     acknowledged_count: int
     failed_count: int
@@ -1730,8 +1883,10 @@ class SIEMAlertAcknowledgeResponse(BaseModel):
 # Scheduled Tasks/Jobs Models (v1.7.6)
 # ============================================================================
 
+
 class ScheduledJobTypeEnum(str, Enum):
     """Types of scheduled jobs"""
+
     # Security scans
     VULNERABILITY_SCAN = "vulnerability_scan"
     COMPLIANCE_CHECK = "compliance_check"
@@ -1766,6 +1921,7 @@ class ScheduledJobTypeEnum(str, Enum):
 
 class ScheduledJobStatusEnum(str, Enum):
     """Status of a scheduled job"""
+
     ACTIVE = "active"
     PAUSED = "paused"
     DISABLED = "disabled"
@@ -1774,6 +1930,7 @@ class ScheduledJobStatusEnum(str, Enum):
 
 class JobExecutionStatusEnum(str, Enum):
     """Status of a job execution"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -1785,6 +1942,7 @@ class JobExecutionStatusEnum(str, Enum):
 
 class ScheduleTypeEnum(str, Enum):
     """Type of schedule"""
+
     CRON = "cron"
     INTERVAL = "interval"
     ONCE = "once"
@@ -1793,6 +1951,7 @@ class ScheduleTypeEnum(str, Enum):
 
 class JobPriorityEnum(str, Enum):
     """Job execution priority"""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -1801,6 +1960,7 @@ class JobPriorityEnum(str, Enum):
 
 class ScheduledJobConfig(BaseModel):
     """Configuration for a scheduled job"""
+
     job_id: Optional[str] = None
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
@@ -1811,41 +1971,30 @@ class ScheduledJobConfig(BaseModel):
     # Schedule configuration
     schedule_type: ScheduleTypeEnum = ScheduleTypeEnum.CRON
     cron_expression: Optional[str] = Field(
-        None,
-        description="Cron expression (e.g., '0 */6 * * *' for every 6 hours)"
+        None, description="Cron expression (e.g., '0 */6 * * *' for every 6 hours)"
     )
     interval_seconds: Optional[int] = Field(
-        None,
-        ge=60,
-        description="Interval in seconds (minimum 60)"
+        None, ge=60, description="Interval in seconds (minimum 60)"
     )
-    run_at: Optional[datetime] = Field(
-        None,
-        description="Specific datetime for one-time execution"
-    )
+    run_at: Optional[datetime] = Field(None, description="Specific datetime for one-time execution")
     timezone: str = Field("UTC", description="Timezone for schedule")
 
     # Execution settings
     timeout_seconds: int = Field(3600, ge=60, le=86400)
     max_retries: int = Field(3, ge=0, le=10)
     retry_delay_seconds: int = Field(300, ge=60, le=3600)
-    concurrent_allowed: bool = Field(
-        False,
-        description="Allow concurrent executions of this job"
-    )
+    concurrent_allowed: bool = Field(False, description="Allow concurrent executions of this job")
 
     # Job-specific parameters
     parameters: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Job-type specific parameters"
+        default_factory=dict, description="Job-type specific parameters"
     )
 
     # Notification settings
     notify_on_success: bool = False
     notify_on_failure: bool = True
     notification_channels: List[str] = Field(
-        default_factory=list,
-        description="Notification channels (email, slack, webhook)"
+        default_factory=list, description="Notification channels (email, slack, webhook)"
     )
     notification_emails: List[str] = Field(default_factory=list)
 
@@ -1864,6 +2013,7 @@ class ScheduledJobConfig(BaseModel):
 
 class ScheduledJobCreateRequest(BaseModel):
     """Request to create a scheduled job"""
+
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     job_type: ScheduledJobTypeEnum
@@ -1899,6 +2049,7 @@ class ScheduledJobCreateRequest(BaseModel):
 
 class ScheduledJobUpdateRequest(BaseModel):
     """Request to update a scheduled job"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     status: Optional[ScheduledJobStatusEnum] = None
@@ -1933,6 +2084,7 @@ class ScheduledJobUpdateRequest(BaseModel):
 
 class ScheduledJobResponse(BaseModel):
     """Response for a scheduled job"""
+
     job_id: str
     name: str
     description: Optional[str]
@@ -1956,6 +2108,7 @@ class ScheduledJobResponse(BaseModel):
 
 class ScheduledJobListResponse(BaseModel):
     """List of scheduled jobs"""
+
     jobs: List[ScheduledJobResponse]
     total: int
     active_count: int
@@ -1965,6 +2118,7 @@ class ScheduledJobListResponse(BaseModel):
 
 class JobExecution(BaseModel):
     """Record of a job execution"""
+
     execution_id: str
     job_id: str
     job_name: str
@@ -1997,6 +2151,7 @@ class JobExecution(BaseModel):
 
 class JobExecutionListResponse(BaseModel):
     """List of job executions"""
+
     executions: List[JobExecution]
     total: int
     running_count: int
@@ -2005,17 +2160,16 @@ class JobExecutionListResponse(BaseModel):
 
 class JobExecutionRequest(BaseModel):
     """Request to manually trigger a job"""
+
     job_id: str
     parameters: Optional[Dict[str, Any]] = None
     priority: Optional[JobPriorityEnum] = None
-    skip_queue: bool = Field(
-        False,
-        description="Execute immediately, bypassing the queue"
-    )
+    skip_queue: bool = Field(False, description="Execute immediately, bypassing the queue")
 
 
 class JobExecutionResponse(BaseModel):
     """Response from triggering a job"""
+
     execution_id: str
     job_id: str
     job_name: str
@@ -2026,12 +2180,14 @@ class JobExecutionResponse(BaseModel):
 
 class JobCancelRequest(BaseModel):
     """Request to cancel a running job"""
+
     execution_id: str
     reason: Optional[str] = None
 
 
 class JobCancelResponse(BaseModel):
     """Response from cancelling a job"""
+
     execution_id: str
     cancelled: bool
     message: str
@@ -2040,6 +2196,7 @@ class JobCancelResponse(BaseModel):
 
 class SchedulerStats(BaseModel):
     """Scheduler system statistics"""
+
     scheduler_status: str  # running, paused, stopped
     uptime_seconds: int
     jobs_total: int
@@ -2076,6 +2233,7 @@ class SchedulerStats(BaseModel):
 
 class SchedulerHealthCheck(BaseModel):
     """Health check for scheduler"""
+
     healthy: bool
     status: str
     checks: Dict[str, bool]
@@ -2088,6 +2246,7 @@ class SchedulerHealthCheck(BaseModel):
 
 class CronValidationRequest(BaseModel):
     """Request to validate a cron expression"""
+
     cron_expression: str
     timezone: str = "UTC"
     count: int = Field(5, ge=1, le=20, description="Number of next runs to show")
@@ -2095,6 +2254,7 @@ class CronValidationRequest(BaseModel):
 
 class CronValidationResponse(BaseModel):
     """Response from cron validation"""
+
     valid: bool
     expression: str
     description: str
@@ -2105,6 +2265,7 @@ class CronValidationResponse(BaseModel):
 
 class JobTypeInfo(BaseModel):
     """Information about a job type"""
+
     job_type: ScheduledJobTypeEnum
     name: str
     description: str
@@ -2119,18 +2280,21 @@ class JobTypeInfo(BaseModel):
 
 class JobTypeListResponse(BaseModel):
     """List of available job types"""
+
     job_types: List[JobTypeInfo]
     categories: List[str]
 
 
 class BulkJobActionRequest(BaseModel):
     """Request for bulk job actions"""
+
     job_ids: List[str] = Field(..., min_items=1, max_items=100)
     action: str = Field(..., pattern="^(pause|resume|disable|delete)$")
 
 
 class BulkJobActionResponse(BaseModel):
     """Response from bulk job action"""
+
     action: str
     total_requested: int
     succeeded: int
@@ -2140,6 +2304,7 @@ class BulkJobActionResponse(BaseModel):
 
 class JobNotificationConfig(BaseModel):
     """Notification configuration for jobs"""
+
     job_id: str
     notify_on_success: bool = False
     notify_on_failure: bool = True
@@ -2154,17 +2319,16 @@ class JobNotificationConfig(BaseModel):
 
 class JobDependency(BaseModel):
     """Dependency between jobs"""
+
     job_id: str
     depends_on_job_id: str
-    dependency_type: str = Field(
-        "completion",
-        pattern="^(completion|success|failure)$"
-    )
+    dependency_type: str = Field("completion", pattern="^(completion|success|failure)$")
     wait_timeout_seconds: int = Field(3600, ge=60)
 
 
 class JobDependencyResponse(BaseModel):
     """Response for job dependencies"""
+
     job_id: str
     dependencies: List[JobDependency]
     dependents: List[str]  # Jobs that depend on this job
@@ -2174,8 +2338,10 @@ class JobDependencyResponse(BaseModel):
 # Notification Hub Models (v1.7.7)
 # ============================================================================
 
+
 class NotificationChannelTypeEnum(str, Enum):
     """Types of notification channels"""
+
     EMAIL = "email"
     SLACK = "slack"
     TEAMS = "teams"
@@ -2190,6 +2356,7 @@ class NotificationChannelTypeEnum(str, Enum):
 
 class NotificationPriorityEnum(str, Enum):
     """Priority levels for notifications"""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -2199,6 +2366,7 @@ class NotificationPriorityEnum(str, Enum):
 
 class NotificationStatusEnum(str, Enum):
     """Status of notification delivery"""
+
     PENDING = "pending"
     QUEUED = "queued"
     SENDING = "sending"
@@ -2211,6 +2379,7 @@ class NotificationStatusEnum(str, Enum):
 
 class NotificationCategoryEnum(str, Enum):
     """Categories of notifications for routing and filtering"""
+
     SECURITY_ALERT = "security_alert"
     INCIDENT = "incident"
     VULNERABILITY = "vulnerability"
@@ -2225,6 +2394,7 @@ class NotificationCategoryEnum(str, Enum):
 
 class ChannelStatusEnum(str, Enum):
     """Status of notification channels"""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
     ERROR = "error"
@@ -2234,8 +2404,10 @@ class ChannelStatusEnum(str, Enum):
 
 # --- Channel Configuration Models ---
 
+
 class EmailChannelConfig(BaseModel):
     """Configuration for email notification channel"""
+
     smtp_host: str
     smtp_port: int = Field(587, ge=1, le=65535)
     smtp_username: str
@@ -2250,6 +2422,7 @@ class EmailChannelConfig(BaseModel):
 
 class SlackChannelConfig(BaseModel):
     """Configuration for Slack notification channel"""
+
     webhook_url: Optional[str] = None
     bot_token: Optional[str] = None
     app_token: Optional[str] = None
@@ -2261,6 +2434,7 @@ class SlackChannelConfig(BaseModel):
 
 class TeamsChannelConfig(BaseModel):
     """Configuration for Microsoft Teams notification channel"""
+
     webhook_url: str
     default_title: str = "Defensive Toolkit Notification"
     theme_color: str = "0076D7"
@@ -2268,6 +2442,7 @@ class TeamsChannelConfig(BaseModel):
 
 class PagerDutyChannelConfig(BaseModel):
     """Configuration for PagerDuty notification channel"""
+
     api_key: str
     routing_key: str
     service_id: Optional[str] = None
@@ -2277,6 +2452,7 @@ class PagerDutyChannelConfig(BaseModel):
 
 class WebhookChannelConfig(BaseModel):
     """Configuration for generic webhook notification channel"""
+
     url: str
     method: str = Field("POST", pattern="^(GET|POST|PUT|PATCH)$")
     headers: Dict[str, str] = {}
@@ -2289,6 +2465,7 @@ class WebhookChannelConfig(BaseModel):
 
 class SMSChannelConfig(BaseModel):
     """Configuration for SMS notification channel"""
+
     provider: str = Field(..., pattern="^(twilio|nexmo|aws_sns|custom)$")
     api_key: str
     api_secret: Optional[str] = None
@@ -2298,6 +2475,7 @@ class SMSChannelConfig(BaseModel):
 
 class DiscordChannelConfig(BaseModel):
     """Configuration for Discord notification channel"""
+
     webhook_url: str
     username: str = "Defensive Toolkit"
     avatar_url: Optional[str] = None
@@ -2305,6 +2483,7 @@ class DiscordChannelConfig(BaseModel):
 
 class OpsGenieChannelConfig(BaseModel):
     """Configuration for OpsGenie notification channel"""
+
     api_key: str
     team_id: Optional[str] = None
     responders: List[Dict[str, str]] = []
@@ -2313,6 +2492,7 @@ class OpsGenieChannelConfig(BaseModel):
 
 class VictorOpsChannelConfig(BaseModel):
     """Configuration for VictorOps/Splunk On-Call notification channel"""
+
     api_key: str
     routing_key: str
     entity_id_prefix: str = "defensive-toolkit"
@@ -2320,8 +2500,10 @@ class VictorOpsChannelConfig(BaseModel):
 
 # --- Notification Channel Models ---
 
+
 class NotificationChannelBase(BaseModel):
     """Base model for notification channels"""
+
     name: str = Field(..., min_length=1, max_length=100)
     channel_type: NotificationChannelTypeEnum
     description: Optional[str] = None
@@ -2335,11 +2517,13 @@ class NotificationChannelBase(BaseModel):
 
 class NotificationChannelCreate(NotificationChannelBase):
     """Request to create a notification channel"""
+
     pass
 
 
 class NotificationChannelUpdate(BaseModel):
     """Request to update a notification channel"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     enabled: Optional[bool] = None
@@ -2352,6 +2536,7 @@ class NotificationChannelUpdate(BaseModel):
 
 class NotificationChannel(NotificationChannelBase):
     """Full notification channel model"""
+
     id: str
     status: ChannelStatusEnum = ChannelStatusEnum.ACTIVE
     created_at: datetime
@@ -2365,6 +2550,7 @@ class NotificationChannel(NotificationChannelBase):
 
 class NotificationChannelResponse(BaseModel):
     """Response for notification channel operations"""
+
     status: StatusEnum
     message: str
     channel: Optional[NotificationChannel] = None
@@ -2372,6 +2558,7 @@ class NotificationChannelResponse(BaseModel):
 
 class NotificationChannelListResponse(BaseModel):
     """Response for listing notification channels"""
+
     channels: List[NotificationChannel]
     total: int
     by_type: Dict[str, int]
@@ -2380,8 +2567,10 @@ class NotificationChannelListResponse(BaseModel):
 
 # --- Message Template Models ---
 
+
 class TemplateVariableInfo(BaseModel):
     """Information about a template variable"""
+
     name: str
     description: str
     type: str = "string"
@@ -2392,6 +2581,7 @@ class TemplateVariableInfo(BaseModel):
 
 class NotificationTemplateBase(BaseModel):
     """Base model for notification templates"""
+
     name: str = Field(..., min_length=1, max_length=100)
     category: NotificationCategoryEnum
     description: Optional[str] = None
@@ -2405,11 +2595,13 @@ class NotificationTemplateBase(BaseModel):
 
 class NotificationTemplateCreate(NotificationTemplateBase):
     """Request to create a notification template"""
+
     pass
 
 
 class NotificationTemplateUpdate(BaseModel):
     """Request to update a notification template"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     category: Optional[NotificationCategoryEnum] = None
     description: Optional[str] = None
@@ -2423,6 +2615,7 @@ class NotificationTemplateUpdate(BaseModel):
 
 class NotificationTemplate(NotificationTemplateBase):
     """Full notification template model"""
+
     id: str
     created_at: datetime
     updated_at: datetime
@@ -2432,6 +2625,7 @@ class NotificationTemplate(NotificationTemplateBase):
 
 class NotificationTemplateResponse(BaseModel):
     """Response for notification template operations"""
+
     status: StatusEnum
     message: str
     template: Optional[NotificationTemplate] = None
@@ -2439,6 +2633,7 @@ class NotificationTemplateResponse(BaseModel):
 
 class NotificationTemplateListResponse(BaseModel):
     """Response for listing notification templates"""
+
     templates: List[NotificationTemplate]
     total: int
     by_category: Dict[str, int]
@@ -2446,6 +2641,7 @@ class NotificationTemplateListResponse(BaseModel):
 
 class TemplateRenderRequest(BaseModel):
     """Request to render a template preview"""
+
     template_id: str
     variables: Dict[str, Any] = {}
     target_channel: Optional[NotificationChannelTypeEnum] = None
@@ -2453,6 +2649,7 @@ class TemplateRenderRequest(BaseModel):
 
 class TemplateRenderResponse(BaseModel):
     """Response for template rendering"""
+
     status: StatusEnum
     subject: Optional[str] = None
     body: str
@@ -2463,15 +2660,20 @@ class TemplateRenderResponse(BaseModel):
 
 # --- Routing Rule Models ---
 
+
 class RoutingCondition(BaseModel):
     """Condition for notification routing"""
+
     field: str = Field(..., pattern="^(category|priority|source|tag|custom)$")
-    operator: str = Field(..., pattern="^(equals|not_equals|contains|regex|in|not_in|gt|lt|gte|lte)$")
+    operator: str = Field(
+        ..., pattern="^(equals|not_equals|contains|regex|in|not_in|gt|lt|gte|lte)$"
+    )
     value: Any
 
 
 class RoutingAction(BaseModel):
     """Action to take when routing rule matches"""
+
     action_type: str = Field(..., pattern="^(route|suppress|delay|transform|escalate)$")
     channel_ids: List[str] = []
     delay_seconds: int = Field(0, ge=0)
@@ -2482,6 +2684,7 @@ class RoutingAction(BaseModel):
 
 class RoutingRuleBase(BaseModel):
     """Base model for routing rules"""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     enabled: bool = True
@@ -2494,11 +2697,13 @@ class RoutingRuleBase(BaseModel):
 
 class RoutingRuleCreate(RoutingRuleBase):
     """Request to create a routing rule"""
+
     pass
 
 
 class RoutingRuleUpdate(BaseModel):
     """Request to update a routing rule"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     enabled: Optional[bool] = None
@@ -2511,6 +2716,7 @@ class RoutingRuleUpdate(BaseModel):
 
 class RoutingRule(RoutingRuleBase):
     """Full routing rule model"""
+
     id: str
     created_at: datetime
     updated_at: datetime
@@ -2520,6 +2726,7 @@ class RoutingRule(RoutingRuleBase):
 
 class RoutingRuleResponse(BaseModel):
     """Response for routing rule operations"""
+
     status: StatusEnum
     message: str
     rule: Optional[RoutingRule] = None
@@ -2527,14 +2734,17 @@ class RoutingRuleResponse(BaseModel):
 
 class RoutingRuleListResponse(BaseModel):
     """Response for listing routing rules"""
+
     rules: List[RoutingRule]
     total: int
 
 
 # --- Notification Models ---
 
+
 class NotificationRecipient(BaseModel):
     """Recipient for a notification"""
+
     channel_id: str
     address: Optional[str] = None  # Override default channel address
     metadata: Dict[str, Any] = {}
@@ -2542,6 +2752,7 @@ class NotificationRecipient(BaseModel):
 
 class NotificationBase(BaseModel):
     """Base model for notifications"""
+
     category: NotificationCategoryEnum
     priority: NotificationPriorityEnum = NotificationPriorityEnum.NORMAL
     subject: str = Field(..., min_length=1, max_length=500)
@@ -2558,6 +2769,7 @@ class NotificationBase(BaseModel):
 
 class NotificationCreate(NotificationBase):
     """Request to create/send a notification"""
+
     defer_until: Optional[datetime] = None
     expire_at: Optional[datetime] = None
     dedupe_key: Optional[str] = None  # For deduplication
@@ -2566,6 +2778,7 @@ class NotificationCreate(NotificationBase):
 
 class Notification(NotificationBase):
     """Full notification model"""
+
     id: str
     status: NotificationStatusEnum
     created_at: datetime
@@ -2584,6 +2797,7 @@ class Notification(NotificationBase):
 
 class NotificationResponse(BaseModel):
     """Response for notification operations"""
+
     status: StatusEnum
     message: str
     notification: Optional[Notification] = None
@@ -2591,6 +2805,7 @@ class NotificationResponse(BaseModel):
 
 class NotificationListResponse(BaseModel):
     """Response for listing notifications"""
+
     notifications: List[Notification]
     total: int
     page: int
@@ -2601,14 +2816,17 @@ class NotificationListResponse(BaseModel):
 
 class NotificationRetryRequest(BaseModel):
     """Request to retry a failed notification"""
+
     notification_id: str
     channels: Optional[List[str]] = None  # Specific channels to retry, or all failed
 
 
 # --- Escalation Policy Models ---
 
+
 class EscalationStep(BaseModel):
     """Step in an escalation policy"""
+
     step_number: int = Field(..., ge=1)
     delay_minutes: int = Field(0, ge=0)
     channel_ids: List[str]
@@ -2619,6 +2837,7 @@ class EscalationStep(BaseModel):
 
 class EscalationPolicyBase(BaseModel):
     """Base model for escalation policies"""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     enabled: bool = True
@@ -2631,11 +2850,13 @@ class EscalationPolicyBase(BaseModel):
 
 class EscalationPolicyCreate(EscalationPolicyBase):
     """Request to create an escalation policy"""
+
     pass
 
 
 class EscalationPolicyUpdate(BaseModel):
     """Request to update an escalation policy"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     enabled: Optional[bool] = None
@@ -2648,6 +2869,7 @@ class EscalationPolicyUpdate(BaseModel):
 
 class EscalationPolicy(EscalationPolicyBase):
     """Full escalation policy model"""
+
     id: str
     created_at: datetime
     updated_at: datetime
@@ -2657,6 +2879,7 @@ class EscalationPolicy(EscalationPolicyBase):
 
 class EscalationPolicyResponse(BaseModel):
     """Response for escalation policy operations"""
+
     status: StatusEnum
     message: str
     policy: Optional[EscalationPolicy] = None
@@ -2664,14 +2887,17 @@ class EscalationPolicyResponse(BaseModel):
 
 class EscalationPolicyListResponse(BaseModel):
     """Response for listing escalation policies"""
+
     policies: List[EscalationPolicy]
     total: int
 
 
 # --- Active Escalation Models ---
 
+
 class ActiveEscalation(BaseModel):
     """Active escalation in progress"""
+
     id: str
     policy_id: str
     notification_id: str
@@ -2687,6 +2913,7 @@ class ActiveEscalation(BaseModel):
 
 class EscalationAcknowledgeRequest(BaseModel):
     """Request to acknowledge an escalation"""
+
     escalation_id: str
     acknowledged_by: str
     note: Optional[str] = None
@@ -2694,6 +2921,7 @@ class EscalationAcknowledgeRequest(BaseModel):
 
 class EscalationResolveRequest(BaseModel):
     """Request to resolve an escalation"""
+
     escalation_id: str
     resolved_by: str
     resolution_note: Optional[str] = None
@@ -2701,8 +2929,10 @@ class EscalationResolveRequest(BaseModel):
 
 # --- Statistics and Health Models ---
 
+
 class NotificationStats(BaseModel):
     """Notification system statistics"""
+
     total_notifications: int
     notifications_today: int
     notifications_this_hour: int
@@ -2721,6 +2951,7 @@ class NotificationStats(BaseModel):
 
 class NotificationHealthCheck(BaseModel):
     """Health check for notification system"""
+
     status: str  # healthy, degraded, unhealthy
     timestamp: datetime
     channels_status: Dict[str, Dict[str, Any]]
@@ -2731,12 +2962,14 @@ class NotificationHealthCheck(BaseModel):
 
 class ChannelTestRequest(BaseModel):
     """Request to test a notification channel"""
+
     channel_id: str
     test_message: Optional[str] = "This is a test notification from Defensive Toolkit"
 
 
 class ChannelTestResponse(BaseModel):
     """Response for channel test"""
+
     status: StatusEnum
     message: str
     channel_id: str
@@ -2746,14 +2979,17 @@ class ChannelTestResponse(BaseModel):
 
 # --- Bulk Operations ---
 
+
 class BulkNotificationRequest(BaseModel):
     """Request to send bulk notifications"""
+
     notifications: List[NotificationCreate] = Field(..., min_items=1, max_items=100)
     fail_on_first_error: bool = False
 
 
 class BulkNotificationResponse(BaseModel):
     """Response for bulk notification operation"""
+
     status: StatusEnum
     total_requested: int
     succeeded: int
@@ -2763,8 +2999,10 @@ class BulkNotificationResponse(BaseModel):
 
 # --- Subscription Models ---
 
+
 class NotificationSubscription(BaseModel):
     """Subscription for notification preferences"""
+
     id: str
     subscriber_id: str  # User ID or system identifier
     subscriber_type: str = Field(..., pattern="^(user|system|team)$")
@@ -2779,6 +3017,7 @@ class NotificationSubscription(BaseModel):
 
 class SubscriptionCreateRequest(BaseModel):
     """Request to create a notification subscription"""
+
     subscriber_id: str
     subscriber_type: str = Field("user", pattern="^(user|system|team)$")
     categories: List[NotificationCategoryEnum] = []
@@ -2789,6 +3028,7 @@ class SubscriptionCreateRequest(BaseModel):
 
 class SubscriptionUpdateRequest(BaseModel):
     """Request to update a notification subscription"""
+
     categories: Optional[List[NotificationCategoryEnum]] = None
     min_priority: Optional[NotificationPriorityEnum] = None
     channels: Optional[List[str]] = None
@@ -2798,6 +3038,7 @@ class SubscriptionUpdateRequest(BaseModel):
 
 class SubscriptionListResponse(BaseModel):
     """Response for listing subscriptions"""
+
     subscriptions: List[NotificationSubscription]
     total: int
 
@@ -2810,8 +3051,10 @@ class SubscriptionListResponse(BaseModel):
 
 # --- Enums ---
 
+
 class CorrelationRuleTypeEnum(str, Enum):
     """Types of correlation rules"""
+
     SEQUENCE = "sequence"  # Events must occur in specific order
     THRESHOLD = "threshold"  # Count of events exceeds threshold
     TEMPORAL = "temporal"  # Events within time window
@@ -2823,6 +3066,7 @@ class CorrelationRuleTypeEnum(str, Enum):
 
 class CorrelationRuleStatusEnum(str, Enum):
     """Status of correlation rules"""
+
     ACTIVE = "active"
     DISABLED = "disabled"
     TESTING = "testing"
@@ -2831,6 +3075,7 @@ class CorrelationRuleStatusEnum(str, Enum):
 
 class KillChainPhaseEnum(str, Enum):
     """Cyber Kill Chain phases (Lockheed Martin model)"""
+
     RECONNAISSANCE = "reconnaissance"
     WEAPONIZATION = "weaponization"
     DELIVERY = "delivery"
@@ -2842,6 +3087,7 @@ class KillChainPhaseEnum(str, Enum):
 
 class CorrelatedAlertStatusEnum(str, Enum):
     """Status of correlated alert groups"""
+
     OPEN = "open"
     INVESTIGATING = "investigating"
     CONFIRMED = "confirmed"
@@ -2851,6 +3097,7 @@ class CorrelatedAlertStatusEnum(str, Enum):
 
 class ClusteringAlgorithmEnum(str, Enum):
     """Supported clustering algorithms"""
+
     KMEANS = "kmeans"
     DBSCAN = "dbscan"
     HIERARCHICAL = "hierarchical"
@@ -2859,6 +3106,7 @@ class ClusteringAlgorithmEnum(str, Enum):
 
 class AttackPatternStatusEnum(str, Enum):
     """Status of detected attack patterns"""
+
     DETECTED = "detected"
     CONFIRMED = "confirmed"
     IN_PROGRESS = "in_progress"
@@ -2868,8 +3116,10 @@ class AttackPatternStatusEnum(str, Enum):
 
 # --- MITRE ATT&CK Models ---
 
+
 class MitreTactic(BaseModel):
     """MITRE ATT&CK Tactic"""
+
     id: str = Field(..., description="Tactic ID (e.g., TA0001)")
     name: str = Field(..., description="Tactic name (e.g., Initial Access)")
     description: Optional[str] = None
@@ -2878,6 +3128,7 @@ class MitreTactic(BaseModel):
 
 class MitreTechnique(BaseModel):
     """MITRE ATT&CK Technique"""
+
     id: str = Field(..., description="Technique ID (e.g., T1566)")
     name: str = Field(..., description="Technique name (e.g., Phishing)")
     tactic_ids: List[str] = Field(default_factory=list, description="Associated tactic IDs")
@@ -2893,6 +3144,7 @@ class MitreTechnique(BaseModel):
 
 class MitreMapping(BaseModel):
     """Mapping of an alert or rule to MITRE ATT&CK"""
+
     technique_ids: List[str] = Field(default_factory=list)
     tactic_ids: List[str] = Field(default_factory=list)
     kill_chain_phases: List[KillChainPhaseEnum] = Field(default_factory=list)
@@ -2902,16 +3154,21 @@ class MitreMapping(BaseModel):
 
 # --- Correlation Rule Models ---
 
+
 class CorrelationCondition(BaseModel):
     """Single condition in a correlation rule"""
+
     field: str = Field(..., description="Field to match (e.g., source_ip, event_type)")
-    operator: str = Field(..., description="Comparison operator (eq, ne, gt, lt, contains, regex, in)")
+    operator: str = Field(
+        ..., description="Comparison operator (eq, ne, gt, lt, contains, regex, in)"
+    )
     value: Any = Field(..., description="Value to compare against")
     case_sensitive: bool = True
 
 
 class CorrelationRuleCreate(BaseModel):
     """Request to create a correlation rule"""
+
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     rule_type: CorrelationRuleTypeEnum
@@ -2928,6 +3185,7 @@ class CorrelationRuleCreate(BaseModel):
 
 class CorrelationRule(BaseModel):
     """Correlation rule definition"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -2951,6 +3209,7 @@ class CorrelationRule(BaseModel):
 
 class CorrelationRuleUpdate(BaseModel):
     """Request to update a correlation rule"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     rule_type: Optional[CorrelationRuleTypeEnum] = None
@@ -2968,6 +3227,7 @@ class CorrelationRuleUpdate(BaseModel):
 
 class CorrelationRuleListResponse(BaseModel):
     """Response for listing correlation rules"""
+
     rules: List[CorrelationRule]
     total: int
     active_count: int
@@ -2976,8 +3236,10 @@ class CorrelationRuleListResponse(BaseModel):
 
 # --- Correlated Alert Models ---
 
+
 class CorrelatedAlertMember(BaseModel):
     """Individual alert that is part of a correlated group"""
+
     alert_id: str
     timestamp: datetime
     source: str
@@ -2990,6 +3252,7 @@ class CorrelatedAlertMember(BaseModel):
 
 class CorrelatedAlertCreate(BaseModel):
     """Request to create a correlated alert group"""
+
     rule_id: str
     alerts: List[CorrelatedAlertMember] = Field(..., min_items=1)
     summary: Optional[str] = None
@@ -2998,6 +3261,7 @@ class CorrelatedAlertCreate(BaseModel):
 
 class CorrelatedAlert(BaseModel):
     """Correlated alert group - multiple alerts linked together"""
+
     id: str
     rule_id: str
     rule_name: str
@@ -3027,6 +3291,7 @@ class CorrelatedAlert(BaseModel):
 
 class CorrelatedAlertUpdate(BaseModel):
     """Request to update a correlated alert"""
+
     status: Optional[CorrelatedAlertStatusEnum] = None
     notes: Optional[str] = None
     assigned_to: Optional[str] = None
@@ -3036,6 +3301,7 @@ class CorrelatedAlertUpdate(BaseModel):
 
 class CorrelatedAlertListResponse(BaseModel):
     """Response for listing correlated alerts"""
+
     correlated_alerts: List[CorrelatedAlert]
     total: int
     by_status: Dict[str, int]
@@ -3044,21 +3310,24 @@ class CorrelatedAlertListResponse(BaseModel):
 
 # --- Alert Clustering Models ---
 
+
 class ClusterConfig(BaseModel):
     """Configuration for alert clustering"""
+
     algorithm: ClusteringAlgorithmEnum = ClusteringAlgorithmEnum.SIMILARITY
     similarity_threshold: float = Field(0.7, ge=0.0, le=1.0)
     min_cluster_size: int = Field(2, ge=2)
     max_cluster_size: int = Field(100, ge=2)
     features: List[str] = Field(
         default_factory=lambda: ["source_ip", "destination_ip", "event_type", "severity"],
-        description="Fields to use for clustering"
+        description="Fields to use for clustering",
     )
     time_window_hours: int = Field(24, ge=1, le=168)
 
 
 class AlertCluster(BaseModel):
     """Cluster of similar alerts"""
+
     id: str
     cluster_name: str
     alerts: List[CorrelatedAlertMember]
@@ -3076,6 +3345,7 @@ class AlertCluster(BaseModel):
 
 class ClusteringRequest(BaseModel):
     """Request to run clustering on alerts"""
+
     alert_ids: Optional[List[str]] = None  # If None, cluster recent alerts
     config: Optional[ClusterConfig] = None
     time_range_hours: int = Field(24, ge=1, le=168)
@@ -3083,6 +3353,7 @@ class ClusteringRequest(BaseModel):
 
 class ClusteringResponse(BaseModel):
     """Response from clustering operation"""
+
     status: StatusEnum
     clusters_found: int
     total_alerts_processed: int
@@ -3095,8 +3366,10 @@ class ClusteringResponse(BaseModel):
 
 # --- Deduplication Models ---
 
+
 class DeduplicationConfig(BaseModel):
     """Configuration for alert deduplication"""
+
     enabled: bool = True
     similarity_threshold: float = Field(0.85, ge=0.0, le=1.0)
     time_window_minutes: int = Field(60, ge=1, le=1440)
@@ -3108,6 +3381,7 @@ class DeduplicationConfig(BaseModel):
 
 class DeduplicationResult(BaseModel):
     """Result of deduplication operation"""
+
     original_count: int
     deduplicated_count: int
     duplicates_removed: int
@@ -3117,8 +3391,10 @@ class DeduplicationResult(BaseModel):
 
 # --- Attack Pattern Models ---
 
+
 class AttackStage(BaseModel):
     """Single stage in a multi-stage attack"""
+
     stage_number: int
     name: str
     description: Optional[str] = None
@@ -3133,6 +3409,7 @@ class AttackStage(BaseModel):
 
 class AttackPatternCreate(BaseModel):
     """Request to create an attack pattern definition"""
+
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     stages: List[AttackStage] = Field(..., min_items=1)
@@ -3143,6 +3420,7 @@ class AttackPatternCreate(BaseModel):
 
 class AttackPattern(BaseModel):
     """Detected multi-stage attack pattern"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -3170,6 +3448,7 @@ class AttackPattern(BaseModel):
 
 class AttackPatternUpdate(BaseModel):
     """Request to update an attack pattern"""
+
     status: Optional[AttackPatternStatusEnum] = None
     notes: Optional[str] = None
     tags: Optional[List[str]] = None
@@ -3177,6 +3456,7 @@ class AttackPatternUpdate(BaseModel):
 
 class AttackPatternListResponse(BaseModel):
     """Response for listing attack patterns"""
+
     patterns: List[AttackPattern]
     total: int
     by_status: Dict[str, int]
@@ -3186,8 +3466,10 @@ class AttackPatternListResponse(BaseModel):
 
 # --- Alert Ingestion Models ---
 
+
 class AlertIngest(BaseModel):
     """Alert to be ingested for correlation"""
+
     source: str = Field(..., description="Source system (e.g., siem, edr, firewall)")
     event_type: str = Field(..., description="Type of event")
     timestamp: datetime
@@ -3203,12 +3485,14 @@ class AlertIngest(BaseModel):
 
 class AlertIngestBatch(BaseModel):
     """Batch of alerts for correlation processing"""
+
     alerts: List[AlertIngest] = Field(..., min_items=1, max_items=1000)
     process_immediately: bool = True
 
 
 class AlertIngestResponse(BaseModel):
     """Response from alert ingestion"""
+
     status: StatusEnum
     alerts_received: int
     alerts_processed: int
@@ -3221,8 +3505,10 @@ class AlertIngestResponse(BaseModel):
 
 # --- Correlation Statistics Models ---
 
+
 class CorrelationStats(BaseModel):
     """Statistics for the correlation engine"""
+
     total_rules: int
     active_rules: int
     disabled_rules: int
@@ -3241,6 +3527,7 @@ class CorrelationStats(BaseModel):
 
 class CorrelationHealthCheck(BaseModel):
     """Health check for correlation engine"""
+
     status: str = Field(..., pattern="^(healthy|degraded|unhealthy)$")
     timestamp: datetime
     rules_status: Dict[str, Any]
@@ -3254,8 +3541,10 @@ class CorrelationHealthCheck(BaseModel):
 
 # --- Rule Testing Models ---
 
+
 class RuleTestRequest(BaseModel):
     """Request to test a correlation rule"""
+
     rule_id: Optional[str] = None  # Test existing rule
     rule: Optional[CorrelationRuleCreate] = None  # Test new rule definition
     test_alerts: List[AlertIngest] = Field(..., min_items=1)
@@ -3263,6 +3552,7 @@ class RuleTestRequest(BaseModel):
 
 class RuleTestResponse(BaseModel):
     """Response from rule testing"""
+
     status: StatusEnum
     rule_matched: bool
     matching_alerts: List[Dict[str, Any]]
@@ -3275,8 +3565,10 @@ class RuleTestResponse(BaseModel):
 
 # --- Kill Chain Analysis Models ---
 
+
 class KillChainAnalysis(BaseModel):
     """Analysis of kill chain progression"""
+
     analysis_id: str
     time_range_start: datetime
     time_range_end: datetime
@@ -3293,6 +3585,7 @@ class KillChainAnalysis(BaseModel):
 
 class KillChainAnalysisRequest(BaseModel):
     """Request for kill chain analysis"""
+
     source_ip: Optional[str] = None
     target_host: Optional[str] = None
     time_range_hours: int = Field(24, ge=1, le=168)
@@ -3301,8 +3594,10 @@ class KillChainAnalysisRequest(BaseModel):
 
 # --- Suppression Models ---
 
+
 class CorrelationSuppression(BaseModel):
     """Suppression rule for correlation"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -3317,6 +3612,7 @@ class CorrelationSuppression(BaseModel):
 
 class SuppressionCreateRequest(BaseModel):
     """Request to create a suppression rule"""
+
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     conditions: List[CorrelationCondition] = Field(..., min_items=1)
@@ -3326,6 +3622,7 @@ class SuppressionCreateRequest(BaseModel):
 
 class SuppressionListResponse(BaseModel):
     """Response for listing suppression rules"""
+
     suppressions: List[CorrelationSuppression]
     total: int
     active_count: int
@@ -3339,8 +3636,10 @@ class SuppressionListResponse(BaseModel):
 
 # --- Dashboard Enums ---
 
+
 class WidgetTypeEnum(str, Enum):
     """Types of dashboard widgets"""
+
     COUNTER = "counter"  # Single metric value with trend
     CHART_LINE = "chart_line"  # Time-series line chart
     CHART_BAR = "chart_bar"  # Bar chart
@@ -3360,6 +3659,7 @@ class WidgetTypeEnum(str, Enum):
 
 class WidgetCategoryEnum(str, Enum):
     """Categories of security widgets"""
+
     THREAT_OVERVIEW = "threat_overview"
     INCIDENT_METRICS = "incident_metrics"
     VULNERABILITY = "vulnerability"
@@ -3375,6 +3675,7 @@ class WidgetCategoryEnum(str, Enum):
 
 class DashboardLayoutTypeEnum(str, Enum):
     """Dashboard layout types"""
+
     GRID = "grid"  # Fixed grid layout
     FREEFORM = "freeform"  # Free positioning
     RESPONSIVE = "responsive"  # Auto-responsive
@@ -3382,6 +3683,7 @@ class DashboardLayoutTypeEnum(str, Enum):
 
 class RefreshIntervalEnum(str, Enum):
     """Widget refresh intervals"""
+
     REALTIME = "realtime"  # SSE/WebSocket
     SECONDS_10 = "10s"
     SECONDS_30 = "30s"
@@ -3395,6 +3697,7 @@ class RefreshIntervalEnum(str, Enum):
 
 class TimeRangePresetEnum(str, Enum):
     """Preset time ranges for widgets"""
+
     LAST_15_MINUTES = "15m"
     LAST_HOUR = "1h"
     LAST_4_HOURS = "4h"
@@ -3407,6 +3710,7 @@ class TimeRangePresetEnum(str, Enum):
 
 class AggregationTypeEnum(str, Enum):
     """Data aggregation types"""
+
     COUNT = "count"
     SUM = "sum"
     AVG = "avg"
@@ -3420,6 +3724,7 @@ class AggregationTypeEnum(str, Enum):
 
 class ThresholdOperatorEnum(str, Enum):
     """Threshold comparison operators"""
+
     GT = "gt"  # Greater than
     GTE = "gte"  # Greater than or equal
     LT = "lt"  # Less than
@@ -3430,8 +3735,10 @@ class ThresholdOperatorEnum(str, Enum):
 
 # --- Widget Configuration Models ---
 
+
 class WidgetThreshold(BaseModel):
     """Threshold configuration for visual indicators"""
+
     operator: ThresholdOperatorEnum
     value: float
     value_max: Optional[float] = None  # For BETWEEN operator
@@ -3441,6 +3748,7 @@ class WidgetThreshold(BaseModel):
 
 class WidgetDataSource(BaseModel):
     """Data source configuration for a widget"""
+
     endpoint: str = Field(..., description="API endpoint to fetch data from")
     method: str = Field("GET", pattern="^(GET|POST)$")
     params: Dict[str, Any] = Field(default_factory=dict)
@@ -3451,6 +3759,7 @@ class WidgetDataSource(BaseModel):
 
 class WidgetPosition(BaseModel):
     """Widget position in grid layout"""
+
     x: int = Field(0, ge=0, le=23)
     y: int = Field(0, ge=0)
     width: int = Field(4, ge=1, le=24)
@@ -3459,6 +3768,7 @@ class WidgetPosition(BaseModel):
 
 class ChartSeriesConfig(BaseModel):
     """Configuration for a chart series"""
+
     name: str
     field: str
     color: Optional[str] = None
@@ -3469,6 +3779,7 @@ class ChartSeriesConfig(BaseModel):
 
 class ChartAxisConfig(BaseModel):
     """Axis configuration for charts"""
+
     label: Optional[str] = None
     min: Optional[float] = None
     max: Optional[float] = None
@@ -3478,6 +3789,7 @@ class ChartAxisConfig(BaseModel):
 
 class ChartConfig(BaseModel):
     """Configuration for chart widgets"""
+
     series: List[ChartSeriesConfig] = Field(default_factory=list)
     x_axis: Optional[ChartAxisConfig] = None
     y_axis: Optional[ChartAxisConfig] = None
@@ -3490,6 +3802,7 @@ class ChartConfig(BaseModel):
 
 class TableColumnConfig(BaseModel):
     """Configuration for table columns"""
+
     field: str
     header: str
     width: Optional[int] = None
@@ -3501,6 +3814,7 @@ class TableColumnConfig(BaseModel):
 
 class TableConfig(BaseModel):
     """Configuration for table widgets"""
+
     columns: List[TableColumnConfig] = Field(default_factory=list)
     page_size: int = Field(10, ge=5, le=100)
     show_pagination: bool = True
@@ -3511,6 +3825,7 @@ class TableConfig(BaseModel):
 
 class CounterConfig(BaseModel):
     """Configuration for counter widgets"""
+
     value_field: str
     label: str
     unit: Optional[str] = None
@@ -3524,6 +3839,7 @@ class CounterConfig(BaseModel):
 
 class GaugeConfig(BaseModel):
     """Configuration for gauge widgets"""
+
     value_field: str
     min_value: float = 0
     max_value: float = 100
@@ -3535,6 +3851,7 @@ class GaugeConfig(BaseModel):
 
 class MapConfig(BaseModel):
     """Configuration for map widgets"""
+
     lat_field: str
     lon_field: str
     value_field: Optional[str] = None
@@ -3547,17 +3864,21 @@ class MapConfig(BaseModel):
 
 class HeatmapConfig(BaseModel):
     """Configuration for heatmap widgets"""
+
     x_field: str
     y_field: str
     value_field: str
     x_labels: Optional[List[str]] = None
     y_labels: Optional[List[str]] = None
-    color_scale: str = Field("viridis", pattern="^(viridis|plasma|inferno|magma|cividis|blues|reds|greens)$")
+    color_scale: str = Field(
+        "viridis", pattern="^(viridis|plasma|inferno|magma|cividis|blues|reds|greens)$"
+    )
     show_values: bool = True
 
 
 class TimelineConfig(BaseModel):
     """Configuration for timeline widgets"""
+
     timestamp_field: str
     title_field: str
     description_field: Optional[str] = None
@@ -3568,8 +3889,10 @@ class TimelineConfig(BaseModel):
 
 # --- Widget Models ---
 
+
 class WidgetConfigUnion(BaseModel):
     """Union of all widget configuration types"""
+
     chart: Optional[ChartConfig] = None
     table: Optional[TableConfig] = None
     counter: Optional[CounterConfig] = None
@@ -3582,6 +3905,7 @@ class WidgetConfigUnion(BaseModel):
 
 class WidgetCreate(BaseModel):
     """Request to create a widget"""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     widget_type: WidgetTypeEnum
@@ -3599,6 +3923,7 @@ class WidgetCreate(BaseModel):
 
 class Widget(BaseModel):
     """Dashboard widget"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -3623,6 +3948,7 @@ class Widget(BaseModel):
 
 class WidgetUpdate(BaseModel):
     """Request to update a widget"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     widget_type: Optional[WidgetTypeEnum] = None
@@ -3640,6 +3966,7 @@ class WidgetUpdate(BaseModel):
 
 class WidgetDataResponse(BaseModel):
     """Response containing widget data"""
+
     widget_id: str
     data: Any
     timestamp: datetime
@@ -3652,6 +3979,7 @@ class WidgetDataResponse(BaseModel):
 
 class WidgetListResponse(BaseModel):
     """Response for listing widgets"""
+
     widgets: List[Widget]
     total: int
     by_type: Dict[str, int]
@@ -3660,8 +3988,10 @@ class WidgetListResponse(BaseModel):
 
 # --- Dashboard Models ---
 
+
 class DashboardVariable(BaseModel):
     """Dashboard variable for dynamic filtering"""
+
     name: str = Field(..., pattern="^[a-zA-Z_][a-zA-Z0-9_]*$")
     label: str
     type: str = Field(..., pattern="^(text|select|multiselect|date|daterange)$")
@@ -3672,6 +4002,7 @@ class DashboardVariable(BaseModel):
 
 class DashboardCreate(BaseModel):
     """Request to create a dashboard"""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     layout_type: DashboardLayoutTypeEnum = DashboardLayoutTypeEnum.GRID
@@ -3685,6 +4016,7 @@ class DashboardCreate(BaseModel):
 
 class Dashboard(BaseModel):
     """Dashboard definition"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -3707,6 +4039,7 @@ class Dashboard(BaseModel):
 
 class DashboardUpdate(BaseModel):
     """Request to update a dashboard"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     layout_type: Optional[DashboardLayoutTypeEnum] = None
@@ -3721,6 +4054,7 @@ class DashboardUpdate(BaseModel):
 
 class DashboardListResponse(BaseModel):
     """Response for listing dashboards"""
+
     dashboards: List[Dashboard]
     total: int
     owned: int
@@ -3730,8 +4064,10 @@ class DashboardListResponse(BaseModel):
 
 # --- Widget Template Models ---
 
+
 class WidgetTemplate(BaseModel):
     """Pre-configured widget template"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -3749,6 +4085,7 @@ class WidgetTemplate(BaseModel):
 
 class WidgetTemplateListResponse(BaseModel):
     """Response for listing widget templates"""
+
     templates: List[WidgetTemplate]
     total: int
     by_category: Dict[str, int]
@@ -3756,8 +4093,10 @@ class WidgetTemplateListResponse(BaseModel):
 
 # --- Dashboard Export/Import Models ---
 
+
 class DashboardExport(BaseModel):
     """Exported dashboard configuration"""
+
     version: str = "1.0"
     exported_at: datetime
     dashboard: Dashboard
@@ -3766,6 +4105,7 @@ class DashboardExport(BaseModel):
 
 class DashboardImportRequest(BaseModel):
     """Request to import a dashboard"""
+
     dashboard_export: DashboardExport
     rename_to: Optional[str] = None
     overwrite_existing: bool = False
@@ -3773,6 +4113,7 @@ class DashboardImportRequest(BaseModel):
 
 class DashboardImportResponse(BaseModel):
     """Response from dashboard import"""
+
     status: StatusEnum
     dashboard_id: str
     widgets_imported: int
@@ -3781,8 +4122,10 @@ class DashboardImportResponse(BaseModel):
 
 # --- Real-time Data Models ---
 
+
 class WidgetDataSubscription(BaseModel):
     """Subscription for real-time widget data"""
+
     widget_id: str
     dashboard_id: str
     subscriber_id: str
@@ -3791,6 +4134,7 @@ class WidgetDataSubscription(BaseModel):
 
 class WidgetDataEvent(BaseModel):
     """Real-time widget data event (for SSE/WebSocket)"""
+
     event_type: str = Field(..., pattern="^(data|error|heartbeat)$")
     widget_id: str
     timestamp: datetime
@@ -3800,8 +4144,10 @@ class WidgetDataEvent(BaseModel):
 
 # --- Dashboard Statistics Models ---
 
+
 class DashboardStats(BaseModel):
     """Dashboard system statistics"""
+
     total_dashboards: int
     total_widgets: int
     active_users_24h: int
@@ -3817,6 +4163,7 @@ class DashboardStats(BaseModel):
 
 class DashboardHealthCheck(BaseModel):
     """Health check for dashboard system"""
+
     status: str = Field(..., pattern="^(healthy|degraded|unhealthy)$")
     timestamp: datetime
     widgets_status: Dict[str, Any]
@@ -3828,8 +4175,10 @@ class DashboardHealthCheck(BaseModel):
 
 # --- Layout Snapshot Models ---
 
+
 class LayoutSnapshot(BaseModel):
     """Saved layout snapshot for undo/redo"""
+
     id: str
     dashboard_id: str
     widgets_positions: Dict[str, WidgetPosition]
@@ -3840,23 +4189,25 @@ class LayoutSnapshot(BaseModel):
 
 class LayoutSnapshotListResponse(BaseModel):
     """Response for listing layout snapshots"""
+
     snapshots: List[LayoutSnapshot]
     total: int
 
 
 # --- Bulk Operations ---
 
+
 class BulkWidgetPositionUpdate(BaseModel):
     """Bulk update widget positions"""
+
     updates: List[Dict[str, Any]] = Field(
-        ...,
-        min_items=1,
-        description="List of {widget_id, position} objects"
+        ..., min_items=1, description="List of {widget_id, position} objects"
     )
 
 
 class BulkWidgetPositionResponse(BaseModel):
     """Response from bulk position update"""
+
     status: StatusEnum
     updated: int
     failed: int
@@ -3874,8 +4225,10 @@ class BulkWidgetPositionResponse(BaseModel):
 
 # --- Asset Enums ---
 
+
 class AssetTypeEnum(str, Enum):
     """Asset type classification based on CIS Controls v8.1"""
+
     # Hardware Devices
     SERVER = "server"
     WORKSTATION = "workstation"
@@ -3924,6 +4277,7 @@ class AssetTypeEnum(str, Enum):
 
 class AssetStatusEnum(str, Enum):
     """Asset lifecycle status"""
+
     DISCOVERED = "discovered"
     PENDING_REVIEW = "pending_review"
     ACTIVE = "active"
@@ -3938,6 +4292,7 @@ class AssetStatusEnum(str, Enum):
 
 class AssetCriticalityEnum(str, Enum):
     """Asset criticality levels (qualitative)"""
+
     CRITICAL = "critical"  # Business-critical, contains sensitive data
     HIGH = "high"  # Important for operations
     MEDIUM = "medium"  # Standard business asset
@@ -3947,6 +4302,7 @@ class AssetCriticalityEnum(str, Enum):
 
 class AssetEnvironmentEnum(str, Enum):
     """Deployment environment"""
+
     PRODUCTION = "production"
     STAGING = "staging"
     DEVELOPMENT = "development"
@@ -3960,6 +4316,7 @@ class AssetEnvironmentEnum(str, Enum):
 
 class AssetOwnershipEnum(str, Enum):
     """Asset ownership type"""
+
     OWNED = "owned"
     LEASED = "leased"
     RENTED = "rented"
@@ -3972,6 +4329,7 @@ class AssetOwnershipEnum(str, Enum):
 
 class DiscoveryMethodEnum(str, Enum):
     """How the asset was discovered"""
+
     MANUAL = "manual"
     AGENT = "agent"
     NETWORK_SCAN = "network_scan"
@@ -3991,6 +4349,7 @@ class DiscoveryMethodEnum(str, Enum):
 
 class ComplianceStatusEnum(str, Enum):
     """Asset compliance status"""
+
     COMPLIANT = "compliant"
     NON_COMPLIANT = "non_compliant"
     PARTIALLY_COMPLIANT = "partially_compliant"
@@ -4001,6 +4360,7 @@ class ComplianceStatusEnum(str, Enum):
 
 class RelationshipTypeEnum(str, Enum):
     """Types of relationships between assets"""
+
     HOSTS = "hosts"  # Server hosts VM/container
     HOSTED_BY = "hosted_by"
     CONNECTS_TO = "connects_to"
@@ -4020,6 +4380,7 @@ class RelationshipTypeEnum(str, Enum):
 
 class ScanTypeEnum(str, Enum):
     """Types of asset discovery scans"""
+
     FULL = "full"
     INCREMENTAL = "incremental"
     TARGETED = "targeted"
@@ -4031,8 +4392,10 @@ class ScanTypeEnum(str, Enum):
 
 # --- Asset Configuration Models ---
 
+
 class NetworkInterface(BaseModel):
     """Network interface details"""
+
     name: str
     mac_address: Optional[str] = None
     ip_addresses: List[str] = Field(default_factory=list)
@@ -4049,6 +4412,7 @@ class NetworkInterface(BaseModel):
 
 class HardwareInfo(BaseModel):
     """Hardware specifications"""
+
     manufacturer: Optional[str] = None
     model: Optional[str] = None
     serial_number: Optional[str] = None
@@ -4067,6 +4431,7 @@ class HardwareInfo(BaseModel):
 
 class OperatingSystem(BaseModel):
     """Operating system information"""
+
     name: str
     version: Optional[str] = None
     build: Optional[str] = None
@@ -4081,6 +4446,7 @@ class OperatingSystem(BaseModel):
 
 class InstalledSoftware(BaseModel):
     """Installed software details"""
+
     name: str
     version: Optional[str] = None
     vendor: Optional[str] = None
@@ -4094,6 +4460,7 @@ class InstalledSoftware(BaseModel):
 
 class CloudMetadata(BaseModel):
     """Cloud-specific asset metadata"""
+
     provider: str  # aws, azure, gcp, etc.
     account_id: Optional[str] = None
     region: Optional[str] = None
@@ -4114,6 +4481,7 @@ class CloudMetadata(BaseModel):
 
 class AssetLocation(BaseModel):
     """Physical or logical location"""
+
     site: Optional[str] = None
     building: Optional[str] = None
     floor: Optional[str] = None
@@ -4129,6 +4497,7 @@ class AssetLocation(BaseModel):
 
 class AssetOwner(BaseModel):
     """Asset ownership information"""
+
     owner_id: Optional[str] = None
     owner_name: Optional[str] = None
     owner_email: Optional[str] = None
@@ -4142,6 +4511,7 @@ class AssetOwner(BaseModel):
 
 class AssetRiskScore(BaseModel):
     """Comprehensive risk scoring (inspired by Tenable ACR/VPR)"""
+
     # Overall score (1-10 scale, 10 being most critical)
     overall_score: float = Field(..., ge=1.0, le=10.0)
 
@@ -4167,6 +4537,7 @@ class AssetRiskScore(BaseModel):
 
 class VulnerabilitySummary(BaseModel):
     """Summary of vulnerabilities on an asset"""
+
     total_count: int = 0
     critical_count: int = 0
     high_count: int = 0
@@ -4181,6 +4552,7 @@ class VulnerabilitySummary(BaseModel):
 
 class SecurityControls(BaseModel):
     """Security controls status on the asset"""
+
     antivirus_installed: bool = False
     antivirus_updated: bool = False
     antivirus_product: Optional[str] = None
@@ -4208,8 +4580,10 @@ class SecurityControls(BaseModel):
 
 # --- Asset CRUD Models ---
 
+
 class AssetCreate(BaseModel):
     """Create a new asset"""
+
     # Required fields
     name: str = Field(..., min_length=1, max_length=255)
     asset_type: AssetTypeEnum
@@ -4269,6 +4643,7 @@ class AssetCreate(BaseModel):
 
 class Asset(BaseModel):
     """Complete asset model"""
+
     id: str
 
     # Required fields
@@ -4340,6 +4715,7 @@ class Asset(BaseModel):
 
 class AssetUpdate(BaseModel):
     """Update an existing asset"""
+
     name: Optional[str] = None
     asset_type: Optional[AssetTypeEnum] = None
     status: Optional[AssetStatusEnum] = None
@@ -4374,6 +4750,7 @@ class AssetUpdate(BaseModel):
 
 class AssetListResponse(BaseModel):
     """Paginated list of assets"""
+
     assets: List[Asset]
     total: int
     page: int
@@ -4385,6 +4762,7 @@ class AssetListResponse(BaseModel):
 
 class AssetSearchQuery(BaseModel):
     """Advanced asset search query"""
+
     query: Optional[str] = None  # Full-text search
     asset_types: Optional[List[AssetTypeEnum]] = None
     statuses: Optional[List[AssetStatusEnum]] = None
@@ -4452,8 +4830,10 @@ class AssetSearchQuery(BaseModel):
 
 # --- Asset Relationship Models ---
 
+
 class AssetRelationshipCreate(BaseModel):
     """Create a relationship between assets"""
+
     source_asset_id: str
     target_asset_id: str
     relationship_type: RelationshipTypeEnum
@@ -4465,6 +4845,7 @@ class AssetRelationshipCreate(BaseModel):
 
 class AssetRelationship(BaseModel):
     """Relationship between two assets"""
+
     id: str
     source_asset_id: str
     source_asset_name: str
@@ -4482,14 +4863,17 @@ class AssetRelationship(BaseModel):
 
 class AssetRelationshipListResponse(BaseModel):
     """List of asset relationships"""
+
     relationships: List[AssetRelationship]
     total: int
 
 
 # --- Asset Group Models ---
 
+
 class AssetGroupCreate(BaseModel):
     """Create an asset group"""
+
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     group_type: str = "static"  # static, dynamic
@@ -4508,6 +4892,7 @@ class AssetGroupCreate(BaseModel):
 
 class AssetGroup(BaseModel):
     """Asset group"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -4525,6 +4910,7 @@ class AssetGroup(BaseModel):
 
 class AssetGroupUpdate(BaseModel):
     """Update an asset group"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     asset_ids: Optional[List[str]] = None
@@ -4536,14 +4922,17 @@ class AssetGroupUpdate(BaseModel):
 
 class AssetGroupListResponse(BaseModel):
     """List of asset groups"""
+
     groups: List[AssetGroup]
     total: int
 
 
 # --- Discovery Scan Models ---
 
+
 class DiscoveryScanConfig(BaseModel):
     """Configuration for asset discovery scan"""
+
     name: str = Field(..., min_length=1, max_length=255)
     scan_type: ScanTypeEnum = ScanTypeEnum.FULL
     description: Optional[str] = None
@@ -4584,6 +4973,7 @@ class DiscoveryScanConfig(BaseModel):
 
 class DiscoveryScan(BaseModel):
     """Discovery scan execution"""
+
     id: str
     name: str
     config: DiscoveryScanConfig
@@ -4611,18 +5001,21 @@ class DiscoveryScan(BaseModel):
 
 class DiscoveryScanCreate(BaseModel):
     """Create a new discovery scan"""
+
     config: DiscoveryScanConfig
     run_immediately: bool = False
 
 
 class DiscoveryScanListResponse(BaseModel):
     """List of discovery scans"""
+
     scans: List[DiscoveryScan]
     total: int
 
 
 class DiscoveryScanResult(BaseModel):
     """Results from a discovery scan"""
+
     scan_id: str
     scan_name: str
     status: str
@@ -4643,8 +5036,10 @@ class DiscoveryScanResult(BaseModel):
 
 # --- Network Topology Models ---
 
+
 class TopologyNode(BaseModel):
     """Node in network topology"""
+
     id: str
     asset_id: str
     asset_name: str
@@ -4665,6 +5060,7 @@ class TopologyNode(BaseModel):
 
 class TopologyEdge(BaseModel):
     """Edge in network topology"""
+
     id: str
     source: str
     target: str
@@ -4677,6 +5073,7 @@ class TopologyEdge(BaseModel):
 
 class NetworkTopology(BaseModel):
     """Network topology graph"""
+
     nodes: List[TopologyNode]
     edges: List[TopologyEdge]
     total_nodes: int
@@ -4690,6 +5087,7 @@ class NetworkTopology(BaseModel):
 
 class TopologyQuery(BaseModel):
     """Query parameters for topology generation"""
+
     # Scope
     asset_ids: Optional[List[str]] = None
     asset_group_id: Optional[str] = None
@@ -4710,8 +5108,10 @@ class TopologyQuery(BaseModel):
 
 # --- CMDB Integration Models ---
 
+
 class CMDBSyncConfig(BaseModel):
     """Configuration for CMDB synchronization"""
+
     name: str = Field(..., min_length=1, max_length=255)
     cmdb_type: str  # servicenow, jira, cmdb, custom
 
@@ -4746,6 +5146,7 @@ class CMDBSyncConfig(BaseModel):
 
 class CMDBSyncResult(BaseModel):
     """Result of CMDB synchronization"""
+
     config_id: str
     sync_type: str  # scheduled, manual
     started_at: datetime
@@ -4766,8 +5167,10 @@ class CMDBSyncResult(BaseModel):
 
 # --- Asset Import/Export Models ---
 
+
 class AssetImportConfig(BaseModel):
     """Configuration for asset import"""
+
     format: str = "csv"  # csv, json, xlsx
     column_mapping: Dict[str, str] = Field(default_factory=dict)
     default_values: Dict[str, Any] = Field(default_factory=dict)
@@ -4781,6 +5184,7 @@ class AssetImportConfig(BaseModel):
 
 class AssetImportResult(BaseModel):
     """Result of asset import"""
+
     import_id: str
     filename: str
     format: str
@@ -4803,6 +5207,7 @@ class AssetImportResult(BaseModel):
 
 class AssetExportConfig(BaseModel):
     """Configuration for asset export"""
+
     format: str = "csv"  # csv, json, xlsx
     columns: List[str] = Field(default_factory=list)  # Empty = all columns
     include_software: bool = False
@@ -4813,6 +5218,7 @@ class AssetExportConfig(BaseModel):
 
 class AssetExportResult(BaseModel):
     """Result of asset export"""
+
     export_id: str
     format: str
     total_assets: int
@@ -4824,8 +5230,10 @@ class AssetExportResult(BaseModel):
 
 # --- Asset Statistics Models ---
 
+
 class AssetStatistics(BaseModel):
     """Overall asset inventory statistics"""
+
     total_assets: int
 
     # By status
@@ -4867,6 +5275,7 @@ class AssetStatistics(BaseModel):
 
 class AssetTrendData(BaseModel):
     """Asset inventory trends over time"""
+
     period: str  # daily, weekly, monthly
     data_points: List[Dict[str, Any]] = Field(default_factory=list)
     # Each point: {date, total, new, decommissioned, by_type, by_criticality, avg_risk}
@@ -4874,8 +5283,10 @@ class AssetTrendData(BaseModel):
 
 # --- Asset Activity/Audit Models ---
 
+
 class AssetActivity(BaseModel):
     """Activity log entry for an asset"""
+
     id: str
     asset_id: str
     activity_type: str  # created, updated, deleted, scanned, status_changed, etc.
@@ -4887,6 +5298,7 @@ class AssetActivity(BaseModel):
 
 class AssetActivityListResponse(BaseModel):
     """List of asset activities"""
+
     activities: List[AssetActivity]
     total: int
     page: int
@@ -4895,14 +5307,17 @@ class AssetActivityListResponse(BaseModel):
 
 # --- Bulk Operations ---
 
+
 class BulkAssetUpdate(BaseModel):
     """Bulk update multiple assets"""
+
     asset_ids: List[str] = Field(..., min_items=1, max_items=1000)
     updates: AssetUpdate
 
 
 class BulkAssetUpdateResult(BaseModel):
     """Result of bulk asset update"""
+
     status: StatusEnum
     total: int
     updated: int
@@ -4912,6 +5327,7 @@ class BulkAssetUpdateResult(BaseModel):
 
 class BulkAssetTag(BaseModel):
     """Bulk tag/untag assets"""
+
     asset_ids: List[str] = Field(..., min_items=1, max_items=1000)
     tags_to_add: List[str] = Field(default_factory=list)
     tags_to_remove: List[str] = Field(default_factory=list)
@@ -4919,6 +5335,7 @@ class BulkAssetTag(BaseModel):
 
 class BulkAssetDelete(BaseModel):
     """Bulk delete assets"""
+
     asset_ids: List[str] = Field(..., min_items=1, max_items=1000)
     soft_delete: bool = True
     reason: Optional[str] = None
@@ -4926,6 +5343,7 @@ class BulkAssetDelete(BaseModel):
 
 class BulkOperationResult(BaseModel):
     """Generic bulk operation result"""
+
     operation: str
     status: StatusEnum
     total: int
@@ -4936,8 +5354,10 @@ class BulkOperationResult(BaseModel):
 
 # --- Asset Health Check ---
 
+
 class AssetHealthCheck(BaseModel):
     """Health check for asset inventory system"""
+
     status: str = Field(..., pattern="^(healthy|degraded|unhealthy)$")
     timestamp: datetime
 

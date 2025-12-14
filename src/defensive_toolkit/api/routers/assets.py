@@ -101,6 +101,7 @@ activities_store: Dict[str, Dict[str, Any]] = {}
 # Helper Functions
 # =============================================================================
 
+
 def generate_id() -> str:
     """Generate a unique ID"""
     return str(uuid.uuid4())
@@ -116,9 +117,9 @@ def calculate_risk_score(asset: Dict[str, Any]) -> AssetRiskScore:
         "low": 3.0,
         "minimal": 1.0,
     }
-    criticality_score = asset.get("criticality_score", criticality_map.get(
-        asset.get("criticality", "medium"), 5.0
-    ))
+    criticality_score = asset.get(
+        "criticality_score", criticality_map.get(asset.get("criticality", "medium"), 5.0)
+    )
 
     # Vulnerability score
     vuln_summary = asset.get("vulnerability_summary", {})
@@ -156,10 +157,7 @@ def calculate_risk_score(asset: Dict[str, Any]) -> AssetRiskScore:
 
     # Calculate overall score (weighted average)
     overall_score = (
-        criticality_score * 0.35 +
-        vuln_score * 0.30 +
-        exposure_score * 0.20 +
-        threat_score * 0.15
+        criticality_score * 0.35 + vuln_score * 0.30 + exposure_score * 0.20 + threat_score * 0.15
     )
     overall_score = max(1.0, min(10.0, overall_score))
 
@@ -171,18 +169,25 @@ def calculate_risk_score(asset: Dict[str, Any]) -> AssetRiskScore:
         threat_score=round(threat_score, 2),
         has_sensitive_data=has_sensitive_data,
         is_internet_facing=bool(cloud_metadata and cloud_metadata.get("public_ip")),
-        has_critical_vulnerabilities=bool(vuln_summary and vuln_summary.get("critical_count", 0) > 0),
+        has_critical_vulnerabilities=bool(
+            vuln_summary and vuln_summary.get("critical_count", 0) > 0
+        ),
         days_since_last_scan=None,
         patch_compliance_percentage=None,
         active_threats_count=0,
         calculated_at=datetime.utcnow(),
         calculation_method="weighted_average",
-        factors_considered=["criticality", "vulnerabilities", "exposure", "security_controls"]
+        factors_considered=["criticality", "vulnerabilities", "exposure", "security_controls"],
     )
 
 
-def log_activity(asset_id: str, activity_type: str, description: str,
-                 details: Dict[str, Any] = None, performed_by: str = None):
+def log_activity(
+    asset_id: str,
+    activity_type: str,
+    description: str,
+    details: Dict[str, Any] = None,
+    performed_by: str = None,
+):
     """Log an activity for an asset"""
     activity_id = generate_id()
     activities_store[activity_id] = {
@@ -214,7 +219,9 @@ def apply_search_filters(asset: Dict[str, Any], query: AssetSearchQuery) -> bool
         return False
 
     # Criticality filter
-    if query.criticalities and asset.get("criticality") not in [c.value for c in query.criticalities]:
+    if query.criticalities and asset.get("criticality") not in [
+        c.value for c in query.criticalities
+    ]:
         return False
 
     # Environment filter
@@ -222,11 +229,15 @@ def apply_search_filters(asset: Dict[str, Any], query: AssetSearchQuery) -> bool
         return False
 
     # Discovery method filter
-    if query.discovery_methods and asset.get("discovery_method") not in [d.value for d in query.discovery_methods]:
+    if query.discovery_methods and asset.get("discovery_method") not in [
+        d.value for d in query.discovery_methods
+    ]:
         return False
 
     # Compliance status filter
-    if query.compliance_statuses and asset.get("compliance_status") not in [c.value for c in query.compliance_statuses]:
+    if query.compliance_statuses and asset.get("compliance_status") not in [
+        c.value for c in query.compliance_statuses
+    ]:
         return False
 
     # Cloud filters
@@ -294,6 +305,7 @@ def apply_search_filters(asset: Dict[str, Any], query: AssetSearchQuery) -> bool
 # Asset CRUD Endpoints
 # =============================================================================
 
+
 @router.post("", response_model=Asset, status_code=201)
 async def create_asset(asset: AssetCreate):
     """
@@ -319,10 +331,15 @@ async def create_asset(asset: AssetCreate):
     assets_store[asset_id] = asset_dict
 
     # Log activity
-    log_activity(asset_id, "created", f"Asset '{asset.name}' created", {
-        "asset_type": asset.asset_type.value,
-        "criticality": asset.criticality.value,
-    })
+    log_activity(
+        asset_id,
+        "created",
+        f"Asset '{asset.name}' created",
+        {
+            "asset_type": asset.asset_type.value,
+            "criticality": asset.criticality.value,
+        },
+    )
 
     logger.info(f"Created asset: {asset_id} - {asset.name}")
     return Asset(**asset_dict)
@@ -453,6 +470,7 @@ async def delete_asset(asset_id: str, soft_delete: bool = Query(True)):
 # Advanced Search
 # =============================================================================
 
+
 @router.post("/search", response_model=AssetListResponse)
 async def search_assets(query: AssetSearchQuery):
     """
@@ -489,6 +507,7 @@ async def search_assets(query: AssetSearchQuery):
 # =============================================================================
 # Asset Relationships
 # =============================================================================
+
 
 @router.post("/{asset_id}/relationships", response_model=AssetRelationship, status_code=201)
 async def create_relationship(asset_id: str, relationship: AssetRelationshipCreate):
@@ -530,8 +549,7 @@ async def create_relationship(asset_id: str, relationship: AssetRelationshipCrea
             "managed_by": "manages",
         }
         reverse_type = reverse_type_map.get(
-            relationship.relationship_type.value,
-            relationship.relationship_type.value
+            relationship.relationship_type.value, relationship.relationship_type.value
         )
         reverse_dict = {
             "id": reverse_rel_id,
@@ -600,6 +618,7 @@ async def delete_relationship(relationship_id: str):
 # =============================================================================
 # Asset Groups
 # =============================================================================
+
 
 @router.post("/groups", response_model=AssetGroup, status_code=201)
 async def create_asset_group(group: AssetGroupCreate):
@@ -756,7 +775,9 @@ async def remove_asset_from_group(group_id: str, asset_id: str):
 
     group = groups_store[group_id]
     if group["group_type"] != "static":
-        raise HTTPException(status_code=400, detail="Cannot manually remove assets from dynamic groups")
+        raise HTTPException(
+            status_code=400, detail="Cannot manually remove assets from dynamic groups"
+        )
 
     if asset_id in group["asset_ids"]:
         group["asset_ids"].remove(asset_id)
@@ -769,6 +790,7 @@ async def remove_asset_from_group(group_id: str, asset_id: str):
 # =============================================================================
 # Discovery Scans
 # =============================================================================
+
 
 @router.post("/discovery/scans", response_model=DiscoveryScan, status_code=201)
 async def create_discovery_scan(scan_request: DiscoveryScanCreate):
@@ -801,6 +823,7 @@ async def create_discovery_scan(scan_request: DiscoveryScanCreate):
     # Simulate immediate scan completion (in production, this would be async)
     if scan_request.run_immediately:
         import random
+
         scan_dict["status"] = "completed"
         scan_dict["completed_at"] = datetime.utcnow().isoformat()
         scan_dict["duration_seconds"] = random.randint(30, 300)
@@ -857,6 +880,7 @@ async def run_discovery_scan(scan_id: str):
 
     # Simulate scan completion
     import random
+
     scan["status"] = "completed"
     scan["completed_at"] = datetime.utcnow().isoformat()
     scan["duration_seconds"] = random.randint(30, 300)
@@ -928,6 +952,7 @@ async def delete_discovery_scan(scan_id: str):
 # Network Topology
 # =============================================================================
 
+
 @router.post("/topology", response_model=NetworkTopology)
 async def generate_topology(query: TopologyQuery):
     """
@@ -943,7 +968,9 @@ async def generate_topology(query: TopologyQuery):
     elif query.asset_group_id:
         if query.asset_group_id in groups_store:
             group = groups_store[query.asset_group_id]
-            starting_assets = [assets_store[aid] for aid in group.get("asset_ids", []) if aid in assets_store]
+            starting_assets = [
+                assets_store[aid] for aid in group.get("asset_ids", []) if aid in assets_store
+            ]
         else:
             starting_assets = []
     else:
@@ -962,16 +989,18 @@ async def generate_topology(query: TopologyQuery):
             continue
 
         processed_assets.add(asset_id)
-        nodes.append(TopologyNode(
-            id=asset_id,
-            asset_id=asset_id,
-            asset_name=asset.get("name", "Unknown"),
-            asset_type=AssetTypeEnum(asset.get("asset_type", "unknown")),
-            ip_address=asset.get("primary_ip"),
-            status=AssetStatusEnum(asset.get("status", "unknown")),
-            criticality=AssetCriticalityEnum(asset.get("criticality", "medium")),
-            risk_score=asset.get("risk_score", {}).get("overall_score"),
-        ))
+        nodes.append(
+            TopologyNode(
+                id=asset_id,
+                asset_id=asset_id,
+                asset_name=asset.get("name", "Unknown"),
+                asset_type=AssetTypeEnum(asset.get("asset_type", "unknown")),
+                ip_address=asset.get("primary_ip"),
+                status=AssetStatusEnum(asset.get("status", "unknown")),
+                criticality=AssetCriticalityEnum(asset.get("criticality", "medium")),
+                risk_score=asset.get("risk_score", {}).get("overall_score"),
+            )
+        )
 
     # Create edges from relationships
     for rel in relationships_store.values():
@@ -984,14 +1013,16 @@ async def generate_topology(query: TopologyQuery):
                 if rel_type not in [r.value for r in query.include_relationships]:
                     continue
 
-            edges.append(TopologyEdge(
-                id=rel["id"],
-                source=source_id,
-                target=target_id,
-                relationship_type=RelationshipTypeEnum(rel["relationship_type"]),
-                label=rel.get("description"),
-                weight=rel.get("confidence", 1.0),
-            ))
+            edges.append(
+                TopologyEdge(
+                    id=rel["id"],
+                    source=source_id,
+                    target=target_id,
+                    relationship_type=RelationshipTypeEnum(rel["relationship_type"]),
+                    label=rel.get("description"),
+                    weight=rel.get("confidence", 1.0),
+                )
+            )
 
     return NetworkTopology(
         nodes=nodes,
@@ -1025,6 +1056,7 @@ async def get_asset_topology(
 # =============================================================================
 # CMDB Integration
 # =============================================================================
+
 
 @router.post("/cmdb/configs", status_code=201)
 async def create_cmdb_config(config: CMDBSyncConfig):
@@ -1071,6 +1103,7 @@ async def trigger_cmdb_sync(config_id: str):
 
     # Simulate sync result
     import random
+
     result = CMDBSyncResult(
         config_id=config_id,
         sync_type="manual",
@@ -1108,6 +1141,7 @@ async def delete_cmdb_config(config_id: str):
 # Import/Export
 # =============================================================================
 
+
 @router.post("/import", response_model=AssetImportResult)
 async def import_assets(
     file: UploadFile = File(...),
@@ -1121,6 +1155,7 @@ async def import_assets(
 
     # Simulate import
     import random
+
     total = random.randint(10, 50)
     imported = random.randint(int(total * 0.7), total)
     updated = random.randint(0, int(total * 0.2))
@@ -1157,7 +1192,9 @@ async def export_assets(config: AssetExportConfig):
 
     # Get assets to export
     if config.filter_query:
-        filtered = [a for a in assets_store.values() if apply_search_filters(a, config.filter_query)]
+        filtered = [
+            a for a in assets_store.values() if apply_search_filters(a, config.filter_query)
+        ]
     else:
         filtered = list(assets_store.values())
 
@@ -1186,6 +1223,7 @@ async def download_export(export_id: str):
 # =============================================================================
 # Statistics & Trends
 # =============================================================================
+
 
 @router.get("/statistics", response_model=AssetStatistics)
 async def get_asset_statistics():
@@ -1256,9 +1294,15 @@ async def get_asset_statistics():
             by_cloud_provider[provider] = by_cloud_provider.get(provider, 0) + 1
 
     # Security control gaps
-    assets_without_edr = sum(1 for a in assets if not a.get("security_controls", {}).get("edr_installed"))
-    assets_without_av = sum(1 for a in assets if not a.get("security_controls", {}).get("antivirus_installed"))
-    assets_with_critical = sum(1 for a in assets if a.get("vulnerability_summary", {}).get("critical_count", 0) > 0)
+    assets_without_edr = sum(
+        1 for a in assets if not a.get("security_controls", {}).get("edr_installed")
+    )
+    assets_without_av = sum(
+        1 for a in assets if not a.get("security_controls", {}).get("antivirus_installed")
+    )
+    assets_with_critical = sum(
+        1 for a in assets if a.get("vulnerability_summary", {}).get("critical_count", 0) > 0
+    )
 
     # Recent activity (simulated)
     new_7d = sum(1 for a in assets if a.get("status") == "discovered")
@@ -1316,15 +1360,17 @@ async def get_asset_trends(
         variation = random.uniform(-0.05, 0.1)
         total = int(base_total * (1 + variation))
 
-        data_points.append({
-            "date": point_date.isoformat(),
-            "total": total,
-            "new": random.randint(0, 10),
-            "decommissioned": random.randint(0, 5),
-            "by_type": {"server": int(total * 0.3), "workstation": int(total * 0.5)},
-            "by_criticality": {"critical": int(total * 0.1), "high": int(total * 0.2)},
-            "avg_risk": round(random.uniform(4.0, 6.0), 2),
-        })
+        data_points.append(
+            {
+                "date": point_date.isoformat(),
+                "total": total,
+                "new": random.randint(0, 10),
+                "decommissioned": random.randint(0, 5),
+                "by_type": {"server": int(total * 0.3), "workstation": int(total * 0.5)},
+                "by_criticality": {"critical": int(total * 0.1), "high": int(total * 0.2)},
+                "avg_risk": round(random.uniform(4.0, 6.0), 2),
+            }
+        )
 
     return AssetTrendData(
         period=period,
@@ -1335,6 +1381,7 @@ async def get_asset_trends(
 # =============================================================================
 # Activity Log
 # =============================================================================
+
 
 @router.get("/{asset_id}/activity", response_model=AssetActivityListResponse)
 async def get_asset_activity(
@@ -1367,6 +1414,7 @@ async def get_asset_activity(
 # =============================================================================
 # Bulk Operations
 # =============================================================================
+
 
 @router.post("/bulk/update", response_model=BulkAssetUpdateResult)
 async def bulk_update_assets(bulk_update: BulkAssetUpdate):
@@ -1532,6 +1580,7 @@ async def bulk_recalculate_risk(asset_ids: List[str] = Body(None)):
 # Risk Score Endpoints
 # =============================================================================
 
+
 @router.get("/{asset_id}/risk-score", response_model=AssetRiskScore)
 async def get_asset_risk_score(asset_id: str):
     """
@@ -1559,7 +1608,9 @@ async def recalculate_asset_risk(asset_id: str):
     asset["risk_score"] = risk_score.model_dump()
     asset["updated_at"] = datetime.utcnow().isoformat()
 
-    log_activity(asset_id, "risk_recalculated", f"Risk score recalculated: {risk_score.overall_score}")
+    log_activity(
+        asset_id, "risk_recalculated", f"Risk score recalculated: {risk_score.overall_score}"
+    )
 
     return risk_score
 
@@ -1567,6 +1618,7 @@ async def recalculate_asset_risk(asset_id: str):
 # =============================================================================
 # Health Check
 # =============================================================================
+
 
 @router.get("/health", response_model=AssetHealthCheck)
 async def health_check():
@@ -1594,13 +1646,27 @@ async def health_check():
                 stale_count += 1
 
     if stale_count > 0:
-        issues.append({"type": "stale_assets", "count": stale_count, "message": f"{stale_count} assets not seen in 7+ days"})
+        issues.append(
+            {
+                "type": "stale_assets",
+                "count": stale_count,
+                "message": f"{stale_count} assets not seen in 7+ days",
+            }
+        )
         recommendations.append(f"Review {stale_count} stale assets that haven't been seen recently")
 
     # Check security control gaps
-    missing_edr = sum(1 for a in assets_store.values() if not a.get("security_controls", {}).get("edr_installed"))
+    missing_edr = sum(
+        1 for a in assets_store.values() if not a.get("security_controls", {}).get("edr_installed")
+    )
     if missing_edr > total_assets * 0.2:  # More than 20% without EDR
-        issues.append({"type": "security_gap", "count": missing_edr, "message": f"{missing_edr} assets without EDR"})
+        issues.append(
+            {
+                "type": "security_gap",
+                "count": missing_edr,
+                "message": f"{missing_edr} assets without EDR",
+            }
+        )
         recommendations.append(f"Deploy EDR to {missing_edr} assets")
 
     # Determine status

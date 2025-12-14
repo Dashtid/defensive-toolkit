@@ -120,6 +120,7 @@ notification_queue: List[Dict[str, Any]] = []
 # Helper Functions
 # ============================================================================
 
+
 def generate_channel_id() -> str:
     """Generate unique channel ID"""
     return f"ch_{secrets.token_hex(8)}"
@@ -172,9 +173,7 @@ def check_rate_limit(channel_id: str, limits: Dict[str, int]) -> bool:
     rate_limits[channel_id]["minute"] = [
         t for t in rate_limits[channel_id]["minute"] if t > minute_ago
     ]
-    rate_limits[channel_id]["hour"] = [
-        t for t in rate_limits[channel_id]["hour"] if t > hour_ago
-    ]
+    rate_limits[channel_id]["hour"] = [t for t in rate_limits[channel_id]["hour"] if t > hour_ago]
 
     # Check limits
     per_minute = limits.get("rate_limit_per_minute", 60)
@@ -204,8 +203,7 @@ def check_dedupe(key: str, window_seconds: int) -> bool:
 
     # Clean old entries
     expired_keys = [
-        k for k, t in dedupe_cache.items()
-        if (now - t).total_seconds() > 3600  # Clean after 1 hour
+        k for k, t in dedupe_cache.items() if (now - t).total_seconds() > 3600  # Clean after 1 hour
     ]
     for k in expired_keys:
         del dedupe_cache[k]
@@ -302,10 +300,7 @@ def match_routing_rules(notification: Dict[str, Any]) -> List[str]:
     matched_rules = []
 
     # Sort rules by priority (lower number = higher priority)
-    sorted_rules = sorted(
-        routing_rules_db.values(),
-        key=lambda r: r.get("priority", 100)
-    )
+    sorted_rules = sorted(routing_rules_db.values(), key=lambda r: r.get("priority", 100))
 
     for rule in sorted_rules:
         if not rule.get("enabled", True):
@@ -335,10 +330,7 @@ def match_routing_rules(notification: Dict[str, Any]) -> List[str]:
     return matched_rules
 
 
-async def send_to_channel(
-    channel: Dict[str, Any],
-    notification: Dict[str, Any]
-) -> Dict[str, Any]:
+async def send_to_channel(channel: Dict[str, Any], notification: Dict[str, Any]) -> Dict[str, Any]:
     """
     Send notification to a specific channel.
     This is a mock implementation - production would integrate with actual APIs.
@@ -359,50 +351,45 @@ async def send_to_channel(
         result["details"] = {
             "recipients": config.get("default_recipients", []),
             "from": config.get("from_address"),
-            "message_id": f"msg_{secrets.token_hex(8)}@defensivetoolkit.local"
+            "message_id": f"msg_{secrets.token_hex(8)}@defensivetoolkit.local",
         }
 
     elif channel_type == NotificationChannelTypeEnum.SLACK.value:
         result["details"] = {
             "channel": config.get("default_channel", "#alerts"),
-            "ts": f"1234567890.{secrets.token_hex(4)}"
+            "ts": f"1234567890.{secrets.token_hex(4)}",
         }
 
     elif channel_type == NotificationChannelTypeEnum.TEAMS.value:
         result["details"] = {
             "message_id": secrets.token_hex(16),
-            "activity_id": secrets.token_hex(8)
+            "activity_id": secrets.token_hex(8),
         }
 
     elif channel_type == NotificationChannelTypeEnum.PAGERDUTY.value:
         result["details"] = {
             "dedup_key": notification.get("dedupe_key") or secrets.token_hex(8),
-            "incident_key": f"dt_{secrets.token_hex(8)}"
+            "incident_key": f"dt_{secrets.token_hex(8)}",
         }
 
     elif channel_type == NotificationChannelTypeEnum.WEBHOOK.value:
         result["details"] = {
             "url": config.get("url"),
             "response_code": 200,
-            "response_body": '{"status": "received"}'
+            "response_body": '{"status": "received"}',
         }
 
     elif channel_type == NotificationChannelTypeEnum.SMS.value:
         result["details"] = {
             "provider": config.get("provider"),
-            "message_sid": f"SM{secrets.token_hex(16)}"
+            "message_sid": f"SM{secrets.token_hex(16)}",
         }
 
     elif channel_type == NotificationChannelTypeEnum.DISCORD.value:
-        result["details"] = {
-            "message_id": secrets.token_hex(18)
-        }
+        result["details"] = {"message_id": secrets.token_hex(18)}
 
     elif channel_type == NotificationChannelTypeEnum.OPSGENIE.value:
-        result["details"] = {
-            "request_id": secrets.token_hex(16),
-            "alert_id": secrets.token_hex(12)
-        }
+        result["details"] = {"request_id": secrets.token_hex(16), "alert_id": secrets.token_hex(12)}
 
     elif channel_type == NotificationChannelTypeEnum.VICTOROPS.value:
         result["details"] = {
@@ -436,10 +423,7 @@ async def process_notification(notification_id: str):
     for recipient in recipients:
         channel_id = recipient.get("channel_id")
         if channel_id not in channels_db:
-            channel_statuses[channel_id] = {
-                "status": "failed",
-                "error": "Channel not found"
-            }
+            channel_statuses[channel_id] = {"status": "failed", "error": "Channel not found"}
             failure_count += 1
             continue
 
@@ -447,18 +431,12 @@ async def process_notification(notification_id: str):
 
         # Check if channel is enabled
         if not channel.get("enabled", True):
-            channel_statuses[channel_id] = {
-                "status": "skipped",
-                "reason": "Channel disabled"
-            }
+            channel_statuses[channel_id] = {"status": "skipped", "reason": "Channel disabled"}
             continue
 
         # Check rate limits
         if not check_rate_limit(channel_id, channel):
-            channel_statuses[channel_id] = {
-                "status": "rate_limited",
-                "retry_after_seconds": 60
-            }
+            channel_statuses[channel_id] = {"status": "rate_limited", "retry_after_seconds": 60}
             channels_db[channel_id]["status"] = ChannelStatusEnum.RATE_LIMITED.value
             failure_count += 1
             continue
@@ -473,10 +451,7 @@ async def process_notification(notification_id: str):
             channels_db[channel_id]["last_used"] = datetime.utcnow().isoformat()
 
         except Exception as e:
-            channel_statuses[channel_id] = {
-                "status": "failed",
-                "error": str(e)
-            }
+            channel_statuses[channel_id] = {"status": "failed", "error": str(e)}
             failure_count += 1
 
             # Update channel error stats
@@ -498,12 +473,15 @@ async def process_notification(notification_id: str):
         notification["failed_at"] = datetime.utcnow().isoformat()
 
     notifications_db[notification_id] = notification
-    logger.info(f"Notification {notification_id} processed: {success_count} succeeded, {failure_count} failed")
+    logger.info(
+        f"Notification {notification_id} processed: {success_count} succeeded, {failure_count} failed"
+    )
 
 
 # ============================================================================
 # Channel Management Endpoints
 # ============================================================================
+
 
 @router.get("/channels", response_model=NotificationChannelListResponse)
 async def list_channels(
@@ -548,7 +526,7 @@ async def get_channel(
     if channel_id not in channels_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Channel {channel_id} not found"}
+            content={"status": "error", "message": f"Channel {channel_id} not found"},
         )
 
     return NotificationChannelResponse(
@@ -608,7 +586,7 @@ async def update_channel(
     if channel_id not in channels_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Channel {channel_id} not found"}
+            content={"status": "error", "message": f"Channel {channel_id} not found"},
         )
 
     channel = channels_db[channel_id]
@@ -651,7 +629,7 @@ async def delete_channel(
     if channel_id not in channels_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Channel {channel_id} not found"}
+            content={"status": "error", "message": f"Channel {channel_id} not found"},
         )
 
     channel = channels_db.pop(channel_id)
@@ -674,7 +652,7 @@ async def test_channel(
     if channel_id not in channels_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Channel {channel_id} not found"}
+            content={"status": "error", "message": f"Channel {channel_id} not found"},
         )
 
     channel = channels_db[channel_id]
@@ -713,6 +691,7 @@ async def test_channel(
 # Template Management Endpoints
 # ============================================================================
 
+
 @router.get("/templates", response_model=NotificationTemplateListResponse)
 async def list_templates(
     category: Optional[NotificationCategoryEnum] = None,
@@ -746,7 +725,7 @@ async def get_template(
     if template_id not in templates_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Template {template_id} not found"}
+            content={"status": "error", "message": f"Template {template_id} not found"},
         )
 
     return NotificationTemplateResponse(
@@ -802,7 +781,7 @@ async def update_template(
     if template_id not in templates_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Template {template_id} not found"}
+            content={"status": "error", "message": f"Template {template_id} not found"},
         )
 
     template = templates_db[template_id]
@@ -847,7 +826,7 @@ async def delete_template(
     if template_id not in templates_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Template {template_id} not found"}
+            content={"status": "error", "message": f"Template {template_id} not found"},
         )
 
     template = templates_db.pop(template_id)
@@ -869,7 +848,7 @@ async def render_template_preview(
     if request.template_id not in templates_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Template {request.template_id} not found"}
+            content={"status": "error", "message": f"Template {request.template_id} not found"},
         )
 
     template = templates_db[request.template_id]
@@ -888,7 +867,9 @@ async def render_template_preview(
 
     # Render templates
     rendered_body = render_template(body_template, request.variables)
-    rendered_subject = render_template(subject_template, request.variables) if subject_template else None
+    rendered_subject = (
+        render_template(subject_template, request.variables) if subject_template else None
+    )
     rendered_html = render_template(html_template, request.variables) if html_template else None
 
     # Find used and missing variables
@@ -916,6 +897,7 @@ async def render_template_preview(
 # ============================================================================
 # Routing Rule Endpoints
 # ============================================================================
+
 
 @router.get("/routing-rules", response_model=RoutingRuleListResponse)
 async def list_routing_rules(
@@ -946,7 +928,7 @@ async def get_routing_rule(
     if rule_id not in routing_rules_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Rule {rule_id} not found"}
+            content={"status": "error", "message": f"Rule {rule_id} not found"},
         )
 
     return RoutingRuleResponse(
@@ -1001,7 +983,7 @@ async def update_routing_rule(
     if rule_id not in routing_rules_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Rule {rule_id} not found"}
+            content={"status": "error", "message": f"Rule {rule_id} not found"},
         )
 
     rule = routing_rules_db[rule_id]
@@ -1044,7 +1026,7 @@ async def delete_routing_rule(
     if rule_id not in routing_rules_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Rule {rule_id} not found"}
+            content={"status": "error", "message": f"Rule {rule_id} not found"},
         )
 
     rule = routing_rules_db.pop(rule_id)
@@ -1060,6 +1042,7 @@ async def delete_routing_rule(
 # ============================================================================
 # Notification Endpoints
 # ============================================================================
+
 
 @router.get("/", response_model=NotificationListResponse)
 async def list_notifications(
@@ -1120,7 +1103,7 @@ async def get_notification(
     if notification_id not in notifications_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Notification {notification_id} not found"}
+            content={"status": "error", "message": f"Notification {notification_id} not found"},
         )
 
     return NotificationResponse(
@@ -1146,8 +1129,8 @@ async def send_notification(
                 status_code=status.HTTP_409_CONFLICT,
                 content={
                     "status": "error",
-                    "message": f"Duplicate notification (dedupe_key: {request.dedupe_key})"
-                }
+                    "message": f"Duplicate notification (dedupe_key: {request.dedupe_key})",
+                },
             )
 
     notification_id = generate_notification_id()
@@ -1204,7 +1187,9 @@ async def send_notification(
     # Update rule match counts
     for rule_id in matched_rules:
         if rule_id in routing_rules_db:
-            routing_rules_db[rule_id]["match_count"] = routing_rules_db[rule_id].get("match_count", 0) + 1
+            routing_rules_db[rule_id]["match_count"] = (
+                routing_rules_db[rule_id].get("match_count", 0) + 1
+            )
             routing_rules_db[rule_id]["last_matched"] = now.isoformat()
 
     # If no explicit recipients, use routing rules to determine channels
@@ -1215,11 +1200,9 @@ async def send_notification(
                 for action in rule.get("actions", []):
                     if action.get("action_type") == "route":
                         for channel_id in action.get("channel_ids", []):
-                            notification_data["recipients"].append({
-                                "channel_id": channel_id,
-                                "address": None,
-                                "metadata": {}
-                            })
+                            notification_data["recipients"].append(
+                                {"channel_id": channel_id, "address": None, "metadata": {}}
+                            )
 
     # Check for deferred delivery
     if request.defer_until and request.defer_until > now:
@@ -1259,18 +1242,21 @@ async def retry_notification(
     if notification_id not in notifications_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Notification {notification_id} not found"}
+            content={"status": "error", "message": f"Notification {notification_id} not found"},
         )
 
     notification = notifications_db[notification_id]
 
     if notification["status"] not in [
         NotificationStatusEnum.FAILED.value,
-        NotificationStatusEnum.PARTIAL.value
+        NotificationStatusEnum.PARTIAL.value,
     ]:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"status": "error", "message": "Only failed or partial notifications can be retried"}
+            content={
+                "status": "error",
+                "message": "Only failed or partial notifications can be retried",
+            },
         )
 
     # Increment retry count
@@ -1281,8 +1267,7 @@ async def retry_notification(
     # If specific channels requested, filter recipients
     if request and request.channels:
         notification["recipients"] = [
-            r for r in notification["recipients"]
-            if r["channel_id"] in request.channels
+            r for r in notification["recipients"] if r["channel_id"] in request.channels
         ]
 
     notifications_db[notification_id] = notification
@@ -1348,19 +1333,23 @@ async def send_bulk_notifications(
             notifications_db[notification_id] = notification_data
             background_tasks.add_task(process_notification, notification_id)
 
-            results.append({
-                "notification_id": notification_id,
-                "status": "queued",
-                "subject": notif_request.subject,
-            })
+            results.append(
+                {
+                    "notification_id": notification_id,
+                    "status": "queued",
+                    "subject": notif_request.subject,
+                }
+            )
             succeeded += 1
 
         except Exception as e:
-            results.append({
-                "subject": notif_request.subject,
-                "status": "failed",
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "subject": notif_request.subject,
+                    "status": "failed",
+                    "error": str(e),
+                }
+            )
             failed += 1
 
             if request.fail_on_first_error:
@@ -1378,6 +1367,7 @@ async def send_bulk_notifications(
 # ============================================================================
 # Escalation Policy Endpoints
 # ============================================================================
+
 
 @router.get("/escalation-policies", response_model=EscalationPolicyListResponse)
 async def list_escalation_policies(
@@ -1405,7 +1395,7 @@ async def get_escalation_policy(
     if policy_id not in escalation_policies_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Policy {policy_id} not found"}
+            content={"status": "error", "message": f"Policy {policy_id} not found"},
         )
 
     return EscalationPolicyResponse(
@@ -1460,7 +1450,7 @@ async def update_escalation_policy(
     if policy_id not in escalation_policies_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Policy {policy_id} not found"}
+            content={"status": "error", "message": f"Policy {policy_id} not found"},
         )
 
     policy = escalation_policies_db[policy_id]
@@ -1503,7 +1493,7 @@ async def delete_escalation_policy(
     if policy_id not in escalation_policies_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Policy {policy_id} not found"}
+            content={"status": "error", "message": f"Policy {policy_id} not found"},
         )
 
     policy = escalation_policies_db.pop(policy_id)
@@ -1520,15 +1510,13 @@ async def delete_escalation_policy(
 # Active Escalation Endpoints
 # ============================================================================
 
+
 @router.get("/escalations/active")
 async def list_active_escalations(
     current_user: str = Depends(get_current_active_user),
 ):
     """List all active escalations."""
-    escalations = [
-        e for e in active_escalations_db.values()
-        if e.get("status") == "active"
-    ]
+    escalations = [e for e in active_escalations_db.values() if e.get("status") == "active"]
 
     return {
         "escalations": [ActiveEscalation(**e) for e in escalations],
@@ -1545,7 +1533,7 @@ async def acknowledge_escalation(
     if request.escalation_id not in active_escalations_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Escalation {request.escalation_id} not found"}
+            content={"status": "error", "message": f"Escalation {request.escalation_id} not found"},
         )
 
     escalation = active_escalations_db[request.escalation_id]
@@ -1553,19 +1541,21 @@ async def acknowledge_escalation(
     if escalation["status"] != "active":
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"status": "error", "message": "Escalation is not active"}
+            content={"status": "error", "message": "Escalation is not active"},
         )
 
     now = datetime.utcnow()
     escalation["status"] = "acknowledged"
     escalation["acknowledged_at"] = now.isoformat()
     escalation["acknowledged_by"] = request.acknowledged_by
-    escalation["step_history"].append({
-        "action": "acknowledged",
-        "by": request.acknowledged_by,
-        "at": now.isoformat(),
-        "note": request.note,
-    })
+    escalation["step_history"].append(
+        {
+            "action": "acknowledged",
+            "by": request.acknowledged_by,
+            "at": now.isoformat(),
+            "note": request.note,
+        }
+    )
 
     active_escalations_db[request.escalation_id] = escalation
     logger.info(f"Escalation {request.escalation_id} acknowledged by {request.acknowledged_by}")
@@ -1586,7 +1576,7 @@ async def resolve_escalation(
     if request.escalation_id not in active_escalations_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Escalation {request.escalation_id} not found"}
+            content={"status": "error", "message": f"Escalation {request.escalation_id} not found"},
         )
 
     escalation = active_escalations_db[request.escalation_id]
@@ -1594,19 +1584,21 @@ async def resolve_escalation(
     if escalation["status"] not in ["active", "acknowledged"]:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"status": "error", "message": "Escalation cannot be resolved"}
+            content={"status": "error", "message": "Escalation cannot be resolved"},
         )
 
     now = datetime.utcnow()
     escalation["status"] = "resolved"
     escalation["resolved_at"] = now.isoformat()
     escalation["resolved_by"] = request.resolved_by
-    escalation["step_history"].append({
-        "action": "resolved",
-        "by": request.resolved_by,
-        "at": now.isoformat(),
-        "note": request.resolution_note,
-    })
+    escalation["step_history"].append(
+        {
+            "action": "resolved",
+            "by": request.resolved_by,
+            "at": now.isoformat(),
+            "note": request.resolution_note,
+        }
+    )
 
     active_escalations_db[request.escalation_id] = escalation
     logger.info(f"Escalation {request.escalation_id} resolved by {request.resolved_by}")
@@ -1621,6 +1613,7 @@ async def resolve_escalation(
 # ============================================================================
 # Subscription Endpoints
 # ============================================================================
+
 
 @router.get("/subscriptions", response_model=SubscriptionListResponse)
 async def list_subscriptions(
@@ -1687,7 +1680,7 @@ async def update_subscription(
     if subscription_id not in subscriptions_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Subscription {subscription_id} not found"}
+            content={"status": "error", "message": f"Subscription {subscription_id} not found"},
         )
 
     sub = subscriptions_db[subscription_id]
@@ -1724,7 +1717,7 @@ async def delete_subscription(
     if subscription_id not in subscriptions_db:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Subscription {subscription_id} not found"}
+            content={"status": "error", "message": f"Subscription {subscription_id} not found"},
         )
 
     sub = subscriptions_db.pop(subscription_id)
@@ -1740,6 +1733,7 @@ async def delete_subscription(
 # Statistics and Health Endpoints
 # ============================================================================
 
+
 @router.get("/stats", response_model=NotificationStats)
 async def get_notification_stats(
     current_user: str = Depends(get_current_active_user),
@@ -1753,12 +1747,10 @@ async def get_notification_stats(
 
     # Calculate statistics
     notifications_today = sum(
-        1 for n in notifications
-        if datetime.fromisoformat(n["created_at"]) >= today_start
+        1 for n in notifications if datetime.fromisoformat(n["created_at"]) >= today_start
     )
     notifications_this_hour = sum(
-        1 for n in notifications
-        if datetime.fromisoformat(n["created_at"]) >= hour_start
+        1 for n in notifications if datetime.fromisoformat(n["created_at"]) >= hour_start
     )
 
     by_status = {}
@@ -1791,13 +1783,17 @@ async def get_notification_stats(
             delivered_count += 1
 
     avg_delivery_time = total_delivery_time / delivered_count if delivered_count > 0 else 0
-    success_rate = (by_status.get("delivered", 0) / len(notifications) * 100) if notifications else 0
+    success_rate = (
+        (by_status.get("delivered", 0) / len(notifications) * 100) if notifications else 0
+    )
 
     # Channel statistics
     channels = list(channels_db.values())
     channels_active = sum(1 for c in channels if c.get("status") == ChannelStatusEnum.ACTIVE.value)
     channels_error = sum(1 for c in channels if c.get("status") == ChannelStatusEnum.ERROR.value)
-    rate_limited = sum(1 for c in channels if c.get("status") == ChannelStatusEnum.RATE_LIMITED.value)
+    rate_limited = sum(
+        1 for c in channels if c.get("status") == ChannelStatusEnum.RATE_LIMITED.value
+    )
 
     # Active escalations
     active_esc = sum(1 for e in active_escalations_db.values() if e.get("status") == "active")
@@ -1858,7 +1854,9 @@ async def get_notification_health(
         if n.get("status") == NotificationStatusEnum.FAILED.value
         and n.get("failed_at")
         and datetime.fromisoformat(n["failed_at"]) >= hour_ago
-    ][:10]  # Limit to 10 most recent
+    ][
+        :10
+    ]  # Limit to 10 most recent
 
     # Determine overall health
     total_channels = len(channels_db)
@@ -1876,7 +1874,9 @@ async def get_notification_health(
         recommendations.append(f"Review and fix {error_channels} channel(s) with errors")
 
     if len(recent_failures) > 5:
-        recommendations.append("High failure rate in the last hour - investigate notification delivery")
+        recommendations.append(
+            "High failure rate in the last hour - investigate notification delivery"
+        )
 
     if len(notification_queue) > 100:
         recommendations.append("Notification queue is building up - check processing capacity")
@@ -1887,7 +1887,9 @@ async def get_notification_health(
         failure = channel.get("failure_count", 0)
         total = success + failure
         if total > 10 and failure / total > 0.2:
-            recommendations.append(f"Channel '{channel.get('name')}' has high failure rate ({failure}/{total})")
+            recommendations.append(
+                f"Channel '{channel.get('name')}' has high failure rate ({failure}/{total})"
+            )
 
     return NotificationHealthCheck(
         status=health_status,

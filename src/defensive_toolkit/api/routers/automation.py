@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/automation", tags=["Automation"])
 
+
 @router.post("/playbooks/execute", response_model=AutomationExecutionStatus)
 async def execute_automation_playbook(
     playbook: AutomationPlaybook,
@@ -23,8 +24,9 @@ async def execute_automation_playbook(
         completed_at=datetime.utcnow(),
         actions_completed=len(playbook.actions),
         actions_total=len(playbook.actions),
-        results={}
+        results={},
     )
+
 
 @router.get("/playbooks", response_model=list)
 async def list_automation_playbooks(current_user: str = Depends(get_current_active_user)):

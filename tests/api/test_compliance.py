@@ -14,7 +14,9 @@ def auth_headers(auth_token):
 
 @pytest.fixture
 def auth_token():
-    response = client.post("/api/v1/auth/token", data={"username": "admin", "password": "changeme123"})
+    response = client.post(
+        "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
+    )
     return response.json()["access_token"]
 
 
@@ -38,7 +40,7 @@ class TestComplianceEndpoints:
             "framework": "cis",
             "version": "8.0",
             "targets": ["192.168.1.100", "192.168.1.101"],
-            "controls": ["1.1", "1.2", "2.1"]
+            "controls": ["1.1", "1.2", "2.1"],
         }
         response = client.post("/api/v1/compliance/check", json=check_data, headers=auth_headers)
         assert response.status_code == 200
@@ -47,7 +49,9 @@ class TestComplianceEndpoints:
 
     def test_get_compliance_report(self, auth_headers):
         """Test getting compliance report"""
-        response = client.get("/api/v1/compliance/reports?framework=cis&format=json", headers=auth_headers)
+        response = client.get(
+            "/api/v1/compliance/reports?framework=cis&format=json", headers=auth_headers
+        )
         assert response.status_code == 200
 
     def test_validate_policy(self, auth_headers):
@@ -55,7 +59,9 @@ class TestComplianceEndpoints:
         policy_data = {
             "policy_file": "security_policy.yml",
             "target": "192.168.1.100",
-            "strict_mode": True
+            "strict_mode": True,
         }
-        response = client.post("/api/v1/compliance/policy/validate", json=policy_data, headers=auth_headers)
+        response = client.post(
+            "/api/v1/compliance/policy/validate", json=policy_data, headers=auth_headers
+        )
         assert response.status_code == 200

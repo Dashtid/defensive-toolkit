@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 # Rate Limiting Middleware
 # ============================================================================
 
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     In-memory rate limiting middleware.
@@ -157,6 +158,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 # Request Logging Middleware
 # ============================================================================
 
+
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
     Log all API requests and responses.
@@ -238,6 +240,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 # Security Headers Middleware
 # ============================================================================
 
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
     Add security headers to all responses.
@@ -279,6 +282,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # ============================================================================
 # Exception Handler Middleware
 # ============================================================================
+
 
 async def http_exception_handler(request: Request, exc: HTTPException):
     """
@@ -340,6 +344,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # CORS Configuration Helper
 # ============================================================================
 
+
 def configure_cors(app):
     """
     Configure CORS middleware.
@@ -359,6 +364,7 @@ def configure_cors(app):
 # ============================================================================
 # Middleware Setup Helper
 # ============================================================================
+
 
 def setup_middleware(app):
     """

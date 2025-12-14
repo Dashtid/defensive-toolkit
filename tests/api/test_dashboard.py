@@ -5,7 +5,6 @@ Comprehensive tests for dashboard management, widgets, templates,
 export/import, snapshots, and real-time streaming.
 """
 
-
 import pytest
 from api.main import app
 from fastapi.testclient import TestClient
@@ -27,7 +26,7 @@ def sample_dashboard():
         "variables": [],
         "tags": ["soc", "security", "monitoring"],
         "is_default": False,
-        "is_public": False
+        "is_public": False,
     }
 
 
@@ -42,25 +41,16 @@ def sample_widget():
         "data_source": {
             "endpoint": "/api/v1/detection/threats/count",
             "method": "GET",
-            "cache_ttl_seconds": 60
+            "cache_ttl_seconds": 60,
         },
         "config": {
-            "counter": {
-                "value_field": "count",
-                "label": "Active Threats",
-                "show_trend": True
-            }
+            "counter": {"value_field": "count", "label": "Active Threats", "show_trend": True}
         },
-        "position": {
-            "x": 0,
-            "y": 0,
-            "width": 6,
-            "height": 3
-        },
+        "position": {"x": 0, "y": 0, "width": 6, "height": 3},
         "refresh_interval": "5_minutes",
         "time_range": "last_24_hours",
         "tags": ["threats", "counter"],
-        "visible": True
+        "visible": True,
     }
 
 
@@ -75,27 +65,20 @@ def sample_chart_widget():
         "data_source": {
             "endpoint": "/api/v1/incident-response/incidents/timeline",
             "method": "GET",
-            "cache_ttl_seconds": 300
+            "cache_ttl_seconds": 300,
         },
         "config": {
             "chart": {
-                "series": [
-                    {"name": "Incidents", "field": "count", "color": "#3B82F6"}
-                ],
+                "series": [{"name": "Incidents", "field": "count", "color": "#3B82F6"}],
                 "show_legend": True,
-                "smooth": True
+                "smooth": True,
             }
         },
-        "position": {
-            "x": 0,
-            "y": 3,
-            "width": 12,
-            "height": 4
-        },
+        "position": {"x": 0, "y": 3, "width": 12, "height": 4},
         "refresh_interval": "5_minutes",
         "time_range": "last_7_days",
         "tags": ["incidents", "timeline"],
-        "visible": True
+        "visible": True,
     }
 
 
@@ -105,9 +88,7 @@ class TestDashboardCRUD:
     def test_create_dashboard(self, auth_headers, sample_dashboard):
         """Test creating a dashboard"""
         response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         assert response.status_code == 201
         data = response.json()
@@ -122,16 +103,9 @@ class TestDashboardCRUD:
     def test_list_dashboards(self, auth_headers, sample_dashboard):
         """Test listing dashboards"""
         # Create a dashboard first
-        client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
-        )
+        client.post("/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers)
 
-        response = client.get(
-            "/api/v1/dashboard/dashboards",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/dashboard/dashboards", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert "dashboards" in data
@@ -144,40 +118,25 @@ class TestDashboardCRUD:
     def test_list_dashboards_with_filters(self, auth_headers, sample_dashboard):
         """Test listing dashboards with filters"""
         # Create dashboard
-        client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
-        )
+        client.post("/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers)
 
         # Filter by tag
-        response = client.get(
-            "/api/v1/dashboard/dashboards?tag=soc",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/dashboard/dashboards?tag=soc", headers=auth_headers)
         assert response.status_code == 200
 
         # Search by name
-        response = client.get(
-            "/api/v1/dashboard/dashboards?search=Security",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/dashboard/dashboards?search=Security", headers=auth_headers)
         assert response.status_code == 200
 
     def test_get_dashboard(self, auth_headers, sample_dashboard):
         """Test getting a specific dashboard"""
         # Create dashboard
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
-        response = client.get(
-            f"/api/v1/dashboard/dashboards/{dashboard_id}",
-            headers=auth_headers
-        )
+        response = client.get(f"/api/v1/dashboard/dashboards/{dashboard_id}", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == dashboard_id
@@ -186,19 +145,14 @@ class TestDashboardCRUD:
 
     def test_get_nonexistent_dashboard(self, auth_headers):
         """Test getting a dashboard that doesn't exist"""
-        response = client.get(
-            "/api/v1/dashboard/dashboards/nonexistent-id",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/dashboard/dashboards/nonexistent-id", headers=auth_headers)
         assert response.status_code == 404
 
     def test_update_dashboard(self, auth_headers, sample_dashboard):
         """Test updating a dashboard"""
         # Create dashboard
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -206,12 +160,10 @@ class TestDashboardCRUD:
         update_data = {
             "name": "Updated Dashboard Name",
             "description": "Updated description",
-            "is_public": True
+            "is_public": True,
         }
         response = client.patch(
-            f"/api/v1/dashboard/dashboards/{dashboard_id}",
-            json=update_data,
-            headers=auth_headers
+            f"/api/v1/dashboard/dashboards/{dashboard_id}", json=update_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -223,16 +175,13 @@ class TestDashboardCRUD:
         """Test deleting a dashboard"""
         # Create dashboard
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
         # Delete dashboard
         response = client.delete(
-            f"/api/v1/dashboard/dashboards/{dashboard_id}",
-            headers=auth_headers
+            f"/api/v1/dashboard/dashboards/{dashboard_id}", headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -240,8 +189,7 @@ class TestDashboardCRUD:
 
         # Verify deletion
         get_response = client.get(
-            f"/api/v1/dashboard/dashboards/{dashboard_id}",
-            headers=auth_headers
+            f"/api/v1/dashboard/dashboards/{dashboard_id}", headers=auth_headers
         )
         assert get_response.status_code == 404
 
@@ -253,9 +201,7 @@ class TestDashboardSharing:
         """Test sharing a dashboard with users"""
         # Create dashboard
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -263,7 +209,7 @@ class TestDashboardSharing:
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/share",
             params={"user_ids": ["user1", "user2"]},
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -274,9 +220,7 @@ class TestDashboardSharing:
         """Test duplicating a dashboard"""
         # Create dashboard
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -284,7 +228,7 @@ class TestDashboardSharing:
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/duplicate",
             params={"new_name": "Duplicated Dashboard"},
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -299,9 +243,7 @@ class TestWidgetCRUD:
         """Test creating a widget in a dashboard"""
         # Create dashboard
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -309,7 +251,7 @@ class TestWidgetCRUD:
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 201
         data = response.json()
@@ -322,15 +264,13 @@ class TestWidgetCRUD:
         """Test listing widgets"""
         # Create dashboard and widget
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
 
         response = client.get("/api/v1/dashboard/widgets")
@@ -345,48 +285,38 @@ class TestWidgetCRUD:
         """Test listing widgets with filters"""
         # Create dashboard and widget
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
 
         # Filter by dashboard
-        response = client.get(
-            f"/api/v1/dashboard/widgets?dashboard_id={dashboard_id}"
-        )
+        response = client.get(f"/api/v1/dashboard/widgets?dashboard_id={dashboard_id}")
         assert response.status_code == 200
 
         # Filter by type
-        response = client.get(
-            "/api/v1/dashboard/widgets?widget_type=counter"
-        )
+        response = client.get("/api/v1/dashboard/widgets?widget_type=counter")
         assert response.status_code == 200
 
         # Filter by category
-        response = client.get(
-            "/api/v1/dashboard/widgets?category=threat_overview"
-        )
+        response = client.get("/api/v1/dashboard/widgets?category=threat_overview")
         assert response.status_code == 200
 
     def test_get_widget(self, auth_headers, sample_dashboard, sample_widget):
         """Test getting a specific widget"""
         # Create dashboard and widget
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         widget_response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         widget_id = widget_response.json()["id"]
 
@@ -405,27 +335,20 @@ class TestWidgetCRUD:
         """Test updating a widget"""
         # Create dashboard and widget
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         widget_response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         widget_id = widget_response.json()["id"]
 
         # Update widget
-        update_data = {
-            "name": "Updated Widget Name",
-            "visible": False
-        }
+        update_data = {"name": "Updated Widget Name", "visible": False}
         response = client.patch(
-            f"/api/v1/dashboard/widgets/{widget_id}",
-            json=update_data,
-            headers=auth_headers
+            f"/api/v1/dashboard/widgets/{widget_id}", json=update_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -436,23 +359,18 @@ class TestWidgetCRUD:
         """Test deleting a widget"""
         # Create dashboard and widget
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         widget_response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         widget_id = widget_response.json()["id"]
 
         # Delete widget
-        response = client.delete(
-            f"/api/v1/dashboard/widgets/{widget_id}",
-            headers=auth_headers
-        )
+        response = client.delete(f"/api/v1/dashboard/widgets/{widget_id}", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
@@ -469,15 +387,13 @@ class TestWidgetData:
         """Test fetching widget data"""
         # Create dashboard and widget
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         widget_response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         widget_id = widget_response.json()["id"]
 
@@ -494,21 +410,17 @@ class TestWidgetData:
         """Test fetching widget data with force refresh"""
         # Create dashboard and widget
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         widget_response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         widget_id = widget_response.json()["id"]
 
-        response = client.get(
-            f"/api/v1/dashboard/widgets/{widget_id}/data?force_refresh=true"
-        )
+        response = client.get(f"/api/v1/dashboard/widgets/{widget_id}/data?force_refresh=true")
         assert response.status_code == 200
         data = response.json()
         assert data["cached"] is False
@@ -522,27 +434,27 @@ class TestWidgetData:
 class TestBulkPositionUpdate:
     """Test bulk widget position updates"""
 
-    def test_update_widget_positions(self, auth_headers, sample_dashboard, sample_widget, sample_chart_widget):
+    def test_update_widget_positions(
+        self, auth_headers, sample_dashboard, sample_widget, sample_chart_widget
+    ):
         """Test bulk updating widget positions"""
         # Create dashboard and widgets
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
         widget1_response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         widget1_id = widget1_response.json()["id"]
 
         widget2_response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_chart_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         widget2_id = widget2_response.json()["id"]
 
@@ -550,13 +462,11 @@ class TestBulkPositionUpdate:
         update_data = {
             "updates": [
                 {"widget_id": widget1_id, "position": {"x": 0, "y": 0, "width": 8, "height": 4}},
-                {"widget_id": widget2_id, "position": {"x": 8, "y": 0, "width": 8, "height": 4}}
+                {"widget_id": widget2_id, "position": {"x": 8, "y": 0, "width": 8, "height": 4}},
             ]
         }
         response = client.post(
-            "/api/v1/dashboard/widgets/positions",
-            json=update_data,
-            headers=auth_headers
+            "/api/v1/dashboard/widgets/positions", json=update_data, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -580,21 +490,15 @@ class TestWidgetTemplates:
     def test_list_templates_with_filters(self, auth_headers):
         """Test listing templates with filters"""
         # Filter by category
-        response = client.get(
-            "/api/v1/dashboard/templates?category=threat_overview"
-        )
+        response = client.get("/api/v1/dashboard/templates?category=threat_overview")
         assert response.status_code == 200
 
         # Filter by widget type
-        response = client.get(
-            "/api/v1/dashboard/templates?widget_type=counter"
-        )
+        response = client.get("/api/v1/dashboard/templates?widget_type=counter")
         assert response.status_code == 200
 
         # Search by name
-        response = client.get(
-            "/api/v1/dashboard/templates?search=Threat"
-        )
+        response = client.get("/api/v1/dashboard/templates?search=Threat")
         assert response.status_code == 200
 
     def test_get_template(self, auth_headers):
@@ -615,20 +519,15 @@ class TestWidgetTemplates:
         """Test creating a widget from a template"""
         # Create dashboard
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
         # Create widget from template
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets/from-template",
-            params={
-                "template_id": "tpl-threat-counter",
-                "name": "Custom Threat Counter"
-            },
-            headers=auth_headers
+            params={"template_id": "tpl-threat-counter", "name": "Custom Threat Counter"},
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -644,21 +543,18 @@ class TestDashboardExportImport:
         """Test exporting a dashboard"""
         # Create dashboard with widget
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
 
         # Export dashboard
         response = client.get(
-            f"/api/v1/dashboard/dashboards/{dashboard_id}/export",
-            headers=auth_headers
+            f"/api/v1/dashboard/dashboards/{dashboard_id}/export", headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -672,31 +568,23 @@ class TestDashboardExportImport:
         """Test importing a dashboard"""
         # Create and export dashboard
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         export_response = client.get(
-            f"/api/v1/dashboard/dashboards/{dashboard_id}/export",
-            headers=auth_headers
+            f"/api/v1/dashboard/dashboards/{dashboard_id}/export", headers=auth_headers
         )
         export_data = export_response.json()
 
         # Import dashboard
-        import_request = {
-            "dashboard_export": export_data,
-            "rename_to": "Imported Dashboard"
-        }
+        import_request = {"dashboard_export": export_data, "rename_to": "Imported Dashboard"}
         response = client.post(
-            "/api/v1/dashboard/dashboards/import",
-            json=import_request,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards/import", json=import_request, headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -712,22 +600,20 @@ class TestLayoutSnapshots:
         """Test creating a layout snapshot"""
         # Create dashboard with widget
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
 
         # Create snapshot
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/snapshots",
             params={"description": "Initial layout"},
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -739,25 +625,21 @@ class TestLayoutSnapshots:
         """Test listing layout snapshots"""
         # Create dashboard with widget and snapshot
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/snapshots",
             params={"description": "Test snapshot"},
-            headers=auth_headers
+            headers=auth_headers,
         )
 
-        response = client.get(
-            f"/api/v1/dashboard/dashboards/{dashboard_id}/snapshots"
-        )
+        response = client.get(f"/api/v1/dashboard/dashboards/{dashboard_id}/snapshots")
         assert response.status_code == 200
         data = response.json()
         assert "snapshots" in data
@@ -767,27 +649,25 @@ class TestLayoutSnapshots:
         """Test restoring a layout snapshot"""
         # Create dashboard with widget and snapshot
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
         client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         snapshot_response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/snapshots",
             params={"description": "Test snapshot"},
-            headers=auth_headers
+            headers=auth_headers,
         )
         snapshot_id = snapshot_response.json()["id"]
 
         # Restore snapshot
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/snapshots/{snapshot_id}/restore",
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -800,16 +680,14 @@ class TestWidgetTypes:
     def test_create_chart_line_widget(self, auth_headers, sample_dashboard, sample_chart_widget):
         """Test creating a line chart widget"""
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=sample_chart_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 201
         data = response.json()
@@ -818,9 +696,7 @@ class TestWidgetTypes:
     def test_create_table_widget(self, auth_headers, sample_dashboard):
         """Test creating a table widget"""
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -831,30 +707,30 @@ class TestWidgetTypes:
             "data_source": {
                 "endpoint": "/api/v1/vulnerability/top",
                 "method": "GET",
-                "cache_ttl_seconds": 600
+                "cache_ttl_seconds": 600,
             },
             "config": {
                 "table": {
                     "columns": [
                         {"field": "cve_id", "header": "CVE ID", "width": 120},
                         {"field": "title", "header": "Title"},
-                        {"field": "severity", "header": "Severity", "width": 100}
+                        {"field": "severity", "header": "Severity", "width": 100},
                     ],
                     "page_size": 10,
-                    "show_search": True
+                    "show_search": True,
                 }
             },
             "position": {"x": 0, "y": 0, "width": 12, "height": 5},
             "refresh_interval": "5_minutes",
             "time_range": "last_24_hours",
             "tags": ["vulnerabilities"],
-            "visible": True
+            "visible": True,
         }
 
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=table_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 201
         data = response.json()
@@ -863,9 +739,7 @@ class TestWidgetTypes:
     def test_create_gauge_widget(self, auth_headers, sample_dashboard):
         """Test creating a gauge widget"""
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -876,27 +750,22 @@ class TestWidgetTypes:
             "data_source": {
                 "endpoint": "/api/v1/compliance/score",
                 "method": "GET",
-                "cache_ttl_seconds": 1800
+                "cache_ttl_seconds": 1800,
             },
             "config": {
-                "gauge": {
-                    "value_field": "score",
-                    "min_value": 0,
-                    "max_value": 100,
-                    "unit": "%"
-                }
+                "gauge": {"value_field": "score", "min_value": 0, "max_value": 100, "unit": "%"}
             },
             "position": {"x": 0, "y": 0, "width": 6, "height": 4},
             "refresh_interval": "5_minutes",
             "time_range": "last_24_hours",
             "tags": ["compliance"],
-            "visible": True
+            "visible": True,
         }
 
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=gauge_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 201
         data = response.json()
@@ -945,35 +814,27 @@ class TestDashboardAuthentication:
 
     def test_create_dashboard_requires_auth(self, sample_dashboard):
         """Test that creating dashboards requires authentication"""
-        response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard
-        )
+        response = client.post("/api/v1/dashboard/dashboards", json=sample_dashboard)
         assert response.status_code == 401
 
     def test_update_dashboard_requires_auth(self, auth_headers, sample_dashboard):
         """Test that updating dashboards requires authentication"""
         # Create dashboard first
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
         # Try to update without auth
         response = client.patch(
-            f"/api/v1/dashboard/dashboards/{dashboard_id}",
-            json={"name": "Updated"}
+            f"/api/v1/dashboard/dashboards/{dashboard_id}", json={"name": "Updated"}
         )
         assert response.status_code == 401
 
     def test_delete_dashboard_requires_auth(self, auth_headers, sample_dashboard):
         """Test that deleting dashboards requires authentication"""
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -983,24 +844,19 @@ class TestDashboardAuthentication:
     def test_create_widget_requires_auth(self, auth_headers, sample_dashboard, sample_widget):
         """Test that creating widgets requires authentication"""
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
         response = client.post(
-            f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
-            json=sample_widget
+            f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets", json=sample_widget
         )
         assert response.status_code == 401
 
     def test_export_dashboard_requires_auth(self, auth_headers, sample_dashboard):
         """Test that exporting dashboards requires authentication"""
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -1013,23 +869,16 @@ class TestDashboardValidation:
 
     def test_create_dashboard_missing_name(self, auth_headers):
         """Test creating dashboard without name"""
-        invalid_dashboard = {
-            "description": "Test",
-            "layout_type": "grid"
-        }
+        invalid_dashboard = {"description": "Test", "layout_type": "grid"}
         response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=invalid_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=invalid_dashboard, headers=auth_headers
         )
         assert response.status_code == 422
 
     def test_create_widget_invalid_type(self, auth_headers, sample_dashboard):
         """Test creating widget with invalid type"""
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -1037,26 +886,20 @@ class TestDashboardValidation:
             "name": "Test Widget",
             "widget_type": "invalid_type",
             "category": "threat_overview",
-            "data_source": {
-                "endpoint": "/api/test",
-                "method": "GET",
-                "cache_ttl_seconds": 60
-            },
-            "position": {"x": 0, "y": 0, "width": 6, "height": 3}
+            "data_source": {"endpoint": "/api/test", "method": "GET", "cache_ttl_seconds": 60},
+            "position": {"x": 0, "y": 0, "width": 6, "height": 3},
         }
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=invalid_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 422
 
     def test_create_widget_invalid_category(self, auth_headers, sample_dashboard):
         """Test creating widget with invalid category"""
         create_response = client.post(
-            "/api/v1/dashboard/dashboards",
-            json=sample_dashboard,
-            headers=auth_headers
+            "/api/v1/dashboard/dashboards", json=sample_dashboard, headers=auth_headers
         )
         dashboard_id = create_response.json()["id"]
 
@@ -1064,32 +907,22 @@ class TestDashboardValidation:
             "name": "Test Widget",
             "widget_type": "counter",
             "category": "invalid_category",
-            "data_source": {
-                "endpoint": "/api/test",
-                "method": "GET",
-                "cache_ttl_seconds": 60
-            },
-            "position": {"x": 0, "y": 0, "width": 6, "height": 3}
+            "data_source": {"endpoint": "/api/test", "method": "GET", "cache_ttl_seconds": 60},
+            "position": {"x": 0, "y": 0, "width": 6, "height": 3},
         }
         response = client.post(
             f"/api/v1/dashboard/dashboards/{dashboard_id}/widgets",
             json=invalid_widget,
-            headers=auth_headers
+            headers=auth_headers,
         )
         assert response.status_code == 422
 
     def test_list_dashboards_invalid_pagination(self, auth_headers):
         """Test listing dashboards with invalid pagination"""
-        response = client.get(
-            "/api/v1/dashboard/dashboards?skip=-1",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/dashboard/dashboards?skip=-1", headers=auth_headers)
         assert response.status_code == 422
 
-        response = client.get(
-            "/api/v1/dashboard/dashboards?limit=1000",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/dashboard/dashboards?limit=1000", headers=auth_headers)
         assert response.status_code == 422
 
     def test_list_templates_invalid_pagination(self, auth_headers):

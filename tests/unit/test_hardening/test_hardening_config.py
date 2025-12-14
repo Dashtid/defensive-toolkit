@@ -52,7 +52,7 @@ class TestCISLevel1Config:
     @pytest.fixture
     def config_content(self) -> str:
         """Return Level 1 config file content."""
-        with open(LEVEL1_CONFIG, 'r') as f:
+        with open(LEVEL1_CONFIG, "r") as f:
             return f.read()
 
     def test_file_not_empty(self, config_content: str):
@@ -88,7 +88,10 @@ class TestCISLevel1Config:
     def test_level1_allows_password_auth(self, config_content: str):
         """Test that Level 1 allows password authentication."""
         # Level 1 should allow password auth (safer for initial deployment)
-        if "PASSWORD_AUTHENTICATION" in config_content or "PasswordAuthentication" in config_content:
+        if (
+            "PASSWORD_AUTHENTICATION" in config_content
+            or "PasswordAuthentication" in config_content
+        ):
             # If setting exists, should be "yes" for Level 1
             assert "yes" in config_content.lower() or "=1" in config_content
 
@@ -108,21 +111,23 @@ class TestCISLevel1Config:
     def test_no_syntax_errors(self, config_content: str):
         """Test that config has valid bash variable syntax."""
         # Check for common bash variable patterns
-        lines = config_content.split('\n')
+        lines = config_content.split("\n")
 
         for line in lines:
             line = line.strip()
             # Skip comments and empty lines
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
             # Should be variable assignment (VAR=value or VAR="value")
-            if '=' in line:
-                parts = line.split('=', 1)
+            if "=" in line:
+                parts = line.split("=", 1)
                 var_name = parts[0].strip()
 
                 # Variable name should be valid (alphanumeric + underscore)
-                assert re.match(r'^[A-Z_][A-Z0-9_]*$', var_name), f"Invalid variable name: {var_name}"
+                assert re.match(
+                    r"^[A-Z_][A-Z0-9_]*$", var_name
+                ), f"Invalid variable name: {var_name}"
 
 
 class TestCISLevel2Config:
@@ -131,7 +136,7 @@ class TestCISLevel2Config:
     @pytest.fixture
     def config_content(self) -> str:
         """Return Level 2 config file content."""
-        with open(LEVEL2_CONFIG, 'r') as f:
+        with open(LEVEL2_CONFIG, "r") as f:
             return f.read()
 
     def test_file_not_empty(self, config_content: str):
@@ -150,7 +155,7 @@ class TestCISLevel2Config:
         # Level 2 should disable password auth (key-based only)
         password_auth_line = None
 
-        for line in config_content.split('\n'):
+        for line in config_content.split("\n"):
             if "PASSWORD_AUTHENTICATION" in line or "PasswordAuthentication" in line:
                 password_auth_line = line
                 break
@@ -168,16 +173,22 @@ class TestCISLevel2Config:
 
     def test_stricter_than_level1(self, config_content: str):
         """Test that Level 2 is stricter than Level 1."""
-        with open(LEVEL1_CONFIG, 'r') as f:
+        with open(LEVEL1_CONFIG, "r") as f:
             level1_content = f.read()
 
         # Level 2 should have more/stricter settings
         # One way: longer file or more variable definitions
-        level2_lines = [l for l in config_content.split('\n') if '=' in l and not l.strip().startswith('#')]
-        level1_lines = [l for l in level1_content.split('\n') if '=' in l and not l.strip().startswith('#')]
+        level2_lines = [
+            l for l in config_content.split("\n") if "=" in l and not l.strip().startswith("#")
+        ]
+        level1_lines = [
+            l for l in level1_content.split("\n") if "=" in l and not l.strip().startswith("#")
+        ]
 
         # Level 2 should have at least as many settings as Level 1
-        assert len(level2_lines) >= len(level1_lines) * 0.8, "Level 2 should have comprehensive settings"
+        assert (
+            len(level2_lines) >= len(level1_lines) * 0.8
+        ), "Level 2 should have comprehensive settings"
 
     def test_cis_level2_reference(self, config_content: str):
         """Test that config references CIS Level 2."""
@@ -197,7 +208,7 @@ class TestAIDEConfig:
     @pytest.fixture
     def config_content(self) -> str:
         """Return AIDE config file content."""
-        with open(AIDE_CONFIG, 'r') as f:
+        with open(AIDE_CONFIG, "r") as f:
             return f.read()
 
     def test_file_not_empty(self, config_content: str):
@@ -213,25 +224,14 @@ class TestAIDEConfig:
 
     def test_monitors_critical_directories(self, config_content: str):
         """Test that config monitors critical system directories."""
-        critical_dirs = [
-            "/boot",
-            "/bin",
-            "/sbin",
-            "/lib",
-            "/etc"
-        ]
+        critical_dirs = ["/boot", "/bin", "/sbin", "/lib", "/etc"]
 
         found_count = sum(1 for dir_path in critical_dirs if dir_path in config_content)
         assert found_count >= 3, f"Should monitor critical directories (found {found_count})"
 
     def test_monitors_config_files(self, config_content: str):
         """Test that config monitors important configuration files."""
-        config_files = [
-            "/etc/passwd",
-            "/etc/shadow",
-            "/etc/ssh",
-            "sshd_config"
-        ]
+        config_files = ["/etc/passwd", "/etc/shadow", "/etc/ssh", "sshd_config"]
 
         found_count = sum(1 for file_path in config_files if file_path in config_content)
         assert found_count >= 2, "Should monitor critical config files"
@@ -249,7 +249,7 @@ class TestAIDEConfig:
             "m",  # mtime
             "c",  # ctime
             "md5",  # checksums
-            "sha"
+            "sha",
         ]
 
         # Should have several attributes defined
@@ -266,24 +266,24 @@ class TestConfigurationConsistency:
 
     def test_level2_builds_on_level1(self):
         """Test that Level 2 extends Level 1 settings."""
-        with open(LEVEL1_CONFIG, 'r') as f:
+        with open(LEVEL1_CONFIG, "r") as f:
             level1_content = f.read()
 
-        with open(LEVEL2_CONFIG, 'r') as f:
+        with open(LEVEL2_CONFIG, "r") as f:
             level2_content = f.read()
 
         # Extract variable names from Level 1
         level1_vars = set()
-        for line in level1_content.split('\n'):
-            if '=' in line and not line.strip().startswith('#'):
-                var_name = line.split('=')[0].strip()
+        for line in level1_content.split("\n"):
+            if "=" in line and not line.strip().startswith("#"):
+                var_name = line.split("=")[0].strip()
                 level1_vars.add(var_name)
 
         # Extract variable names from Level 2
         level2_vars = set()
-        for line in level2_content.split('\n'):
-            if '=' in line and not line.strip().startswith('#'):
-                var_name = line.split('=')[0].strip()
+        for line in level2_content.split("\n"):
+            if "=" in line and not line.strip().startswith("#"):
+                var_name = line.split("=")[0].strip()
                 level2_vars.add(var_name)
 
         # Level 2 should have overlap with Level 1 (common settings)
@@ -295,34 +295,34 @@ class TestConfigurationConsistency:
         configs = [LEVEL1_CONFIG, LEVEL2_CONFIG, AIDE_CONFIG]
 
         for config_path in configs:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 content = f.read()
-                first_lines = content.split('\n')[:5]
+                first_lines = content.split("\n")[:5]
 
                 # Should have comment in first 5 lines
-                has_comment = any(line.strip().startswith('#') for line in first_lines)
+                has_comment = any(line.strip().startswith("#") for line in first_lines)
                 assert has_comment, f"{config_path.name} should have header comment"
 
     def test_consistent_naming_convention(self):
         """Test that configs use consistent variable naming."""
-        with open(LEVEL1_CONFIG, 'r') as f:
+        with open(LEVEL1_CONFIG, "r") as f:
             level1_content = f.read()
 
-        with open(LEVEL2_CONFIG, 'r') as f:
+        with open(LEVEL2_CONFIG, "r") as f:
             level2_content = f.read()
 
         # Extract all variable names
         all_vars = []
 
         for content in [level1_content, level2_content]:
-            for line in content.split('\n'):
-                if '=' in line and not line.strip().startswith('#'):
-                    var_name = line.split('=')[0].strip()
+            for line in content.split("\n"):
+                if "=" in line and not line.strip().startswith("#"):
+                    var_name = line.split("=")[0].strip()
                     all_vars.append(var_name)
 
         # All should follow UPPER_CASE_WITH_UNDERSCORES convention
         for var_name in all_vars:
-            assert re.match(r'^[A-Z_][A-Z0-9_]*$', var_name), f"Inconsistent naming: {var_name}"
+            assert re.match(r"^[A-Z_][A-Z0-9_]*$", var_name), f"Inconsistent naming: {var_name}"
 
 
 class TestConfigurationDocumentation:
@@ -333,7 +333,7 @@ class TestConfigurationDocumentation:
         readme = HARDENING_DIR / "README.md"
         assert readme.exists()
 
-        with open(readme, 'r') as f:
+        with open(readme, "r") as f:
             content = f.read()
 
         # Should mention config files
@@ -346,7 +346,7 @@ class TestConfigurationDocumentation:
         ubuntu_script = HARDENING_DIR / "harden-ubuntu.sh"
 
         if ubuntu_script.exists():
-            with open(ubuntu_script, 'r') as f:
+            with open(ubuntu_script, "r") as f:
                 content = f.read()
 
             # Should reference config directory or files
@@ -366,7 +366,7 @@ class TestConfigurationSecurity:
         configs = [LEVEL1_CONFIG, LEVEL2_CONFIG, AIDE_CONFIG]
 
         for config_path in configs:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 content = f.read()
 
             # Check for credential patterns (excluding variable names)
@@ -375,26 +375,26 @@ class TestConfigurationSecurity:
                 "password=admin",
                 "passwd=",
                 "api_key=",
-                "token="
+                "token=",
             ]
 
             for pattern in forbidden_values:
-                assert pattern.lower() not in content.lower(), f"Possible credential in {config_path.name}"
+                assert (
+                    pattern.lower() not in content.lower()
+                ), f"Possible credential in {config_path.name}"
 
     def test_secure_defaults(self):
         """Test that configs use secure default values."""
-        with open(LEVEL1_CONFIG, 'r') as f:
+        with open(LEVEL1_CONFIG, "r") as f:
             level1_content = f.read()
 
         # Level 1 should have secure defaults
-        secure_indicators = [
-            "no",  # Disable insecure features
-            "deny",  # Default deny
-            "disable"
-        ]
+        secure_indicators = ["no", "deny", "disable"]  # Disable insecure features  # Default deny
 
         # Should have some secure settings
-        found_count = sum(1 for indicator in secure_indicators if indicator in level1_content.lower())
+        found_count = sum(
+            1 for indicator in secure_indicators if indicator in level1_content.lower()
+        )
         assert found_count >= 1, "Should have secure default settings"
 
 

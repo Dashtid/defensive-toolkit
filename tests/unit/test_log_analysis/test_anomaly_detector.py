@@ -38,20 +38,17 @@ class TestAnomalyDetectorInit:
         baseline_data = {
             "timestamp": "2025-10-18T00:00:00",
             "entry_count": 1000,
-            "statistics": {
-                "avg_events_per_hour": 100.0,
-                "unique_ips": 50
-            }
+            "statistics": {"avg_events_per_hour": 100.0, "unique_ips": 50},
         }
 
         baseline_file = tmp_path / "baseline.json"
-        with open(baseline_file, 'w') as f:
+        with open(baseline_file, "w") as f:
             json.dump(baseline_data, f)
 
         detector = AnomalyDetector(baseline_file=baseline_file)
 
         assert detector.baseline is not None
-        assert detector.baseline['entry_count'] == 1000
+        assert detector.baseline["entry_count"] == 1000
 
 
 class TestBaselineCreation:
@@ -71,9 +68,9 @@ class TestBaselineCreation:
         baseline = detector.create_baseline(log_entries, output_file)
 
         assert output_file.exists()
-        assert baseline['entry_count'] == 3
-        assert 'timestamp' in baseline
-        assert 'statistics' in baseline
+        assert baseline["entry_count"] == 3
+        assert "timestamp" in baseline
+        assert "statistics" in baseline
 
     def test_create_baseline_empty_logs(self, tmp_path):
         """Test creating baseline with empty log list"""
@@ -82,7 +79,7 @@ class TestBaselineCreation:
         output_file = tmp_path / "baseline.json"
         baseline = detector.create_baseline([], output_file)
 
-        assert baseline['entry_count'] == 0
+        assert baseline["entry_count"] == 0
 
     def test_create_baseline_large_dataset(self, tmp_path):
         """Test baseline creation with large dataset"""
@@ -93,7 +90,7 @@ class TestBaselineCreation:
             {
                 "severity": "INFO" if i % 10 != 0 else "ERROR",
                 "source_ip": f"192.168.1.{i % 100}",
-                "timestamp": f"2025-10-18T{i % 24:02d}:00:00"
+                "timestamp": f"2025-10-18T{i % 24:02d}:00:00",
             }
             for i in range(10000)
         ]
@@ -101,7 +98,7 @@ class TestBaselineCreation:
         output_file = tmp_path / "baseline.json"
         baseline = detector.create_baseline(log_entries, output_file)
 
-        assert baseline['entry_count'] == 10000
+        assert baseline["entry_count"] == 10000
         assert output_file.exists()
 
 
@@ -128,8 +125,7 @@ class TestAnomalyDetection:
 
         # Create logs with frequency spike
         log_entries = [
-            {"source_ip": "192.168.1.10", "event": "login"}
-            for _ in range(100)  # Normal activity
+            {"source_ip": "192.168.1.10", "event": "login"} for _ in range(100)  # Normal activity
         ] + [
             {"source_ip": "192.168.1.100", "event": "login_failed"}
             for _ in range(500)  # Anomalous spike
@@ -162,15 +158,11 @@ class TestAnomalyDetection:
         baseline_data = {
             "timestamp": "2025-10-18T00:00:00",
             "entry_count": 1000,
-            "statistics": {
-                "avg_events_per_hour": 100.0,
-                "error_rate": 0.01,
-                "unique_ips": 50
-            }
+            "statistics": {"avg_events_per_hour": 100.0, "error_rate": 0.01, "unique_ips": 50},
         }
 
         baseline_file = tmp_path / "baseline.json"
-        with open(baseline_file, 'w') as f:
+        with open(baseline_file, "w") as f:
             json.dump(baseline_data, f)
 
         detector = AnomalyDetector(baseline_file=baseline_file)
@@ -196,18 +188,16 @@ class TestAnomalyDetection:
         # Normal rate: 1 event per second
         for hour in range(0, 10):
             for second in range(60):
-                log_entries.append({
-                    "timestamp": f"2025-10-18T{hour:02d}:00:{second:02d}",
-                    "event": "normal"
-                })
+                log_entries.append(
+                    {"timestamp": f"2025-10-18T{hour:02d}:00:{second:02d}", "event": "normal"}
+                )
 
         # Spike: 100 events per second
         for second in range(60):
             for _ in range(100):
-                log_entries.append({
-                    "timestamp": f"2025-10-18T10:00:{second:02d}",
-                    "event": "spike"
-                })
+                log_entries.append(
+                    {"timestamp": f"2025-10-18T10:00:{second:02d}", "event": "spike"}
+                )
 
         anomalies = detector.detect_anomalies(log_entries)
 
@@ -232,7 +222,7 @@ class TestStatisticalAnalysis:
         stats = detector._compute_statistics(log_entries)
 
         assert isinstance(stats, dict)
-        assert 'total_entries' in stats or len(stats) > 0
+        assert "total_entries" in stats or len(stats) > 0
 
     def test_standard_deviation_calculation(self):
         """Test standard deviation calculation"""
@@ -254,10 +244,7 @@ class TestAnomalyClassification:
         detector = AnomalyDetector(threshold_stddev=2.0)
 
         # Extreme deviation should be high severity
-        log_entries = [
-            {"value": 100, "metric": "cpu"}  # Normal
-            for _ in range(100)
-        ] + [
+        log_entries = [{"value": 100, "metric": "cpu"} for _ in range(100)] + [  # Normal
             {"value": 10000, "metric": "cpu"}  # Extreme spike
         ]
 
@@ -265,7 +252,7 @@ class TestAnomalyClassification:
 
         # Check if high severity anomalies detected
         if anomalies:
-            high_severity = [a for a in anomalies if a.get('severity') == 'HIGH']
+            high_severity = [a for a in anomalies if a.get("severity") == "HIGH"]
             # May or may not classify by severity depending on implementation
 
     def test_anomaly_categories(self):
@@ -291,10 +278,7 @@ class TestAnomalyReporting:
         """Test generating anomaly report"""
         detector = AnomalyDetector()
 
-        log_entries = [
-            {"severity": "ERROR", "message": "Critical failure"}
-            for _ in range(100)
-        ]
+        log_entries = [{"severity": "ERROR", "message": "Critical failure"} for _ in range(100)]
 
         anomalies = detector.detect_anomalies(log_entries)
 
@@ -304,18 +288,18 @@ class TestAnomalyReporting:
             "timestamp": datetime.now().isoformat(),
             "total_logs_analyzed": len(log_entries),
             "anomalies_detected": len(anomalies),
-            "anomalies": anomalies
+            "anomalies": anomalies,
         }
 
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump(report_data, f, indent=2)
 
         assert report_file.exists()
 
-        with open(report_file, 'r') as f:
+        with open(report_file, "r") as f:
             report = json.load(f)
 
-        assert 'anomalies_detected' in report
+        assert "anomalies_detected" in report
 
     def test_anomaly_summary_statistics(self):
         """Test anomaly summary generation"""
@@ -327,11 +311,11 @@ class TestAnomalyReporting:
         summary = {
             "total_analyzed": len(log_entries),
             "anomalies_found": len(anomalies),
-            "anomaly_rate": len(anomalies) / len(log_entries) if log_entries else 0
+            "anomaly_rate": len(anomalies) / len(log_entries) if log_entries else 0,
         }
 
-        assert summary['total_analyzed'] == 1000
-        assert summary['anomaly_rate'] >= 0.0
+        assert summary["total_analyzed"] == 1000
+        assert summary["anomaly_rate"] >= 0.0
 
 
 class TestTimeSeriesAnalysis:
@@ -347,17 +331,11 @@ class TestTimeSeriesAnalysis:
         # Normal pattern: 100 events per hour
         for hour in range(0, 24):
             for _ in range(100):
-                log_entries.append({
-                    "timestamp": f"2025-10-18T{hour:02d}:00:00",
-                    "event": "normal"
-                })
+                log_entries.append({"timestamp": f"2025-10-18T{hour:02d}:00:00", "event": "normal"})
 
         # Anomalous hour: 1000 events
         for _ in range(1000):
-            log_entries.append({
-                "timestamp": "2025-10-18T12:00:00",
-                "event": "spike"
-            })
+            log_entries.append({"timestamp": "2025-10-18T12:00:00", "event": "spike"})
 
         anomalies = detector.detect_anomalies(log_entries)
 
@@ -372,10 +350,7 @@ class TestTimeSeriesAnalysis:
         for minute in range(60):
             count = 10 if minute != 30 else 100  # Spike at minute 30
             for _ in range(count):
-                log_entries.append({
-                    "timestamp": f"2025-10-18T10:{minute:02d}:00",
-                    "event": "test"
-                })
+                log_entries.append({"timestamp": f"2025-10-18T10:{minute:02d}:00", "event": "test"})
 
         anomalies = detector.detect_anomalies(log_entries)
 
@@ -394,8 +369,7 @@ class TestAnomalyDetectorIntegration:
         detector = AnomalyDetector()
 
         historical_logs = [
-            {"severity": "INFO", "source_ip": f"192.168.1.{i % 50}"}
-            for i in range(10000)
+            {"severity": "INFO", "source_ip": f"192.168.1.{i % 50}"} for i in range(10000)
         ]
 
         baseline_file = tmp_path / "baseline.json"
@@ -418,13 +392,10 @@ class TestAnomalyDetectorIntegration:
         report = {
             "baseline": baseline,
             "anomalies": anomalies,
-            "summary": {
-                "total_analyzed": len(current_logs),
-                "anomalies_found": len(anomalies)
-            }
+            "summary": {"total_analyzed": len(current_logs), "anomalies_found": len(anomalies)},
         }
 
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump(report, f, indent=2)
 
         assert report_file.exists()
@@ -438,10 +409,7 @@ class TestAnomalyDetectorIntegration:
 
         # Normal traffic
         for i in range(100):
-            log_stream.append({
-                "timestamp": f"2025-10-18T10:00:{i:02d}",
-                "event": "normal"
-            })
+            log_stream.append({"timestamp": f"2025-10-18T10:00:{i:02d}", "event": "normal"})
 
             # Detect anomalies every 10 entries
             if i % 10 == 0 and i > 0:
@@ -458,12 +426,9 @@ def test_different_thresholds(threshold):
     assert detector.threshold_stddev == threshold
 
 
-@pytest.mark.parametrize("anomaly_type", [
-    "frequency_spike",
-    "pattern_match",
-    "rate_change",
-    "statistical_deviation"
-])
+@pytest.mark.parametrize(
+    "anomaly_type", ["frequency_spike", "pattern_match", "rate_change", "statistical_deviation"]
+)
 def test_anomaly_types(anomaly_type):
     """Test detection of different anomaly types"""
     detector = AnomalyDetector()
@@ -496,7 +461,7 @@ def test_large_scale_anomaly_detection():
             "timestamp": f"2025-10-18T{i % 24:02d}:{i % 60:02d}:{i % 60:02d}",
             "severity": "INFO" if i % 100 != 0 else "ERROR",
             "source_ip": f"192.168.1.{i % 255}",
-            "message": f"Event {i}"
+            "message": f"Event {i}",
         }
         for i in range(100000)
     ]

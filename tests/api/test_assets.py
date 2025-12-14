@@ -5,7 +5,6 @@ Comprehensive tests for asset CRUD, search, relationships, groups,
 discovery scans, topology, CMDB sync, import/export, and bulk operations.
 """
 
-
 import pytest
 from api.main import app
 from fastapi.testclient import TestClient
@@ -35,30 +34,25 @@ def sample_server_asset():
             "name": "Ubuntu",
             "version": "22.04 LTS",
             "architecture": "x86_64",
-            "kernel_version": "5.15.0"
+            "kernel_version": "5.15.0",
         },
         "hardware_info": {
             "manufacturer": "Dell",
             "model": "PowerEdge R740",
             "cpu_cores": 16,
             "memory_gb": 64,
-            "storage_gb": 1000
+            "storage_gb": 1000,
         },
-        "location": {
-            "building": "DC1",
-            "floor": "2",
-            "room": "Server Room A",
-            "rack": "R-42"
-        },
+        "location": {"building": "DC1", "floor": "2", "room": "Server Room A", "rack": "R-42"},
         "security_controls": {
             "edr_installed": True,
             "antivirus_installed": True,
             "firewall_enabled": True,
-            "encryption_enabled": True
+            "encryption_enabled": True,
         },
         "tags": ["web", "production", "critical"],
         "compliance_status": "compliant",
-        "is_cloud_asset": False
+        "is_cloud_asset": False,
     }
 
 
@@ -76,20 +70,16 @@ def sample_workstation_asset():
         "ownership": "internal",
         "discovery_method": "agent",
         "primary_ip": "192.168.10.50",
-        "operating_system": {
-            "name": "Windows",
-            "version": "11 Pro",
-            "architecture": "x86_64"
-        },
+        "operating_system": {"name": "Windows", "version": "11 Pro", "architecture": "x86_64"},
         "security_controls": {
             "edr_installed": True,
             "antivirus_installed": True,
             "firewall_enabled": True,
-            "encryption_enabled": True
+            "encryption_enabled": True,
         },
         "tags": ["workstation", "developer"],
         "compliance_status": "compliant",
-        "is_cloud_asset": False
+        "is_cloud_asset": False,
     }
 
 
@@ -114,16 +104,16 @@ def sample_cloud_asset():
             "instance_id": "i-0123456789abcdef0",
             "instance_type": "m5.xlarge",
             "vpc_id": "vpc-12345",
-            "public_ip": "54.123.45.67"
+            "public_ip": "54.123.45.67",
         },
         "security_controls": {
             "edr_installed": True,
             "antivirus_installed": False,
             "firewall_enabled": True,
-            "encryption_enabled": True
+            "encryption_enabled": True,
         },
         "tags": ["cloud", "api", "production"],
-        "compliance_status": "compliant"
+        "compliance_status": "compliant",
     }
 
 
@@ -135,7 +125,7 @@ def sample_asset_group():
         "description": "All production server assets",
         "group_type": "static",
         "asset_ids": [],
-        "tags": ["production", "servers"]
+        "tags": ["production", "servers"],
     }
 
 
@@ -146,10 +136,8 @@ def sample_dynamic_group():
         "name": "Critical Assets",
         "description": "Dynamically includes all critical assets",
         "group_type": "dynamic",
-        "filter_query": {
-            "criticalities": ["critical"]
-        },
-        "tags": ["critical", "auto"]
+        "filter_query": {"criticalities": ["critical"]},
+        "tags": ["critical", "auto"],
     }
 
 
@@ -163,13 +151,9 @@ def sample_discovery_scan():
             "target_subnets": ["192.168.1.0/24", "192.168.10.0/24"],
             "enabled": True,
             "schedule": "0 2 * * *",
-            "settings": {
-                "ping_sweep": True,
-                "port_scan": True,
-                "service_detection": True
-            }
+            "settings": {"ping_sweep": True, "port_scan": True, "service_detection": True},
         },
-        "run_immediately": False
+        "run_immediately": False,
     }
 
 
@@ -178,10 +162,7 @@ class TestAssetCRUD:
 
     def test_create_asset(self, sample_server_asset):
         """Test creating an asset"""
-        response = client.post(
-            "/api/v1/assets",
-            json=sample_server_asset
-        )
+        response = client.post("/api/v1/assets", json=sample_server_asset)
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == sample_server_asset["name"]
@@ -278,7 +259,7 @@ class TestAssetCRUD:
         update_data = {
             "description": "Updated production web server",
             "criticality": "critical",
-            "tags": ["web", "production", "critical", "updated"]
+            "tags": ["web", "production", "critical", "updated"],
         }
         response = client.put(f"/api/v1/assets/{asset_id}", json=update_data)
         assert response.status_code == 200
@@ -324,9 +305,7 @@ class TestAssetSearch:
         """Test basic asset search"""
         client.post("/api/v1/assets", json=sample_server_asset)
 
-        search_query = {
-            "query": "web-server"
-        }
+        search_query = {"query": "web-server"}
         response = client.post("/api/v1/assets/search", json=search_query)
         assert response.status_code == 200
         data = response.json()
@@ -338,9 +317,7 @@ class TestAssetSearch:
         client.post("/api/v1/assets", json=sample_server_asset)
         client.post("/api/v1/assets", json=sample_workstation_asset)
 
-        search_query = {
-            "asset_types": ["server"]
-        }
+        search_query = {"asset_types": ["server"]}
         response = client.post("/api/v1/assets/search", json=search_query)
         assert response.status_code == 200
         data = response.json()
@@ -352,9 +329,7 @@ class TestAssetSearch:
         client.post("/api/v1/assets", json=sample_server_asset)
         client.post("/api/v1/assets", json=sample_cloud_asset)
 
-        search_query = {
-            "criticalities": ["critical", "high"]
-        }
+        search_query = {"criticalities": ["critical", "high"]}
         response = client.post("/api/v1/assets/search", json=search_query)
         assert response.status_code == 200
 
@@ -362,10 +337,7 @@ class TestAssetSearch:
         """Test search by tags"""
         client.post("/api/v1/assets", json=sample_server_asset)
 
-        search_query = {
-            "tags": ["production", "web"],
-            "tags_match_all": True
-        }
+        search_query = {"tags": ["production", "web"], "tags_match_all": True}
         response = client.post("/api/v1/assets/search", json=search_query)
         assert response.status_code == 200
 
@@ -373,10 +345,7 @@ class TestAssetSearch:
         """Test search by risk score range"""
         client.post("/api/v1/assets", json=sample_server_asset)
 
-        search_query = {
-            "min_risk_score": 3.0,
-            "max_risk_score": 8.0
-        }
+        search_query = {"min_risk_score": 3.0, "max_risk_score": 8.0}
         response = client.post("/api/v1/assets/search", json=search_query)
         assert response.status_code == 200
 
@@ -384,11 +353,7 @@ class TestAssetSearch:
         """Test search by security controls"""
         client.post("/api/v1/assets", json=sample_server_asset)
 
-        search_query = {
-            "has_edr": True,
-            "has_antivirus": True,
-            "is_encrypted": True
-        }
+        search_query = {"has_edr": True, "has_antivirus": True, "is_encrypted": True}
         response = client.post("/api/v1/assets/search", json=search_query)
         assert response.status_code == 200
 
@@ -396,10 +361,7 @@ class TestAssetSearch:
         """Test search by cloud filter"""
         client.post("/api/v1/assets", json=sample_cloud_asset)
 
-        search_query = {
-            "is_cloud_asset": True,
-            "cloud_provider": "aws"
-        }
+        search_query = {"is_cloud_asset": True, "cloud_provider": "aws"}
         response = client.post("/api/v1/assets/search", json=search_query)
         assert response.status_code == 200
 
@@ -420,12 +382,9 @@ class TestAssetRelationships:
             "relationship_type": "connects_to",
             "description": "Workstation connects to web server",
             "is_bidirectional": False,
-            "confidence": 0.95
+            "confidence": 0.95,
         }
-        response = client.post(
-            f"/api/v1/assets/{server_id}/relationships",
-            json=relationship
-        )
+        response = client.post(f"/api/v1/assets/{server_id}/relationships", json=relationship)
         assert response.status_code == 201
         data = response.json()
         assert data["source_asset_id"] == server_id
@@ -443,12 +402,9 @@ class TestAssetRelationships:
             "target_asset_id": workstation_id,
             "relationship_type": "depends_on",
             "is_bidirectional": True,
-            "confidence": 0.9
+            "confidence": 0.9,
         }
-        response = client.post(
-            f"/api/v1/assets/{server_id}/relationships",
-            json=relationship
-        )
+        response = client.post(f"/api/v1/assets/{server_id}/relationships", json=relationship)
         assert response.status_code == 201
 
     def test_get_asset_relationships(self, sample_server_asset, sample_workstation_asset):
@@ -462,7 +418,7 @@ class TestAssetRelationships:
         relationship = {
             "target_asset_id": workstation_id,
             "relationship_type": "hosts",
-            "is_bidirectional": False
+            "is_bidirectional": False,
         }
         client.post(f"/api/v1/assets/{server_id}/relationships", json=relationship)
 
@@ -472,7 +428,9 @@ class TestAssetRelationships:
         assert "relationships" in data
         assert "total" in data
 
-    def test_get_relationships_with_direction_filter(self, sample_server_asset, sample_workstation_asset):
+    def test_get_relationships_with_direction_filter(
+        self, sample_server_asset, sample_workstation_asset
+    ):
         """Test getting relationships with direction filter"""
         server_response = client.post("/api/v1/assets", json=sample_server_asset)
         server_id = server_response.json()["id"]
@@ -482,7 +440,7 @@ class TestAssetRelationships:
         relationship = {
             "target_asset_id": workstation_id,
             "relationship_type": "hosts",
-            "is_bidirectional": False
+            "is_bidirectional": False,
         }
         client.post(f"/api/v1/assets/{server_id}/relationships", json=relationship)
 
@@ -504,11 +462,10 @@ class TestAssetRelationships:
         relationship = {
             "target_asset_id": workstation_id,
             "relationship_type": "connects_to",
-            "is_bidirectional": False
+            "is_bidirectional": False,
         }
         create_response = client.post(
-            f"/api/v1/assets/{server_id}/relationships",
-            json=relationship
+            f"/api/v1/assets/{server_id}/relationships", json=relationship
         )
         relationship_id = create_response.json()["id"]
 
@@ -569,10 +526,7 @@ class TestAssetGroups:
         create_response = client.post("/api/v1/assets/groups", json=sample_asset_group)
         group_id = create_response.json()["id"]
 
-        update_data = {
-            "name": "Updated Production Servers",
-            "description": "Updated description"
-        }
+        update_data = {"name": "Updated Production Servers", "description": "Updated description"}
         response = client.put(f"/api/v1/assets/groups/{group_id}", json=update_data)
         assert response.status_code == 200
         data = response.json()
@@ -635,10 +589,7 @@ class TestDiscoveryScans:
 
     def test_create_discovery_scan(self, sample_discovery_scan):
         """Test creating a discovery scan"""
-        response = client.post(
-            "/api/v1/assets/discovery/scans",
-            json=sample_discovery_scan
-        )
+        response = client.post("/api/v1/assets/discovery/scans", json=sample_discovery_scan)
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == sample_discovery_scan["config"]["name"]
@@ -674,10 +625,7 @@ class TestDiscoveryScans:
 
     def test_get_discovery_scan(self, sample_discovery_scan):
         """Test getting a specific discovery scan"""
-        create_response = client.post(
-            "/api/v1/assets/discovery/scans",
-            json=sample_discovery_scan
-        )
+        create_response = client.post("/api/v1/assets/discovery/scans", json=sample_discovery_scan)
         scan_id = create_response.json()["id"]
 
         response = client.get(f"/api/v1/assets/discovery/scans/{scan_id}")
@@ -687,10 +635,7 @@ class TestDiscoveryScans:
 
     def test_run_discovery_scan(self, sample_discovery_scan):
         """Test manually running a discovery scan"""
-        create_response = client.post(
-            "/api/v1/assets/discovery/scans",
-            json=sample_discovery_scan
-        )
+        create_response = client.post("/api/v1/assets/discovery/scans", json=sample_discovery_scan)
         scan_id = create_response.json()["id"]
 
         response = client.post(f"/api/v1/assets/discovery/scans/{scan_id}/run")
@@ -723,10 +668,7 @@ class TestDiscoveryScans:
 
     def test_delete_discovery_scan(self, sample_discovery_scan):
         """Test deleting a discovery scan"""
-        create_response = client.post(
-            "/api/v1/assets/discovery/scans",
-            json=sample_discovery_scan
-        )
+        create_response = client.post("/api/v1/assets/discovery/scans", json=sample_discovery_scan)
         scan_id = create_response.json()["id"]
 
         response = client.delete(f"/api/v1/assets/discovery/scans/{scan_id}")
@@ -749,14 +691,11 @@ class TestNetworkTopology:
         relationship = {
             "target_asset_id": workstation_id,
             "relationship_type": "connects_to",
-            "is_bidirectional": False
+            "is_bidirectional": False,
         }
         client.post(f"/api/v1/assets/{server_id}/relationships", json=relationship)
 
-        topology_query = {
-            "asset_ids": [server_id, workstation_id],
-            "max_depth": 2
-        }
+        topology_query = {"asset_ids": [server_id, workstation_id], "max_depth": 2}
         response = client.post("/api/v1/assets/topology", json=topology_query)
         assert response.status_code == 200
         data = response.json()
@@ -797,7 +736,7 @@ class TestCMDBIntegration:
             "auth_type": "basic",
             "username": "admin",
             "sync_direction": "bidirectional",
-            "enabled": True
+            "enabled": True,
         }
         response = client.post("/api/v1/assets/cmdb/configs", json=config)
         assert response.status_code == 201
@@ -811,7 +750,7 @@ class TestCMDBIntegration:
             "name": "Test CMDB",
             "cmdb_type": "servicenow",
             "url": "https://test.service-now.com",
-            "sync_direction": "import"
+            "sync_direction": "import",
         }
         client.post("/api/v1/assets/cmdb/configs", json=config)
 
@@ -827,7 +766,7 @@ class TestCMDBIntegration:
             "name": "Test CMDB",
             "cmdb_type": "servicenow",
             "url": "https://test.service-now.com",
-            "sync_direction": "import"
+            "sync_direction": "import",
         }
         create_response = client.post("/api/v1/assets/cmdb/configs", json=config)
         config_id = create_response.json()["id"]
@@ -841,7 +780,7 @@ class TestCMDBIntegration:
             "name": "Test CMDB",
             "cmdb_type": "servicenow",
             "url": "https://test.service-now.com",
-            "sync_direction": "import"
+            "sync_direction": "import",
         }
         create_response = client.post("/api/v1/assets/cmdb/configs", json=config)
         config_id = create_response.json()["id"]
@@ -858,7 +797,7 @@ class TestCMDBIntegration:
             "name": "Test CMDB",
             "cmdb_type": "servicenow",
             "url": "https://test.service-now.com",
-            "sync_direction": "import"
+            "sync_direction": "import",
         }
         create_response = client.post("/api/v1/assets/cmdb/configs", json=config)
         config_id = create_response.json()["id"]
@@ -875,11 +814,7 @@ class TestImportExport:
         """Test exporting assets"""
         client.post("/api/v1/assets", json=sample_server_asset)
 
-        export_config = {
-            "format": "json",
-            "include_relationships": True,
-            "include_history": False
-        }
+        export_config = {"format": "json", "include_relationships": True, "include_history": False}
         response = client.post("/api/v1/assets/export", json=export_config)
         assert response.status_code == 200
         data = response.json()
@@ -892,12 +827,7 @@ class TestImportExport:
         client.post("/api/v1/assets", json=sample_server_asset)
         client.post("/api/v1/assets", json=sample_workstation_asset)
 
-        export_config = {
-            "format": "csv",
-            "filter_query": {
-                "asset_types": ["server"]
-            }
-        }
+        export_config = {"format": "csv", "filter_query": {"asset_types": ["server"]}}
         response = client.post("/api/v1/assets/export", json=export_config)
         assert response.status_code == 200
 
@@ -981,9 +911,7 @@ class TestBulkOperations:
 
         bulk_update = {
             "asset_ids": [asset1_id, asset2_id],
-            "updates": {
-                "compliance_status": "compliant"
-            }
+            "updates": {"compliance_status": "compliant"},
         }
         response = client.post("/api/v1/assets/bulk/update", json=bulk_update)
         assert response.status_code == 200
@@ -1001,7 +929,7 @@ class TestBulkOperations:
         bulk_tag = {
             "asset_ids": [asset1_id, asset2_id],
             "tags_to_add": ["bulk-tagged", "new-tag"],
-            "tags_to_remove": []
+            "tags_to_remove": [],
         }
         response = client.post("/api/v1/assets/bulk/tag", json=bulk_tag)
         assert response.status_code == 200
@@ -1018,7 +946,7 @@ class TestBulkOperations:
         bulk_delete = {
             "asset_ids": [asset1_id, asset2_id],
             "soft_delete": True,
-            "reason": "Test bulk decommission"
+            "reason": "Test bulk decommission",
         }
         response = client.post("/api/v1/assets/bulk/delete", json=bulk_delete)
         assert response.status_code == 200
@@ -1090,20 +1018,13 @@ class TestAssetValidation:
 
     def test_create_asset_missing_name(self):
         """Test creating asset without name"""
-        invalid_asset = {
-            "asset_type": "server",
-            "status": "active"
-        }
+        invalid_asset = {"asset_type": "server", "status": "active"}
         response = client.post("/api/v1/assets", json=invalid_asset)
         assert response.status_code == 422
 
     def test_create_asset_invalid_type(self):
         """Test creating asset with invalid type"""
-        invalid_asset = {
-            "name": "test-asset",
-            "asset_type": "invalid_type",
-            "status": "active"
-        }
+        invalid_asset = {"name": "test-asset", "asset_type": "invalid_type", "status": "active"}
         response = client.post("/api/v1/assets", json=invalid_asset)
         assert response.status_code == 422
 
@@ -1112,7 +1033,7 @@ class TestAssetValidation:
         invalid_asset = {
             "name": "test-asset",
             "asset_type": "server",
-            "criticality": "invalid_criticality"
+            "criticality": "invalid_criticality",
         }
         response = client.post("/api/v1/assets", json=invalid_asset)
         assert response.status_code == 422

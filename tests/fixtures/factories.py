@@ -16,10 +16,7 @@ class DetectionRuleFactory:
 
     @staticmethod
     def create(
-        name: Optional[str] = None,
-        rule_type: str = "sigma",
-        severity: str = "medium",
-        **kwargs
+        name: Optional[str] = None, rule_type: str = "sigma", severity: str = "medium", **kwargs
     ) -> Dict:
         """Create a detection rule"""
         return {
@@ -33,7 +30,7 @@ class DetectionRuleFactory:
             "tags": kwargs.get("tags", ["test", rule_type]),
             "created_at": kwargs.get("created_at", datetime.utcnow().isoformat()),
             "updated_at": kwargs.get("updated_at", datetime.utcnow().isoformat()),
-            "enabled": kwargs.get("enabled", True)
+            "enabled": kwargs.get("enabled", True),
         }
 
     @staticmethod
@@ -47,10 +44,7 @@ class IncidentFactory:
 
     @staticmethod
     def create(
-        title: Optional[str] = None,
-        severity: str = "high",
-        status: str = "open",
-        **kwargs
+        title: Optional[str] = None, severity: str = "high", status: str = "open", **kwargs
     ) -> Dict:
         """Create an incident"""
         return {
@@ -65,7 +59,7 @@ class IncidentFactory:
             "iocs": kwargs.get("iocs", ["192.168.1.100", "sha256:abc123..."]),
             "created_at": kwargs.get("created_at", datetime.utcnow().isoformat()),
             "updated_at": kwargs.get("updated_at", datetime.utcnow().isoformat()),
-            "assigned_to": kwargs.get("assigned_to", "analyst-001")
+            "assigned_to": kwargs.get("assigned_to", "analyst-001"),
         }
 
     @staticmethod
@@ -78,11 +72,7 @@ class VulnerabilityFactory:
     """Factory for creating vulnerability test data"""
 
     @staticmethod
-    def create(
-        cve_id: Optional[str] = None,
-        severity: str = "HIGH",
-        **kwargs
-    ) -> Dict:
+    def create(cve_id: Optional[str] = None, severity: str = "HIGH", **kwargs) -> Dict:
         """Create a vulnerability"""
         if not cve_id:
             cve_id = f"CVE-2025-{random.randint(10000, 99999)}"
@@ -98,17 +88,20 @@ class VulnerabilityFactory:
             "affected_version": kwargs.get("affected_version", "1.0.0"),
             "fixed_version": kwargs.get("fixed_version", "1.0.1"),
             "published_date": kwargs.get("published_date", datetime.utcnow().isoformat()),
-            "status": kwargs.get("status", "open")
+            "status": kwargs.get("status", "open"),
         }
 
     @staticmethod
     def create_scan_result(target: str = "192.168.1.100", **kwargs) -> Dict:
         """Create a vulnerability scan result"""
-        vulns = kwargs.get("vulnerabilities", [
-            VulnerabilityFactory.create(severity="HIGH"),
-            VulnerabilityFactory.create(severity="MEDIUM"),
-            VulnerabilityFactory.create(severity="LOW")
-        ])
+        vulns = kwargs.get(
+            "vulnerabilities",
+            [
+                VulnerabilityFactory.create(severity="HIGH"),
+                VulnerabilityFactory.create(severity="MEDIUM"),
+                VulnerabilityFactory.create(severity="LOW"),
+            ],
+        )
 
         return {
             "scan_id": kwargs.get("scan_id", str(uuid4())),
@@ -121,8 +114,8 @@ class VulnerabilityFactory:
                 "critical": sum(1 for v in vulns if v["severity"] == "CRITICAL"),
                 "high": sum(1 for v in vulns if v["severity"] == "HIGH"),
                 "medium": sum(1 for v in vulns if v["severity"] == "MEDIUM"),
-                "low": sum(1 for v in vulns if v["severity"] == "LOW")
-            }
+                "low": sum(1 for v in vulns if v["severity"] == "LOW"),
+            },
         }
 
 
@@ -137,14 +130,17 @@ class PlaybookFactory:
             "name": name or f"Test Playbook {uuid4().hex[:8]}",
             "description": kwargs.get("description", "Test playbook"),
             "version": kwargs.get("version", "1.0"),
-            "tasks": kwargs.get("tasks", [
-                {
-                    "name": "Log message",
-                    "action": "log",
-                    "parameters": {"message": "Test", "level": "info"}
-                }
-            ]),
-            "created_at": kwargs.get("created_at", datetime.utcnow().isoformat())
+            "tasks": kwargs.get(
+                "tasks",
+                [
+                    {
+                        "name": "Log message",
+                        "action": "log",
+                        "parameters": {"message": "Test", "level": "info"},
+                    }
+                ],
+            ),
+            "created_at": kwargs.get("created_at", datetime.utcnow().isoformat()),
         }
 
 
@@ -167,12 +163,15 @@ class ComplianceCheckFactory:
                 "total": total_controls,
                 "passed": passed,
                 "failed": total_controls - passed,
-                "score_percent": round((passed / total_controls) * 100, 2)
+                "score_percent": round((passed / total_controls) * 100, 2),
             },
-            "controls": kwargs.get("controls", [
-                {"id": "1.1", "name": "Test Control 1", "passed": True},
-                {"id": "1.2", "name": "Test Control 2", "passed": False}
-            ])
+            "controls": kwargs.get(
+                "controls",
+                [
+                    {"id": "1.1", "name": "Test Control 1", "passed": True},
+                    {"id": "1.2", "name": "Test Control 2", "passed": False},
+                ],
+            ),
         }
 
 
@@ -191,8 +190,10 @@ class ForensicArtifactFactory:
             "case_id": kwargs.get("case_id", f"CASE-2025-{random.randint(100, 999)}"),
             "hostname": kwargs.get("hostname", "WORKSTATION01"),
             "hash_md5": kwargs.get("hash_md5", "d41d8cd98f00b204e9800998ecf8427e"),
-            "hash_sha256": kwargs.get("hash_sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
-            "metadata": kwargs.get("metadata", {})
+            "hash_sha256": kwargs.get(
+                "hash_sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            ),
+            "metadata": kwargs.get("metadata", {}),
         }
 
     @staticmethod
@@ -206,7 +207,7 @@ class ForensicArtifactFactory:
             "size": kwargs.get("size", 102400),
             "md5": kwargs.get("md5", "d41d8cd98f00b204e9800998ecf8427e"),
             "suspicious": kwargs.get("suspicious", False),
-            "reason": kwargs.get("reason", None)
+            "reason": kwargs.get("reason", None),
         }
 
 
@@ -224,7 +225,7 @@ class LogEntryFactory:
             "source": kwargs.get("source", "test-host"),
             "message": kwargs.get("message", "Test log message"),
             "raw": kwargs.get("raw", "Oct 22 14:30:22 test-host test: message"),
-            "parsed_fields": kwargs.get("parsed_fields", {})
+            "parsed_fields": kwargs.get("parsed_fields", {}),
         }
 
     @staticmethod
@@ -245,7 +246,9 @@ class LogEntryFactory:
         path = kwargs.get("path", "/")
         status = kwargs.get("status", 200)
         size = kwargs.get("size", 1234)
-        return f'{ip} - - [{timestamp}] "{method} {path} HTTP/1.1" {status} {size} "-" "Mozilla/5.0"'
+        return (
+            f'{ip} - - [{timestamp}] "{method} {path} HTTP/1.1" {status} {size} "-" "Mozilla/5.0"'
+        )
 
 
 class ThreatHuntQueryFactory:
@@ -262,7 +265,7 @@ class ThreatHuntQueryFactory:
             "query": kwargs.get("query", "rule.id:60122"),
             "time_range": kwargs.get("time_range", "24h"),
             "mitre_tactics": kwargs.get("mitre_tactics", ["TA0008"]),
-            "created_at": kwargs.get("created_at", datetime.utcnow().isoformat())
+            "created_at": kwargs.get("created_at", datetime.utcnow().isoformat()),
         }
 
 
@@ -282,7 +285,7 @@ class AlertFactory:
             "condition": kwargs.get("condition", "gt"),
             "threshold": kwargs.get("threshold", 90),
             "current_value": kwargs.get("current_value", 95),
-            "triggered_at": kwargs.get("triggered_at", datetime.utcnow().isoformat())
+            "triggered_at": kwargs.get("triggered_at", datetime.utcnow().isoformat()),
         }
 
 
@@ -301,21 +304,24 @@ class SBOMFactory:
                 "component": {
                     "type": "application",
                     "name": app_name,
-                    "version": kwargs.get("version", "1.0.0")
-                }
-            },
-            "components": kwargs.get("components", [
-                {
-                    "type": "library",
-                    "name": "requests",
-                    "version": "2.31.0",
-                    "purl": "pkg:pypi/requests@2.31.0"
+                    "version": kwargs.get("version", "1.0.0"),
                 },
-                {
-                    "type": "library",
-                    "name": "PyYAML",
-                    "version": "6.0.1",
-                    "purl": "pkg:pypi/pyyaml@6.0.1"
-                }
-            ])
+            },
+            "components": kwargs.get(
+                "components",
+                [
+                    {
+                        "type": "library",
+                        "name": "requests",
+                        "version": "2.31.0",
+                        "purl": "pkg:pypi/requests@2.31.0",
+                    },
+                    {
+                        "type": "library",
+                        "name": "PyYAML",
+                        "version": "6.0.1",
+                        "purl": "pkg:pypi/pyyaml@6.0.1",
+                    },
+                ],
+            ),
         }

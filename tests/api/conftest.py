@@ -29,8 +29,7 @@ def module_auth_token():
     """Get authentication token once per module to avoid rate limiting"""
     client = TestClient(app)
     response = client.post(
-        "/api/v1/auth/token",
-        data={"username": "admin", "password": "changeme123"}
+        "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
     )
     if response.status_code != 200:
         pytest.fail(f"Failed to get auth token: {response.json()}")

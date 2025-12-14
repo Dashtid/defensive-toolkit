@@ -93,23 +93,19 @@ class TestSigmaRequiredFields:
         for idx, rule in enumerate(rules):
             for field in self.REQUIRED_FIELDS:
                 assert field in rule, (
-                    f"Missing required field '{field}' in rule {idx + 1} "
-                    f"of {sigma_file.name}"
+                    f"Missing required field '{field}' in rule {idx + 1} " f"of {sigma_file.name}"
                 )
 
     @pytest.mark.parametrize("sigma_file", sigma_files, ids=lambda x: x.name)
     def test_valid_uuid_format(self, sigma_file: Path):
         """Test that rule IDs are valid UUIDs."""
-        uuid_pattern = (
-            r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
-            r"[0-9a-f]{4}-[0-9a-f]{12}$"
-        )
+        uuid_pattern = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-" r"[0-9a-f]{4}-[0-9a-f]{12}$"
         rules = load_sigma_rules(sigma_file)
         for idx, rule in enumerate(rules):
             if "id" in rule:
-                assert re.match(uuid_pattern, str(rule["id"]), re.IGNORECASE), (
-                    f"Invalid UUID format for rule {idx + 1} in {sigma_file.name}"
-                )
+                assert re.match(
+                    uuid_pattern, str(rule["id"]), re.IGNORECASE
+                ), f"Invalid UUID format for rule {idx + 1} in {sigma_file.name}"
 
 
 class TestSigmaFieldValues:
@@ -125,8 +121,7 @@ class TestSigmaFieldValues:
         for idx, rule in enumerate(rules):
             if "status" in rule:
                 assert rule["status"] in self.VALID_STATUSES, (
-                    f"Invalid status '{rule['status']}' in rule {idx + 1} "
-                    f"of {sigma_file.name}"
+                    f"Invalid status '{rule['status']}' in rule {idx + 1} " f"of {sigma_file.name}"
                 )
 
     @pytest.mark.parametrize("sigma_file", sigma_files, ids=lambda x: x.name)
@@ -136,8 +131,7 @@ class TestSigmaFieldValues:
         for idx, rule in enumerate(rules):
             if "level" in rule:
                 assert rule["level"] in self.VALID_LEVELS, (
-                    f"Invalid level '{rule['level']}' in rule {idx + 1} "
-                    f"of {sigma_file.name}"
+                    f"Invalid level '{rule['level']}' in rule {idx + 1} " f"of {sigma_file.name}"
                 )
 
     @pytest.mark.parametrize("sigma_file", sigma_files, ids=lambda x: x.name)
@@ -147,13 +141,11 @@ class TestSigmaFieldValues:
         for idx, rule in enumerate(rules):
             if "logsource" in rule:
                 logsource = rule["logsource"]
-                assert isinstance(logsource, dict), (
-                    f"logsource must be a dict in rule {idx + 1} of {sigma_file.name}"
-                )
+                assert isinstance(
+                    logsource, dict
+                ), f"logsource must be a dict in rule {idx + 1} of {sigma_file.name}"
                 # Should have at least one of these
-                has_source = any(
-                    k in logsource for k in ["category", "product", "service"]
-                )
+                has_source = any(k in logsource for k in ["category", "product", "service"])
                 assert has_source, (
                     f"logsource needs category, product, or service in rule {idx + 1} "
                     f"of {sigma_file.name}"
@@ -170,12 +162,12 @@ class TestSigmaDetectionLogic:
         for idx, rule in enumerate(rules):
             if "detection" in rule:
                 detection = rule["detection"]
-                assert isinstance(detection, dict), (
-                    f"detection must be a dict in rule {idx + 1} of {sigma_file.name}"
-                )
-                assert "condition" in detection, (
-                    f"detection missing condition in rule {idx + 1} of {sigma_file.name}"
-                )
+                assert isinstance(
+                    detection, dict
+                ), f"detection must be a dict in rule {idx + 1} of {sigma_file.name}"
+                assert (
+                    "condition" in detection
+                ), f"detection missing condition in rule {idx + 1} of {sigma_file.name}"
 
     @pytest.mark.parametrize("sigma_file", sigma_files, ids=lambda x: x.name)
     def test_detection_has_selections(self, sigma_file: Path):
@@ -186,9 +178,9 @@ class TestSigmaDetectionLogic:
                 detection = rule["detection"]
                 # Should have at least one selection (key other than condition)
                 selections = [k for k in detection.keys() if k != "condition"]
-                assert len(selections) > 0, (
-                    f"detection has no selections in rule {idx + 1} of {sigma_file.name}"
-                )
+                assert (
+                    len(selections) > 0
+                ), f"detection has no selections in rule {idx + 1} of {sigma_file.name}"
 
 
 class TestSigmaMitreMapping:
@@ -217,9 +209,7 @@ class TestSigmaMitreMapping:
         for idx, rule in enumerate(rules):
             if "tags" in rule:
                 tags = rule["tags"]
-                technique_tags = [
-                    t for t in tags if t.startswith("attack.t")
-                ]
+                technique_tags = [t for t in tags if t.startswith("attack.t")]
                 for tag in technique_tags:
                     assert re.match(technique_pattern, tag, re.IGNORECASE), (
                         f"Invalid technique tag format '{tag}' in rule {idx + 1} "
@@ -235,18 +225,14 @@ class TestSigmaQuality:
         """Test that rules have an author."""
         rules = load_sigma_rules(sigma_file)
         for idx, rule in enumerate(rules):
-            assert "author" in rule, (
-                f"Missing author in rule {idx + 1} of {sigma_file.name}"
-            )
+            assert "author" in rule, f"Missing author in rule {idx + 1} of {sigma_file.name}"
 
     @pytest.mark.parametrize("sigma_file", sigma_files, ids=lambda x: x.name)
     def test_has_date(self, sigma_file: Path):
         """Test that rules have a date."""
         rules = load_sigma_rules(sigma_file)
         for idx, rule in enumerate(rules):
-            assert "date" in rule, (
-                f"Missing date in rule {idx + 1} of {sigma_file.name}"
-            )
+            assert "date" in rule, f"Missing date in rule {idx + 1} of {sigma_file.name}"
 
     @pytest.mark.parametrize("sigma_file", sigma_files, ids=lambda x: x.name)
     def test_description_quality(self, sigma_file: Path):
@@ -255,9 +241,9 @@ class TestSigmaQuality:
         for idx, rule in enumerate(rules):
             if "description" in rule:
                 desc = rule["description"]
-                assert len(str(desc)) >= 20, (
-                    f"Description too short in rule {idx + 1} of {sigma_file.name}"
-                )
+                assert (
+                    len(str(desc)) >= 20
+                ), f"Description too short in rule {idx + 1} of {sigma_file.name}"
 
     @pytest.mark.parametrize("sigma_file", sigma_files, ids=lambda x: x.name)
     def test_has_references(self, sigma_file: Path):
@@ -286,9 +272,7 @@ class TestSigmaRuleCounts:
             total_rules += len(rules)
 
         # We should have at least 30 rules
-        assert total_rules >= 30, (
-            f"Expected at least 30 Sigma rules, found {total_rules}"
-        )
+        assert total_rules >= 30, f"Expected at least 30 Sigma rules, found {total_rules}"
 
     def test_coverage_by_tactic(self):
         """Test that we have coverage across tactics."""

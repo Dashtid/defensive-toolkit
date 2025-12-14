@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/forensics", tags=["Forensics"])
 
+
 @router.post("/analyze", response_model=ForensicsAnalysisResult)
 async def analyze_artifact(
     request: ForensicsAnalysisRequest,
@@ -20,8 +21,9 @@ async def analyze_artifact(
         artifact_path=request.artifact_path,
         findings=[],
         timeline=[],
-        chain_of_custody=[]
+        chain_of_custody=[],
     )
+
 
 @router.get("/artifacts/types", response_model=list)
 async def list_artifact_types(current_user: str = Depends(get_current_active_user)):

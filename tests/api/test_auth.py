@@ -18,8 +18,7 @@ class TestAuthentication:
     def test_login_success(self):
         """Test successful login with valid credentials"""
         response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "admin", "password": "changeme123"}
+            "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -30,16 +29,14 @@ class TestAuthentication:
     def test_login_invalid_credentials(self):
         """Test login with invalid credentials"""
         response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "admin", "password": "wrongpassword"}
+            "/api/v1/auth/token", data={"username": "admin", "password": "wrongpassword"}
         )
         assert response.status_code == 401
 
     def test_login_nonexistent_user(self):
         """Test login with non-existent user"""
         response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "nonexistent", "password": "password"}
+            "/api/v1/auth/token", data={"username": "nonexistent", "password": "password"}
         )
         assert response.status_code == 401
 
@@ -47,16 +44,12 @@ class TestAuthentication:
         """Test token refresh with valid refresh token"""
         # Login first
         login_response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "admin", "password": "changeme123"}
+            "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
         )
         refresh_token = login_response.json()["refresh_token"]
 
         # Refresh token
-        response = client.post(
-            "/api/v1/auth/refresh",
-            json={"refresh_token": refresh_token}
-        )
+        response = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
@@ -66,15 +59,13 @@ class TestAuthentication:
         """Test getting current user info with valid token"""
         # Login first
         login_response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "admin", "password": "changeme123"}
+            "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
         )
         access_token = login_response.json()["access_token"]
 
         # Get user info
         response = client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {access_token}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {access_token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -85,15 +76,13 @@ class TestAuthentication:
         """Test logout endpoint"""
         # Login first
         login_response = client.post(
-            "/api/v1/auth/token",
-            data={"username": "admin", "password": "changeme123"}
+            "/api/v1/auth/token", data={"username": "admin", "password": "changeme123"}
         )
         access_token = login_response.json()["access_token"]
 
         # Logout
         response = client.post(
-            "/api/v1/auth/logout",
-            headers={"Authorization": f"Bearer {access_token}"}
+            "/api/v1/auth/logout", headers={"Authorization": f"Bearer {access_token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -103,10 +92,7 @@ class TestAuthentication:
         """Test API key authentication"""
         # Note: In production, use actual configured API key
         # This test would need a valid API key configured in settings
-        response = client.get(
-            "/api/v1/auth/me",
-            headers={"X-API-Key": "test-api-key"}
-        )
+        response = client.get("/api/v1/auth/me", headers={"X-API-Key": "test-api-key"})
         # Will fail without configured key, but tests the mechanism
         assert response.status_code in [200, 401]
 

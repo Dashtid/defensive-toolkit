@@ -5,11 +5,13 @@ Notification Actions for Security Automation
 
 import logging
 
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def send_email(to: str, subject: str, body: str, smtp_server: str = None, dry_run: bool = False) -> bool:
+def send_email(
+    to: str, subject: str, body: str, smtp_server: str = None, dry_run: bool = False
+) -> bool:
     """Send email notification"""
     logger.info(f"[+] Sending email to: {to}")
     logger.info(f"    Subject: {subject}")

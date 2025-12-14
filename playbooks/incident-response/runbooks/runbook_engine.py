@@ -40,6 +40,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 try:
     import yaml
+
     YAML_AVAILABLE = True
 except ImportError:
     YAML_AVAILABLE = False
@@ -47,18 +48,19 @@ except ImportError:
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
 
 class Severity(Enum):
     """Action severity levels for approval gates"""
-    LOW = "low"           # Auto-approve: logging, enrichment
-    MEDIUM = "medium"     # Prompt: evidence collection, alerts
-    HIGH = "high"         # Require approval: containment actions
-    CRITICAL = "critical" # Require explicit approval: account disable, isolation
+
+    LOW = "low"  # Auto-approve: logging, enrichment
+    MEDIUM = "medium"  # Prompt: evidence collection, alerts
+    HIGH = "high"  # Require approval: containment actions
+    CRITICAL = "critical"  # Require explicit approval: account disable, isolation
 
 
 class ActionResult:
@@ -69,7 +71,7 @@ class ActionResult:
         success: bool,
         message: str,
         data: Optional[Dict] = None,
-        rollback_info: Optional[Dict] = None
+        rollback_info: Optional[Dict] = None,
     ):
         self.success = success
         self.message = message
@@ -83,7 +85,7 @@ class ActionResult:
             "message": self.message,
             "data": self.data,
             "rollback_info": self.rollback_info,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
         }
 
 
@@ -101,7 +103,7 @@ class EvidenceChain:
         evidence_type: str,
         source: str,
         file_path: Optional[Path] = None,
-        description: str = ""
+        description: str = "",
     ) -> str:
         """Add evidence item with hash verification"""
         evidence_id = str(uuid.uuid4())[:8]
@@ -140,12 +142,16 @@ class EvidenceChain:
         """Persist chain of custody to disk"""
         self.output_dir.mkdir(parents=True, exist_ok=True)
         with open(self.chain_file, "w") as f:
-            json.dump({
-                "incident_id": self.incident_id,
-                "created_at": datetime.now().isoformat(),
-                "evidence_count": len(self.evidence_items),
-                "evidence": self.evidence_items
-            }, f, indent=2)
+            json.dump(
+                {
+                    "incident_id": self.incident_id,
+                    "created_at": datetime.now().isoformat(),
+                    "evidence_count": len(self.evidence_items),
+                    "evidence": self.evidence_items,
+                },
+                f,
+                indent=2,
+            )
 
 
 class RunbookEngine:
@@ -160,7 +166,7 @@ class RunbookEngine:
         self,
         dry_run: bool = False,
         auto_approve: Optional[str] = None,
-        output_dir: Optional[Path] = None
+        output_dir: Optional[Path] = None,
     ):
         self.dry_run = dry_run
         self.auto_approve_level = Severity(auto_approve) if auto_approve else None
@@ -184,19 +190,16 @@ class RunbookEngine:
             "set_variable": self._action_set_variable,
             "conditional": self._action_conditional,
             "prompt_analyst": self._action_prompt_analyst,
-
             # Containment (loaded from actions module)
             "isolate_host": self._wrap_external_action("containment", "isolate_host"),
             "block_ip": self._wrap_external_action("containment", "block_ip"),
             "disable_account": self._wrap_external_action("containment", "disable_account"),
             "quarantine_file": self._wrap_external_action("containment", "quarantine_file"),
             "kill_process": self._wrap_external_action("containment", "kill_process"),
-
             # Preservation
             "collect_evidence": self._wrap_external_action("preservation", "collect_evidence"),
             "run_triage": self._action_run_triage,
             "capture_memory": self._wrap_external_action("preservation", "capture_memory"),
-
             # Escalation
             "send_alert": self._wrap_external_action("escalation", "send_alert"),
             "create_ticket": self._wrap_external_action("escalation", "create_ticket"),
@@ -205,24 +208,19 @@ class RunbookEngine:
 
     def _wrap_external_action(self, module: str, action: str) -> Callable:
         """Wrap external action module for lazy loading"""
+
         def wrapper(params: Dict) -> ActionResult:
             try:
                 # Dynamic import
-                mod = __import__(
-                    f"actions.{module}",
-                    fromlist=[action],
-                    globals=globals()
-                )
+                mod = __import__(f"actions.{module}", fromlist=[action], globals=globals())
                 func = getattr(mod, action)
                 return func(**params)
             except ImportError as e:
                 logger.warning(f"[!] Module not available: {module}.{action}")
-                return ActionResult(
-                    success=False,
-                    message=f"Action module not available: {e}"
-                )
+                return ActionResult(success=False, message=f"Action module not available: {e}")
             except Exception as e:
                 return ActionResult(success=False, message=str(e))
+
         return wrapper
 
     def load_runbook(self, runbook_path: Path) -> Dict:
@@ -249,10 +247,7 @@ class RunbookEngine:
         self._print_header(runbook)
 
         # Initialize evidence chain
-        self.evidence_chain = EvidenceChain(
-            self.incident_id,
-            self.output_dir / self.incident_id
-        )
+        self.evidence_chain = EvidenceChain(self.incident_id, self.output_dir / self.incident_id)
 
         # Set initial variables
         self.variables = {
@@ -260,7 +255,7 @@ class RunbookEngine:
             "hostname": platform.node(),
             "timestamp": datetime.now().isoformat(),
             "analyst": os.getenv("USERNAME", os.getenv("USER", "unknown")),
-            **runbook.get("variables", {})
+            **runbook.get("variables", {}),
         }
 
         start_time = datetime.now()
@@ -316,10 +311,7 @@ class RunbookEngine:
 
         # Check approval
         if not self._check_approval(step, severity):
-            return ActionResult(
-                success=False,
-                message="Action not approved by analyst"
-            )
+            return ActionResult(success=False, message="Action not approved by analyst")
 
         # Dry run check
         if self.dry_run:
@@ -330,10 +322,7 @@ class RunbookEngine:
         # Get action handler
         handler = self.actions.get(action_name)
         if not handler:
-            return ActionResult(
-                success=False,
-                message=f"Unknown action: {action_name}"
-            )
+            return ActionResult(success=False, message=f"Unknown action: {action_name}")
 
         # Execute action
         try:
@@ -341,21 +330,25 @@ class RunbookEngine:
 
             # Track for potential rollback
             if result.rollback_info:
-                self.rollback_stack.append({
-                    "step": step.get("name"),
-                    "action": action_name,
-                    "rollback_info": result.rollback_info
-                })
+                self.rollback_stack.append(
+                    {
+                        "step": step.get("name"),
+                        "action": action_name,
+                        "rollback_info": result.rollback_info,
+                    }
+                )
 
             # Log execution
-            self.execution_log.append({
-                "timestamp": datetime.now().isoformat(),
-                "step": step.get("name"),
-                "action": action_name,
-                "parameters": params,
-                "severity": severity.value,
-                "result": result.to_dict()
-            })
+            self.execution_log.append(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "step": step.get("name"),
+                    "action": action_name,
+                    "parameters": params,
+                    "severity": severity.value,
+                    "result": result.to_dict(),
+                }
+            )
 
             if result.success:
                 logger.info(f"[OK] {result.message}")
@@ -374,7 +367,9 @@ class RunbookEngine:
         if self.auto_approve_level:
             severity_order = [Severity.LOW, Severity.MEDIUM, Severity.HIGH, Severity.CRITICAL]
             if severity_order.index(severity) <= severity_order.index(self.auto_approve_level):
-                logger.info(f"[AUTO] Auto-approved ({severity.value} <= {self.auto_approve_level.value})")
+                logger.info(
+                    f"[AUTO] Auto-approved ({severity.value} <= {self.auto_approve_level.value})"
+                )
                 return True
 
         # Low severity always auto-approved
@@ -415,7 +410,8 @@ class RunbookEngine:
         """Recursively substitute ${var} placeholders"""
         if isinstance(obj, str):
             import re
-            pattern = r'\$\{(\w+)\}'
+
+            pattern = r"\$\{(\w+)\}"
 
             def replace(match):
                 var = match.group(1)
@@ -529,11 +525,7 @@ class RunbookEngine:
         if variable:
             self.variables[variable] = value
 
-        return ActionResult(
-            success=True,
-            message="Analyst input received",
-            data={"value": value}
-        )
+        return ActionResult(success=True, message="Analyst input received", data={"value": value})
 
     def _action_run_triage(self, params: Dict) -> ActionResult:
         """Run triage script and collect evidence"""
@@ -554,25 +546,16 @@ class RunbookEngine:
             cmd = ["bash", str(script)]
 
         if not script.exists():
-            return ActionResult(
-                success=False,
-                message=f"Triage script not found: {script}"
-            )
+            return ActionResult(success=False, message=f"Triage script not found: {script}")
 
         logger.info(f"    Running {script_type} triage on {target}...")
 
         if self.dry_run:
-            return ActionResult(
-                success=True,
-                message=f"Dry run - would execute: {' '.join(cmd)}"
-            )
+            return ActionResult(success=True, message=f"Dry run - would execute: {' '.join(cmd)}")
 
         try:
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minute timeout
+                cmd, capture_output=True, text=True, timeout=300  # 5 minute timeout
             )
 
             # Log evidence
@@ -580,13 +563,13 @@ class RunbookEngine:
                 self.evidence_chain.add_evidence(
                     evidence_type="triage_output",
                     source=target,
-                    description=f"{script_type} triage script output"
+                    description=f"{script_type} triage script output",
                 )
 
             return ActionResult(
                 success=result.returncode == 0,
                 message=f"Triage completed with exit code {result.returncode}",
-                data={"stdout": result.stdout, "stderr": result.stderr}
+                data={"stdout": result.stdout, "stderr": result.stderr},
             )
 
         except subprocess.TimeoutExpired:
@@ -644,23 +627,19 @@ class RunbookEngine:
 
         log_data = {
             "incident_id": self.incident_id,
-            "runbook": {
-                "name": runbook["name"],
-                "version": runbook["version"]
-            },
+            "runbook": {"name": runbook["name"], "version": runbook["version"]},
             "execution": {
                 "started_at": self.variables.get("timestamp"),
                 "completed_at": datetime.now().isoformat(),
                 "dry_run": self.dry_run,
                 "analyst": self.variables.get("analyst"),
-                "hostname": platform.node()
+                "hostname": platform.node(),
             },
             "variables": self.variables,
             "steps": self.execution_log,
             "rollback_available": [
-                {"step": r["step"], "action": r["action"]}
-                for r in self.rollback_stack
-            ]
+                {"step": r["step"], "action": r["action"]} for r in self.rollback_stack
+            ],
         }
 
         with open(log_file, "w") as f:
@@ -684,40 +663,33 @@ Severity Levels:
   medium   - Evidence collection, alerts (prompts by default)
   high     - Containment actions (requires approval)
   critical - Account disable, host isolation (requires explicit approval)
-        """
+        """,
     )
 
     parser.add_argument(
-        "--runbook", "-r",
-        type=Path,
-        required=True,
-        help="Path to runbook YAML file"
+        "--runbook", "-r", type=Path, required=True, help="Path to runbook YAML file"
     )
 
     parser.add_argument(
-        "--dry-run", "-n",
-        action="store_true",
-        help="Simulate execution without performing actions"
+        "--dry-run", "-n", action="store_true", help="Simulate execution without performing actions"
     )
 
     parser.add_argument(
-        "--auto-approve", "-a",
+        "--auto-approve",
+        "-a",
         choices=["low", "medium", "high"],
-        help="Auto-approve actions up to this severity level"
+        help="Auto-approve actions up to this severity level",
     )
 
     parser.add_argument(
-        "--output-dir", "-o",
+        "--output-dir",
+        "-o",
         type=Path,
         default=Path("./ir-output"),
-        help="Output directory for evidence and logs"
+        help="Output directory for evidence and logs",
     )
 
-    parser.add_argument(
-        "--variables", "-v",
-        type=Path,
-        help="JSON file with additional variables"
-    )
+    parser.add_argument("--variables", "-v", type=Path, help="JSON file with additional variables")
 
     args = parser.parse_args()
 
@@ -727,9 +699,7 @@ Severity Levels:
 
     # Initialize engine
     engine = RunbookEngine(
-        dry_run=args.dry_run,
-        auto_approve=args.auto_approve,
-        output_dir=args.output_dir
+        dry_run=args.dry_run, auto_approve=args.auto_approve, output_dir=args.output_dir
     )
 
     # Load additional variables

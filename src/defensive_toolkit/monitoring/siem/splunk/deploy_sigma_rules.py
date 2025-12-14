@@ -39,8 +39,8 @@ except ImportError:
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
@@ -74,10 +74,7 @@ class SplunkSigmaDeployer:
         try:
             logger.info(f"Connecting to Splunk at {self.host}:{self.port}")
             self.service = client.connect(
-                host=self.host,
-                port=self.port,
-                username=self.username,
-                password=self.password
+                host=self.host, port=self.port, username=self.username, password=self.password
             )
             logger.info(f"[OK] Connected to Splunk (version {self.service.info['version']})")
             return True
@@ -98,10 +95,11 @@ class SplunkSigmaDeployer:
         try:
             # Use sigma-cli to convert
             import subprocess
+
             result = subprocess.run(
-                ['sigma', 'convert', '-t', 'splunk', str(sigma_file)],
+                ["sigma", "convert", "-t", "splunk", str(sigma_file)],
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             if result.returncode != 0:
@@ -112,24 +110,25 @@ class SplunkSigmaDeployer:
 
             # Parse Sigma file for metadata
             import yaml
-            with open(sigma_file, 'r') as f:
+
+            with open(sigma_file, "r") as f:
                 sigma_rule = yaml.safe_load(f)
 
             return {
-                'title': sigma_rule.get('title', sigma_file.stem),
-                'id': sigma_rule.get('id', ''),
-                'description': sigma_rule.get('description', ''),
-                'level': sigma_rule.get('level', 'medium'),
-                'query': spl_query,
-                'tags': sigma_rule.get('tags', []),
-                'falsepositives': sigma_rule.get('falsepositives', [])
+                "title": sigma_rule.get("title", sigma_file.stem),
+                "id": sigma_rule.get("id", ""),
+                "description": sigma_rule.get("description", ""),
+                "level": sigma_rule.get("level", "medium"),
+                "query": spl_query,
+                "tags": sigma_rule.get("tags", []),
+                "falsepositives": sigma_rule.get("falsepositives", []),
             }
 
         except Exception as e:
             logger.error(f"[X] Error converting {sigma_file.name}: {e}")
             return None
 
-    def create_saved_search(self, rule: Dict, app: str = 'search') -> bool:
+    def create_saved_search(self, rule: Dict, app: str = "search") -> bool:
         """
         Create saved search in Splunk from converted rule
 
@@ -147,36 +146,36 @@ class SplunkSigmaDeployer:
             if search_name in self.service.saved_searches:
                 logger.warning(f"[!] Saved search '{search_name}' already exists, updating...")
                 saved_search = self.service.saved_searches[search_name]
-                saved_search.update(search=rule['query'])
+                saved_search.update(search=rule["query"])
             else:
                 # Determine alert severity
                 severity_map = {
-                    'critical': 'critical',
-                    'high': 'high',
-                    'medium': 'medium',
-                    'low': 'low',
-                    'informational': 'info'
+                    "critical": "critical",
+                    "high": "high",
+                    "medium": "medium",
+                    "low": "low",
+                    "informational": "info",
                 }
-                severity = severity_map.get(rule['level'], 'medium')
+                severity = severity_map.get(rule["level"], "medium")
 
                 # Create saved search
                 saved_search = self.service.saved_searches.create(
                     search_name,
-                    search=rule['query'],
+                    search=rule["query"],
                     **{
-                        'description': rule['description'],
-                        'is_scheduled': True,
-                        'cron_schedule': '*/15 * * * *',  # Every 15 minutes
-                        'dispatch.earliest_time': '-15m',
-                        'dispatch.latest_time': 'now',
-                        'alert_type': 'always',
-                        'alert_severity': severity,
-                        'alert.track': True,
-                        'alert.digest_mode': True,
-                        'actions': 'email',
-                        'action.email.to': 'security@example.com',  # Update this
-                        'action.email.subject': f'Sigma Alert: {rule["title"]}',
-                    }
+                        "description": rule["description"],
+                        "is_scheduled": True,
+                        "cron_schedule": "*/15 * * * *",  # Every 15 minutes
+                        "dispatch.earliest_time": "-15m",
+                        "dispatch.latest_time": "now",
+                        "alert_type": "always",
+                        "alert_severity": severity,
+                        "alert.track": True,
+                        "alert.digest_mode": True,
+                        "actions": "email",
+                        "action.email.to": "security@example.com",  # Update this
+                        "action.email.subject": f'Sigma Alert: {rule["title"]}',
+                    },
                 )
                 logger.info(f"[+] Created saved search: {search_name}")
 
@@ -186,7 +185,7 @@ class SplunkSigmaDeployer:
             logger.error(f"[X] Failed to create saved search: {e}")
             return False
 
-    def deploy_rules(self, rules_dir: Path, app: str = 'search') -> Dict:
+    def deploy_rules(self, rules_dir: Path, app: str = "search") -> Dict:
         """
         Deploy all Sigma rules from directory to Splunk
 
@@ -197,16 +196,11 @@ class SplunkSigmaDeployer:
         Returns:
             dict: Deployment statistics
         """
-        stats = {
-            'total': 0,
-            'converted': 0,
-            'deployed': 0,
-            'failed': 0
-        }
+        stats = {"total": 0, "converted": 0, "deployed": 0, "failed": 0}
 
         # Find all Sigma rule files
-        sigma_files = list(rules_dir.rglob('*.yml'))
-        stats['total'] = len(sigma_files)
+        sigma_files = list(rules_dir.rglob("*.yml"))
+        stats["total"] = len(sigma_files)
 
         logger.info(f"Found {stats['total']} Sigma rule files")
 
@@ -216,16 +210,16 @@ class SplunkSigmaDeployer:
             # Convert rule
             rule = self.convert_sigma_to_spl(sigma_file)
             if not rule:
-                stats['failed'] += 1
+                stats["failed"] += 1
                 continue
 
-            stats['converted'] += 1
+            stats["converted"] += 1
 
             # Deploy to Splunk
             if self.create_saved_search(rule, app):
-                stats['deployed'] += 1
+                stats["deployed"] += 1
             else:
-                stats['failed'] += 1
+                stats["failed"] += 1
 
         return stats
 
@@ -233,8 +227,9 @@ class SplunkSigmaDeployer:
 def load_config(config_file: Path) -> Dict:
     """Load configuration from YAML file"""
     import yaml
+
     try:
-        with open(config_file, 'r') as f:
+        with open(config_file, "r") as f:
             return yaml.safe_load(f)
     except Exception as e:
         logger.error(f"[X] Failed to load config: {e}")
@@ -242,45 +237,34 @@ def load_config(config_file: Path) -> Dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Deploy Sigma rules to Splunk as saved searches'
+    parser = argparse.ArgumentParser(description="Deploy Sigma rules to Splunk as saved searches")
+    parser.add_argument(
+        "--config", type=Path, default="splunk_config.yml", help="Path to Splunk configuration file"
     )
     parser.add_argument(
-        '--config',
+        "--rules-dir",
         type=Path,
-        default='splunk_config.yml',
-        help='Path to Splunk configuration file'
+        default="../../../rules/sigma",
+        help="Directory containing Sigma rules",
     )
+    parser.add_argument("--app", default="search", help="Splunk app to deploy to (default: search)")
     parser.add_argument(
-        '--rules-dir',
-        type=Path,
-        default='../../../rules/sigma',
-        help='Directory containing Sigma rules'
-    )
-    parser.add_argument(
-        '--app',
-        default='search',
-        help='Splunk app to deploy to (default: search)'
-    )
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Convert rules but do not deploy to Splunk'
+        "--dry-run", action="store_true", help="Convert rules but do not deploy to Splunk"
     )
 
     args = parser.parse_args()
 
     # Load configuration
     config = load_config(args.config)
-    splunk_config = config.get('splunk', {})
+    splunk_config = config.get("splunk", {})
 
     if not args.dry_run:
         # Initialize deployer
         deployer = SplunkSigmaDeployer(
-            host=splunk_config.get('host', 'localhost'),
-            port=splunk_config.get('port', 8089),
-            username=splunk_config.get('username', 'admin'),
-            password=splunk_config.get('password', '')
+            host=splunk_config.get("host", "localhost"),
+            port=splunk_config.get("port", 8089),
+            username=splunk_config.get("username", "admin"),
+            password=splunk_config.get("password", ""),
         )
 
         # Connect to Splunk
@@ -293,15 +277,15 @@ def main():
         stats = deployer.deploy_rules(args.rules_dir, args.app)
 
         # Print summary
-        logger.info("\n" + "="*50)
+        logger.info("\n" + "=" * 50)
         logger.info("Deployment Summary:")
         logger.info(f"  Total rules: {stats['total']}")
         logger.info(f"  Converted: {stats['converted']}")
         logger.info(f"  Deployed: {stats['deployed']}")
         logger.info(f"  Failed: {stats['failed']}")
-        logger.info("="*50)
+        logger.info("=" * 50)
 
-        if stats['deployed'] > 0:
+        if stats["deployed"] > 0:
             logger.info(f"\n[OK] Successfully deployed {stats['deployed']} rules to Splunk")
             logger.info("[i] View in Splunk: Settings > Searches, reports, and alerts")
 
@@ -310,5 +294,5 @@ def main():
         # TODO: Implement dry-run conversion only
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

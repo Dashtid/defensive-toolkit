@@ -33,27 +33,20 @@ class TestAuditScript:
     def test_script_is_executable(self, script_path: Path):
         """Test that script is executable."""
         import os
+
         assert os.access(script_path, os.X_OK), f"Script not executable: {script_path}"
 
     def test_script_runs_without_errors(self, script_path: Path):
         """Test that audit script runs without errors."""
         # Note: This may fail on Windows/non-root, but tests script structure
-        result = subprocess.run(
-            ["bash", str(script_path)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", str(script_path)], capture_output=True, text=True)
 
         # Script should attempt to run (may fail due to permissions)
         assert result.returncode == 0 or "root" in result.stderr.lower() or "EUID" in result.stderr
 
     def test_output_contains_checks(self, script_path: Path):
         """Test that audit output contains security checks."""
-        result = subprocess.run(
-            ["bash", str(script_path)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", str(script_path)], capture_output=True, text=True)
 
         output = result.stdout + result.stderr
 
@@ -65,7 +58,7 @@ class TestAuditScript:
 
     def test_script_structure(self, script_path: Path):
         """Test that script has proper structure."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should have shebang
@@ -76,20 +69,17 @@ class TestAuditScript:
 
     def test_checks_ssh_configuration(self, script_path: Path):
         """Test that audit checks SSH configuration."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
-        ssh_checks = [
-            "ssh" or "SSH",
-            "PermitRootLogin" or "sshd_config"
-        ]
+        ssh_checks = ["ssh" or "SSH", "PermitRootLogin" or "sshd_config"]
 
         found = any(check.lower() in content.lower() for check in ssh_checks)
         assert found, "Should check SSH configuration"
 
     def test_checks_firewall_status(self, script_path: Path):
         """Test that audit checks firewall status."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         firewall_checks = ["ufw", "firewall", "iptables"]
@@ -99,14 +89,14 @@ class TestAuditScript:
 
     def test_checks_kernel_parameters(self, script_path: Path):
         """Test that audit checks kernel parameters."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         assert "sysctl" in content.lower() or "kernel" in content.lower()
 
     def test_has_scoring_logic(self, script_path: Path):
         """Test that audit includes scoring logic."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should calculate scores or counts
@@ -117,7 +107,7 @@ class TestAuditScript:
 
     def test_provides_summary(self, script_path: Path):
         """Test that audit provides summary information."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should have summary section
@@ -125,14 +115,14 @@ class TestAuditScript:
 
     def test_checks_aide_installation(self, script_path: Path):
         """Test that audit checks AIDE installation."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         assert "aide" in content.lower() or "AIDE" in content
 
     def test_checks_automatic_updates(self, script_path: Path):
         """Test that audit checks automatic updates."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         update_indicators = ["update", "unattended", "yum-cron"]
@@ -146,7 +136,7 @@ class TestAuditScoring:
 
     def test_calculates_percentage_score(self, script_path=AUDIT_SCRIPT):
         """Test that audit calculates percentage score."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should calculate percentage (passed/total * 100)
@@ -157,7 +147,7 @@ class TestAuditScoring:
 
     def test_counts_passed_checks(self, script_path=AUDIT_SCRIPT):
         """Test that audit counts passed checks."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should track passed checks
@@ -165,7 +155,7 @@ class TestAuditScoring:
 
     def test_counts_failed_checks(self, script_path=AUDIT_SCRIPT):
         """Test that audit counts failed checks."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should track failed checks
@@ -173,7 +163,7 @@ class TestAuditScoring:
 
     def test_counts_total_checks(self, script_path=AUDIT_SCRIPT):
         """Test that audit counts total checks."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should track total checks
@@ -185,11 +175,7 @@ class TestAuditOutput:
 
     def test_has_header(self, script_path=AUDIT_SCRIPT):
         """Test that audit has formatted header."""
-        result = subprocess.run(
-            ["bash", str(script_path)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", str(script_path)], capture_output=True, text=True)
 
         output = result.stdout + result.stderr
 
@@ -198,7 +184,7 @@ class TestAuditOutput:
 
     def test_uses_status_indicators(self, script_path=AUDIT_SCRIPT):
         """Test that audit uses clear status indicators."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should use visual indicators
@@ -209,7 +195,7 @@ class TestAuditOutput:
 
     def test_has_separator_lines(self, script_path=AUDIT_SCRIPT):
         """Test that audit uses separator lines for readability."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should have visual separators
@@ -224,26 +210,18 @@ class TestAuditCoverage:
 
     def test_checks_multiple_categories(self, script_path=AUDIT_SCRIPT):
         """Test that audit checks multiple security categories."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should check at least 3 major categories
-        categories = [
-            "ssh",
-            "firewall",
-            "kernel",
-            "aide",
-            "update",
-            "selinux",
-            "apparmor"
-        ]
+        categories = ["ssh", "firewall", "kernel", "aide", "update", "selinux", "apparmor"]
 
         found_count = sum(1 for cat in categories if cat in content.lower())
         assert found_count >= 3, f"Should check multiple categories (found {found_count})"
 
     def test_has_minimum_checks(self, script_path=AUDIT_SCRIPT):
         """Test that audit performs minimum number of checks."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Count check patterns (approximate)
@@ -261,7 +239,7 @@ class TestAuditIntegration:
         readme = HARDENING_DIR / "README.md"
         assert readme.exists()
 
-        with open(readme, 'r') as f:
+        with open(readme, "r") as f:
             content = f.read()
 
         assert "audit-security-posture.sh" in content
@@ -270,11 +248,7 @@ class TestAuditIntegration:
     def test_audit_script_independent(self):
         """Test that audit script can run independently."""
         # Script should not require hardening to be run first
-        result = subprocess.run(
-            ["bash", str(AUDIT_SCRIPT)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", str(AUDIT_SCRIPT)], capture_output=True, text=True)
 
         # Should produce output even if hardening not applied
         output = result.stdout + result.stderr
@@ -282,11 +256,7 @@ class TestAuditIntegration:
 
     def test_bash_syntax_valid(self):
         """Test that script has valid bash syntax."""
-        result = subprocess.run(
-            ["bash", "-n", str(AUDIT_SCRIPT)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", "-n", str(AUDIT_SCRIPT)], capture_output=True, text=True)
 
         assert result.returncode == 0, f"Syntax error: {result.stderr}"
 
@@ -296,11 +266,7 @@ class TestAuditOutputFormats:
 
     def test_default_text_output(self, script_path=AUDIT_SCRIPT):
         """Test that audit produces text output by default."""
-        result = subprocess.run(
-            ["bash", str(script_path)],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["bash", str(script_path)], capture_output=True, text=True)
 
         output = result.stdout + result.stderr
 
@@ -312,7 +278,7 @@ class TestAuditOutputFormats:
 
     def test_supports_output_parameter(self, script_path=AUDIT_SCRIPT):
         """Test if audit supports output format parameter."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Check if it supports --output or similar parameter
@@ -329,7 +295,7 @@ class TestAuditRootCheck:
 
     def test_checks_for_root(self, script_path=AUDIT_SCRIPT):
         """Test that audit checks if running as root."""
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         # Should check for root privileges
