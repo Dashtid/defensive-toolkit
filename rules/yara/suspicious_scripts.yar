@@ -63,7 +63,7 @@ rule Suspicious_VBScript
         $createobject and
         (
             ($wscript and ($run or $exec)) or
-            ($xmlhttp and $adodb and $write) or
+            ($xmlhttp and $adodb and ($write or $download)) or
             ($shell_exec and $exec) or
             ($hidden and $run)
         )
