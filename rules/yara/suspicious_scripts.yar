@@ -32,7 +32,7 @@ rule Suspicious_PowerShell_Script
         (
             ($encoded and ($invoke_expression or $base64)) or
             ($hidden and $bypass) or
-            ($download and $invoke_expression) or
+            (($download or $invoke_webrequest) and $invoke_expression) or
             (3 of ($hidden, $bypass, $noprofile, $noninteractive, $reflection, $process_start))
         )
 }
