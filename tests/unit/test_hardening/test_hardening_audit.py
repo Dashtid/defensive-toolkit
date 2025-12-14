@@ -13,8 +13,10 @@ from pathlib import Path
 
 import pytest
 
-# Path to hardening scripts
-HARDENING_DIR = Path(__file__).parent.parent.parent.parent / "hardening" / "linux"
+# Path to hardening scripts (now under src/defensive_toolkit/)
+HARDENING_DIR = (
+    Path(__file__).parent.parent.parent.parent / "src" / "defensive_toolkit" / "hardening" / "linux"
+)
 AUDIT_SCRIPT = HARDENING_DIR / "audit-security-posture.sh"
 
 

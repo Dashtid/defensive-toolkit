@@ -15,8 +15,10 @@ from pathlib import Path
 
 import pytest
 
-# Path to hardening scripts
-HARDENING_DIR = Path(__file__).parent.parent.parent.parent / "hardening" / "linux"
+# Path to hardening scripts (now under src/defensive_toolkit/)
+HARDENING_DIR = (
+    Path(__file__).parent.parent.parent.parent / "src" / "defensive_toolkit" / "hardening" / "linux"
+)
 BACKUP_SCRIPT = HARDENING_DIR / "backup-security-settings.sh"
 RESTORE_SCRIPT = HARDENING_DIR / "restore-security-settings.sh"
 
