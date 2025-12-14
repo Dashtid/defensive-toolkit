@@ -1,7 +1,7 @@
 """Compliance API Router"""
 
-from api.dependencies import get_current_active_user
-from api.models import ComplianceCheckRequest, ComplianceReport
+from defensive_toolkit.api.dependencies import get_current_active_user
+from defensive_toolkit.api.models import ComplianceCheckRequest, ComplianceReport
 from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/compliance", tags=["Compliance"])

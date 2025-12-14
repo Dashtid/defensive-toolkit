@@ -9,8 +9,8 @@ import os
 import uuid
 from datetime import datetime
 
-from api.dependencies import get_current_active_user, require_write_scope
-from api.models import APIResponse, DeployRuleRequest, DetectionRule, DetectionRuleList, StatusEnum
+from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
+from defensive_toolkit.api.models import APIResponse, DeployRuleRequest, DetectionRule, DetectionRuleList, StatusEnum
 from fastapi import APIRouter, Depends, HTTPException, status
 
 router = APIRouter(prefix="/detection", tags=["Detection Rules"])

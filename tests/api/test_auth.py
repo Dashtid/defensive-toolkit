@@ -5,8 +5,8 @@ Tests for JWT authentication, token refresh, and API key authentication.
 """
 
 import pytest
-from api.auth import create_token_pair, get_password_hash
-from api.main import app
+from defensive_toolkit.api.auth import create_token_pair, get_password_hash
+from defensive_toolkit.api.main import app
 from fastapi.testclient import TestClient
 
 client = TestClient(app)

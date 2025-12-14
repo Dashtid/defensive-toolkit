@@ -2,8 +2,8 @@
 
 import uuid
 
-from api.dependencies import get_current_active_user
-from api.models import LogAnalysisRequest, LogAnalysisResult
+from defensive_toolkit.api.dependencies import get_current_active_user
+from defensive_toolkit.api.models import LogAnalysisRequest, LogAnalysisResult
 from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/log-analysis", tags=["Log Analysis"])

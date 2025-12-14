@@ -2,8 +2,8 @@
 
 import random
 
-from api.dependencies import get_current_active_user, require_write_scope
-from api.models import AlertConfiguration, APIResponse, MonitoringMetrics, StatusEnum
+from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
+from defensive_toolkit.api.models import AlertConfiguration, APIResponse, MonitoringMetrics, StatusEnum
 from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/monitoring", tags=["Monitoring"])

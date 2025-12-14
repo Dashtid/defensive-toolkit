@@ -21,9 +21,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set
 
-from api.auth import verify_token
-from api.config import get_settings
-from api.models import (
+from defensive_toolkit.api.auth import verify_token
+from defensive_toolkit.api.config import get_settings
+from defensive_toolkit.api.models import (
     AlertEvent,
     ApprovalRequestEvent,
     IncidentEvent,

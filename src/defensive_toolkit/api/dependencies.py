@@ -4,7 +4,7 @@ FastAPI Dependencies
 Common dependencies used across API routers.
 """
 
-from api.auth import get_current_active_user
+from defensive_toolkit.api.auth import get_current_active_user
 from fastapi import Depends, HTTPException, status
 
 

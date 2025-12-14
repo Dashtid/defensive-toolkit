@@ -19,8 +19,8 @@ from datetime import datetime, timedelta
 from ipaddress import ip_address, ip_network
 from typing import Any, Dict, List, Optional
 
-from api.dependencies import get_current_active_user, require_write_scope
-from api.models import (
+from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
+from defensive_toolkit.api.models import (
     APIResponse,
     IncomingAlert,
     RunbookExecuteRequest,

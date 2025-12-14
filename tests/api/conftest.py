@@ -12,7 +12,7 @@ import pytest
 # Disable rate limiting for tests before importing any API modules
 os.environ["RATE_LIMIT_ENABLED"] = "false"
 
-from api.main import app
+from defensive_toolkit.api.main import app
 from fastapi.testclient import TestClient
 
 

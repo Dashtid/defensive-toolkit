@@ -7,7 +7,7 @@ Comprehensive tests for scheduled job management, execution, and scheduler opera
 from datetime import datetime, timedelta
 
 import pytest
-from api.main import app
+from defensive_toolkit.api.main import app
 from fastapi.testclient import TestClient
 
 client = TestClient(app)

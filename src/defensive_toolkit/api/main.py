@@ -7,16 +7,16 @@ Main FastAPI application with all routers and middleware.
 import logging
 from contextlib import asynccontextmanager
 
-from api.auth import (
+from defensive_toolkit.api.auth import (
     authenticate_user,
     create_token_pair,
     generate_api_key,
     get_current_active_user,
     verify_token,
 )
-from api.config import get_settings
-from api.middleware import general_exception_handler, setup_middleware
-from api.models import (
+from defensive_toolkit.api.config import get_settings
+from defensive_toolkit.api.middleware import general_exception_handler, setup_middleware
+from defensive_toolkit.api.models import (
     APIResponse,
     HealthCheckResponse,
     RefreshTokenRequest,
@@ -25,7 +25,7 @@ from api.models import (
 )
 
 # Import all routers
-from api.routers import (
+from defensive_toolkit.api.routers import (
     assets,
     automation,
     compliance,

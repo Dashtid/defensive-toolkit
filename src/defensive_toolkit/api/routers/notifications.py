@@ -28,8 +28,8 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from api.auth import get_current_active_user
-from api.models import (
+from defensive_toolkit.api.auth import get_current_active_user
+from defensive_toolkit.api.models import (
     ActiveEscalation,
     # Bulk Operations
     BulkNotificationRequest,

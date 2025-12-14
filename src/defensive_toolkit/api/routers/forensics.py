@@ -2,8 +2,8 @@
 
 import uuid
 
-from api.dependencies import get_current_active_user
-from api.models import ForensicsAnalysisRequest, ForensicsAnalysisResult
+from defensive_toolkit.api.dependencies import get_current_active_user
+from defensive_toolkit.api.models import ForensicsAnalysisRequest, ForensicsAnalysisResult
 from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/forensics", tags=["Forensics"])

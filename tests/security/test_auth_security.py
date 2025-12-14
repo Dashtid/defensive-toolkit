@@ -3,7 +3,7 @@
 import time
 
 import pytest
-from api.main import app
+from defensive_toolkit.api.main import app
 from fastapi.testclient import TestClient
 
 client = TestClient(app)

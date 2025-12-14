@@ -21,8 +21,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
-from api.dependencies import get_current_active_user, require_write_scope
-from api.models import (
+from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
+from defensive_toolkit.api.models import (
     APIResponse,
     BulkEnrichmentResponse,
     GeoIPData,

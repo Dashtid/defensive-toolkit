@@ -17,7 +17,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Callable, Dict
 
-from api.config import get_settings
+from defensive_toolkit.api.config import get_settings
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
