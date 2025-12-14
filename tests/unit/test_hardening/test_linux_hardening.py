@@ -18,7 +18,13 @@ from pathlib import Path
 import pytest
 
 # Path to hardening scripts
-HARDENING_DIR = Path(__file__).parent.parent.parent.parent / "src" / "defensive_toolkit" / "hardening" / "linux"
+HARDENING_DIR = (
+    Path(__file__).parent.parent.parent.parent
+    / "src"
+    / "defensive_toolkit"
+    / "hardening"
+    / "linux"
+)
 UBUNTU_SCRIPT = HARDENING_DIR / "harden-ubuntu.sh"
 
 

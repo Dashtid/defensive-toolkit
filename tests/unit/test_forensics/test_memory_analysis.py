@@ -368,7 +368,9 @@ class TestReportGeneration:
 
 
 # [+] Integration tests
-@pytest.mark.skip(reason="Tests for API methods not yet implemented (analyze_processes, malware_hunt, etc.)")
+@pytest.mark.skip(
+    reason="Tests for API methods not yet implemented (analyze_processes, malware_hunt, etc.)"
+)
 @pytest.mark.integration
 class TestVolatilityIntegration:
     """Integration tests for Volatility analysis"""
