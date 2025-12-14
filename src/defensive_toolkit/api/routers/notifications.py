@@ -28,6 +28,9 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
+from fastapi.responses import JSONResponse
+
 from defensive_toolkit.api.auth import get_current_active_user
 from defensive_toolkit.api.models import (
     ActiveEscalation,
@@ -87,8 +90,6 @@ from defensive_toolkit.api.models import (
     TemplateRenderRequest,
     TemplateRenderResponse,
 )
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
-from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 

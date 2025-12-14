@@ -13,12 +13,13 @@ import secrets
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from defensive_toolkit.api.config import get_settings
-from defensive_toolkit.api.models import Token, TokenData
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+
+from defensive_toolkit.api.config import get_settings
+from defensive_toolkit.api.models import Token, TokenData
 
 settings = get_settings()
 

@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set
 
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
+
 from defensive_toolkit.api.auth import verify_token
 from defensive_toolkit.api.config import get_settings
 from defensive_toolkit.api.models import (
@@ -48,7 +50,6 @@ from defensive_toolkit.api.models import (
     WebSocketHeartbeat,
     WebSocketMessage,
 )
-from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

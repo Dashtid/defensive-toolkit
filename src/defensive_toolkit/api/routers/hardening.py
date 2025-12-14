@@ -1,8 +1,14 @@
 """Hardening API Router"""
 
-from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
-from defensive_toolkit.api.models import APIResponse, HardeningResult, HardeningScanRequest, StatusEnum
 from fastapi import APIRouter, Depends
+
+from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
+from defensive_toolkit.api.models import (
+    APIResponse,
+    HardeningResult,
+    HardeningScanRequest,
+    StatusEnum,
+)
 
 router = APIRouter(prefix="/hardening", tags=["Hardening"])
 

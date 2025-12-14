@@ -23,6 +23,8 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from fastapi import APIRouter, Body, File, HTTPException, Query, UploadFile
+
 from defensive_toolkit.api.models import (
     Asset,
     # Activity Models
@@ -79,7 +81,6 @@ from defensive_toolkit.api.models import (
     TopologyNode,
     TopologyQuery,
 )
-from fastapi import APIRouter, Body, File, HTTPException, Query, UploadFile
 
 logger = logging.getLogger(__name__)
 

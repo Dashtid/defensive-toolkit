@@ -3,9 +3,10 @@
 import uuid
 from datetime import datetime
 
+from fastapi import APIRouter, Depends
+
 from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
 from defensive_toolkit.api.models import AutomationExecutionStatus, AutomationPlaybook, StatusEnum
-from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/automation", tags=["Automation"])
 

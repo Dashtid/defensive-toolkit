@@ -17,6 +17,9 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
+
 from defensive_toolkit.api.auth import get_current_active_user
 from defensive_toolkit.api.models import (
     APIResponse,
@@ -69,8 +72,6 @@ from defensive_toolkit.api.models import (
     WidgetTypeEnum,
     WidgetUpdate,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
 

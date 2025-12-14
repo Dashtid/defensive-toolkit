@@ -17,11 +17,12 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Callable, Dict
 
-from defensive_toolkit.api.config import get_settings
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
+
+from defensive_toolkit.api.config import get_settings
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

@@ -22,6 +22,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Type
 
 import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
 from defensive_toolkit.api.auth import get_current_active_user
 from defensive_toolkit.api.config import get_settings
 from defensive_toolkit.api.models import (
@@ -49,7 +51,6 @@ from defensive_toolkit.api.models import (
     SIEMRuleListResponse,
     StatusEnum,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

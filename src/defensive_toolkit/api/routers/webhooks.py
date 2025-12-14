@@ -19,6 +19,17 @@ from datetime import datetime, timedelta
 from ipaddress import ip_address, ip_network
 from typing import Any, Dict, List, Optional
 
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
+
 from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
 from defensive_toolkit.api.models import (
     APIResponse,
@@ -35,16 +46,6 @@ from defensive_toolkit.api.models import (
     WebhookTestResult,
     WebhookTriggerResult,
     WebhookTriggerRule,
-)
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Depends,
-    Header,
-    HTTPException,
-    Query,
-    Request,
-    status,
 )
 
 # Configure logging

@@ -1,8 +1,9 @@
 """Threat Hunting API Router"""
 
+from fastapi import APIRouter, Depends
+
 from defensive_toolkit.api.dependencies import get_current_active_user
 from defensive_toolkit.api.models import ThreatHuntQuery, ThreatHuntResult
-from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/threat-hunting", tags=["Threat Hunting"])
 

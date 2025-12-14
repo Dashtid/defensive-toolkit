@@ -7,6 +7,11 @@ Main FastAPI application with all routers and middleware.
 import logging
 from contextlib import asynccontextmanager
 
+from fastapi import Depends, FastAPI, status
+from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from prometheus_fastapi_instrumentator import Instrumentator
+
 from defensive_toolkit.api.auth import (
     authenticate_user,
     create_token_pair,
@@ -46,10 +51,6 @@ from defensive_toolkit.api.routers import (
     webhooks,
     websocket,
 )
-from fastapi import Depends, FastAPI, status
-from fastapi.responses import JSONResponse
-from fastapi.security import OAuth2PasswordRequestForm
-from prometheus_fastapi_instrumentator import Instrumentator
 
 settings = get_settings()
 

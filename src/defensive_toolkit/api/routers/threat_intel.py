@@ -21,6 +21,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+
 from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
 from defensive_toolkit.api.models import (
     APIResponse,
@@ -40,7 +42,6 @@ from defensive_toolkit.api.models import (
     ThreatIntelSourceStatus,
     ThreatIntelStats,
 )
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
 # Configure logging
 logger = logging.getLogger(__name__)
