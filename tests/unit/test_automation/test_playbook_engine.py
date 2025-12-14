@@ -14,7 +14,7 @@ import yaml
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from automation.playbooks.playbook_engine import PlaybookEngine
+from defensive_toolkit.automation.playbooks.playbook_engine import PlaybookEngine
 
 
 class TestPlaybookEngine:

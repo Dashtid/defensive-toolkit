@@ -12,7 +12,7 @@ import pytest
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from automation.actions.enrichment import (
+from defensive_toolkit.automation.actions.enrichment import (
     _check_abuseipdb,
     _check_virustotal,
     enrich_ioc,

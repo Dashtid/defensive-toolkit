@@ -13,7 +13,7 @@ import pytest
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from log_analysis.analysis.anomaly_detector import AnomalyDetector
+from defensive_toolkit.log_analysis.analysis.anomaly_detector import AnomalyDetector
 
 
 class TestAnomalyDetectorInit:

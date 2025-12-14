@@ -12,7 +12,7 @@ import pytest
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from automation.actions.containment import (
+from defensive_toolkit.automation.actions.containment import (
     block_ip,
     disable_user_account,
     isolate_host,

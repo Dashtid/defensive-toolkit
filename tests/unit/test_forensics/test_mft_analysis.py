@@ -15,7 +15,7 @@ import pytest
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from forensics.disk.extract_mft import MFTAnalyzer
+from defensive_toolkit.forensics.disk.extract_mft import MFTAnalyzer
 
 
 class TestMFTAnalyzerInit:

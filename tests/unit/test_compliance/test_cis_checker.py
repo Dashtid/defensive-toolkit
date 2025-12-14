@@ -13,7 +13,7 @@ import pytest
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from compliance.frameworks.cis_checker import CISChecker
+from defensive_toolkit.compliance.frameworks.cis_checker import CISChecker
 
 
 class TestCISChecker:
