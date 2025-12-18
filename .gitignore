@@ -110,3 +110,7 @@ config.local.json
 *.img
 *.e01
 *.aff
+
+# Rust build artifacts
+target/
+Cargo.lock
