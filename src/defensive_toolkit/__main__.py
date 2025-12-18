@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 """
-Quick Start Script for Defensive Toolkit API
+Defensive Toolkit CLI Entry Point
 
-This script starts the FastAPI server with default settings.
+Run with: python -m defensive_toolkit
+Or after installation: defensive-toolkit
+
 For production deployment, see docs/API.md
 """
 
-import os
-import sys
 
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-if __name__ == "__main__":
+def main():
+    """Main entry point for the defensive toolkit API server."""
     import uvicorn
-    from api.config import get_settings
+
+    from defensive_toolkit.api.config import get_settings
 
     settings = get_settings()
 
@@ -33,9 +32,13 @@ if __name__ == "__main__":
     print("=" * 70)
 
     uvicorn.run(
-        "api.main:app",
+        "defensive_toolkit.api.main:app",
         host=settings.api_host,
         port=settings.api_port,
         reload=settings.debug,
         log_level=settings.log_level.lower(),
     )
+
+
+if __name__ == "__main__":
+    main()

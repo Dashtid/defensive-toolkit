@@ -83,10 +83,8 @@ Documentation = "https://github.com/Dashtid/defensive-toolkit/blob/main/docs/REA
 Changelog = "https://github.com/Dashtid/defensive-toolkit/blob/main/docs/CHANGELOG.md"
 
 [project.scripts]
-# CLI entry points for utility scripts
-toolkit-cleanup = "tools.scripts.cleanup:main"
-toolkit-validate = "tools.scripts.validate_project:main"
-toolkit-gendocs = "tools.scripts.generate_docs:main"
+# Main CLI entry point
+defensive-toolkit = "defensive_toolkit.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -98,6 +96,7 @@ packages = ["src/defensive_toolkit"]
 [tool.hatch.build.targets.sdist]
 include = [
     "/src",
+    "/rust",
     "/tools",
     "/rules",
     "/playbooks",
@@ -112,11 +111,13 @@ dev = [
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.24.0",
     "pytest-xdist>=3.6.0",
+    "pytest-benchmark>=5.1.0",
     "bandit>=1.8.0",
     "black>=24.10.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
     "coverage[toml]>=7.6.0",
+    "maturin>=1.4.0",
 ]
 
 [tool.uv]

@@ -1,14 +1,14 @@
 [workspace]
 resolver = "2"
 members = [
-    "tools/cleanup",
+    "cleanup",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/yourusername/defensive-toolkit"
+repository = "https://github.com/Dashtid/defensive-toolkit"
 
 [workspace.dependencies]
 # Shared dependencies across Rust tools
