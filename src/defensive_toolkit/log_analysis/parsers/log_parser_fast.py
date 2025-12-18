@@ -255,15 +255,11 @@ class LogParser:
         file_path = Path(file_path)
 
         if self._use_rust:
-            results = self._rust_parser.parse_file_parallel(
-                str(file_path), max_lines, chunk_size
-            )
+            results = self._rust_parser.parse_file_parallel(str(file_path), max_lines, chunk_size)
             return [LogEntry.from_rust(r) for r in results]
         else:
             # Fallback to sequential parsing
-            logger.warning(
-                "[!] Parallel parsing requires Rust backend. Using sequential parsing."
-            )
+            logger.warning("[!] Parallel parsing requires Rust backend. Using sequential parsing.")
             return self.parse_file(file_path, max_lines)
 
     def parse_lines_parallel(self, lines: List[str]) -> List[LogEntry]:
