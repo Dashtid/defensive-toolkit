@@ -31,6 +31,12 @@ from fastapi import (
 )
 
 from defensive_toolkit.api.dependencies import get_current_active_user, require_write_scope
+from defensive_toolkit.api.metrics import (
+    record_signature_verification,
+    record_webhook_rate_limited,
+    record_webhook_trigger,
+)
+from defensive_toolkit.api.validation import check_payload_size
 from defensive_toolkit.api.models import (
     APIResponse,
     IncomingAlert,
@@ -546,6 +552,9 @@ async def trigger_webhook(
     # Get raw body for signature verification
     body = await request.body()
 
+    # Validate payload size (default 10MB)
+    check_payload_size(body)
+
     # Verify signature if configured
     signature = x_signature or x_hub_signature or x_wazuh_signature
     if config.secret_key:
@@ -557,10 +566,12 @@ async def trigger_webhook(
 
         if not _verify_signature(body, signature, config.secret_key):
             _update_stats(webhook_id, received=True, error=True)
+            record_signature_verification(webhook_id, "sha256", success=False)
             logger.warning(f"[!] Webhook {webhook_id}: Invalid signature")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid signature"
             )
+        record_signature_verification(webhook_id, "sha256", success=True)
 
     # Parse JSON payload
     try:
@@ -600,6 +611,8 @@ async def trigger_webhook(
                 break
             else:
                 _update_stats(webhook_id, skipped=True)
+                record_webhook_rate_limited(webhook_id, rule.rule_id, "cooldown_or_hourly")
+                record_webhook_trigger(webhook_id, config.source.value, "rate_limited")
                 return WebhookTriggerResult(
                     webhook_id=webhook_id,
                     alert_id=alert.alert_id,
@@ -690,6 +703,13 @@ async def trigger_webhook(
         )
 
         _update_stats(webhook_id, processed=True, triggered=True)
+        record_webhook_trigger(
+            webhook_id,
+            config.source.value,
+            "triggered",
+            rule_id=matched_rule.rule_id if matched_rule else None,
+            runbook_id=runbook_id,
+        )
 
         logger.info(
             f"[+] Webhook {webhook_id}: Triggered runbook {runbook_id} "
@@ -711,6 +731,7 @@ async def trigger_webhook(
 
     except Exception as e:
         _update_stats(webhook_id, processed=True, error=True)
+        record_webhook_trigger(webhook_id, config.source.value, "error")
         logger.error(f"[-] Webhook {webhook_id}: Runbook execution failed: {e}")
         return WebhookTriggerResult(
             webhook_id=webhook_id,

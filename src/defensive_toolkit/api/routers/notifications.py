@@ -32,6 +32,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from fastapi.responses import JSONResponse
 
 from defensive_toolkit.api.auth import get_current_active_user
+from defensive_toolkit.api.validation import validate_url_or_raise_http
 from defensive_toolkit.api.models import (
     ActiveEscalation,
     # Bulk Operations
@@ -543,6 +544,13 @@ async def create_channel(
     current_user: str = Depends(get_current_active_user),
 ):
     """Create a new notification channel."""
+    # Validate webhook URLs for applicable channel types
+    webhook_channel_types = {"webhook", "slack", "teams", "discord", "pagerduty", "opsgenie"}
+    if request.channel_type.value in webhook_channel_types:
+        url_field = request.config.get("webhook_url") or request.config.get("url")
+        if url_field:
+            validate_url_or_raise_http(url_field)
+
     now = datetime.utcnow()
     channel_id = generate_channel_id()
 
@@ -607,6 +615,12 @@ async def update_channel(
     if request.rate_limit_per_hour is not None:
         channel["rate_limit_per_hour"] = request.rate_limit_per_hour
     if request.config is not None:
+        # Validate webhook URLs for applicable channel types
+        webhook_channel_types = {"webhook", "slack", "teams", "discord", "pagerduty", "opsgenie"}
+        if channel.get("channel_type") in webhook_channel_types:
+            url_field = request.config.get("webhook_url") or request.config.get("url")
+            if url_field:
+                validate_url_or_raise_http(url_field)
         channel["config"] = request.config
 
     channel["updated_at"] = datetime.utcnow().isoformat()
