@@ -228,6 +228,36 @@ Organizations can now:
 
 ---
 
+## Recent Enhancements (v1.2.0)
+
+### CI/CD Security Pipeline
+- [✓] **Dependency Scanning**: pip-audit for Python vulnerabilities
+- [✓] **Secret Detection**: gitleaks pre-commit scanning
+- [✓] **SAST Analysis**: Semgrep with OWASP Top 10 rules
+- [✓] **SBOM Generation**: Syft for SPDX/CycloneDX output
+- [✓] **Container Signing**: Cosign keyless signing with OIDC
+- [✓] **Release Automation**: Release Please for semantic versioning
+
+### Kubernetes Deployment
+- [✓] **Kustomize Manifests**: Production-ready K8s configs (`infra/kubernetes/`)
+- [✓] **Helm Chart**: Parameterized deployment (`infra/helm/defensive-toolkit/`)
+- [✓] **Health Probes**: Liveness and readiness endpoints
+- [✓] **HPA/PDB**: Auto-scaling and disruption budgets
+
+### API Enhancements
+- [✓] **Redis Rate Limiting**: Distributed sliding window algorithm
+- [✓] **Per-User Limits**: Separate rate buckets for authenticated users
+- [✓] **Webhook Retry Service**: Exponential backoff with circuit breaker
+- [✓] **Dead Letter Queue**: Failed delivery tracking and replay
+- [✓] **Custom Prometheus Metrics**: Business-level observability
+- [✓] **Input Validation**: URL validation, payload size limits
+- [✓] **Enhanced Health Checks**: Component status, system resources
+
+### Documentation
+- [✓] **API Authentication Guide**: JWT, API keys, RBAC (`docs/API_AUTHENTICATION.md`)
+
+---
+
 ## Repository Health
 
 ### Strengths
@@ -241,15 +271,18 @@ Organizations can now:
 - [✓] Clear ethical boundaries
 - [✓] Integration-ready (SIEM, SOAR, ticketing)
 - [✓] Comprehensive example workflows
+- [✓] Kubernetes-ready with Helm chart
+- [✓] Prometheus metrics for observability
+- [✓] Redis support for distributed deployments
 
 ### Future Opportunities
 - [ ] Cloud environment expansion (AWS, Azure, GCP specific tools)
-- [ ] Container orchestration (Kubernetes threat hunting)
+- [✓] Container orchestration (Kubernetes deployment ready)
 - [ ] Additional Snort/Suricata network rules
 - [ ] Machine learning anomaly models
 - [ ] Mobile device forensics
 - [ ] Community-contributed content
-- [ ] API-first architecture expansion
+- [✓] API-first architecture (REST API with full OpenAPI docs)
 
 ---
 

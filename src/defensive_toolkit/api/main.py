@@ -20,6 +20,12 @@ from defensive_toolkit.api.auth import (
     verify_token,
 )
 from defensive_toolkit.api.config import get_settings
+from defensive_toolkit.api.health import (
+    perform_health_check,
+    perform_liveness_check,
+    perform_readiness_check,
+    set_start_time,
+)
 from defensive_toolkit.api.middleware import general_exception_handler, setup_middleware
 from defensive_toolkit.api.models import (
     APIResponse,
@@ -69,6 +75,7 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown events.
     """
     # Startup
+    set_start_time()
     logger.info("Starting Defensive Toolkit API...")
     logger.info(f"Version: {settings.app_version}")
     logger.info(f"Debug mode: {settings.debug}")
@@ -123,17 +130,48 @@ async def root():
     }
 
 
-@app.get("/health", response_model=HealthCheckResponse, tags=["Health"])
-async def health_check():
-    """Health check endpoint for monitoring."""
-    return HealthCheckResponse(
-        version=settings.app_version,
-        services={
-            "api": "healthy",
-            "authentication": "healthy",
-            "rate_limiting": "healthy" if settings.rate_limit_enabled else "disabled",
-        },
+@app.get("/health", tags=["Health"])
+async def health_check(
+    detailed: bool = True,
+    include_system: bool = False,
+):
+    """
+    Comprehensive health check endpoint.
+
+    Args:
+        detailed: Include detailed component information
+        include_system: Include system resource checks (memory, disk)
+
+    Returns:
+        Health status of all components
+    """
+    result = await perform_health_check(
+        include_system=include_system,
+        include_details=detailed,
     )
+    return result.to_dict()
+
+
+@app.get("/health/live", tags=["Health"])
+async def liveness_check():
+    """
+    Kubernetes liveness probe endpoint.
+
+    Returns minimal response to indicate the process is alive.
+    Use for Kubernetes livenessProbe configuration.
+    """
+    return await perform_liveness_check()
+
+
+@app.get("/health/ready", tags=["Health"])
+async def readiness_check():
+    """
+    Kubernetes readiness probe endpoint.
+
+    Checks if the application is ready to receive traffic.
+    Use for Kubernetes readinessProbe configuration.
+    """
+    return await perform_readiness_check()
 
 
 # ============================================================================
