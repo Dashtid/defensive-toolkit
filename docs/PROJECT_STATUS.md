@@ -209,7 +209,7 @@ Organizations can now:
 ## Technology Stack
 
 ### Languages
-- Python 3.8+ (primary automation language)
+- Python 3.10+ (primary automation language)
 - PowerShell 7+ (Windows automation)
 - Bash (Linux automation)
 - YAML (configurations, playbooks, policies)

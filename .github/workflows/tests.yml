@@ -105,6 +105,21 @@ jobs:
         name: bandit-security-report
         path: bandit-report.json
 
+    - name: Run pip-audit for dependency vulnerabilities
+      continue-on-error: true
+      run: |
+        uv pip install pip-audit
+        uv run pip-audit --format json --output pip-audit-report.json || true
+        uv run pip-audit --format screen || true
+        echo "[OK] pip-audit scan completed (findings are informational)"
+
+    - name: Upload pip-audit report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: pip-audit-report
+        path: pip-audit-report.json
+
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
@@ -138,10 +153,27 @@ jobs:
       run: |
         uv run mypy . || echo "Type checking has issues (non-blocking)"
 
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for comprehensive scan
+
+    - name: Run gitleaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+        GITLEAKS_ENABLE_SUMMARY: true
+
   test-matrix-summary:
     name: Test Results Summary
     runs-on: ubuntu-latest
-    needs: [test, security-lint, code-quality]
+    needs: [test, security-lint, code-quality, secret-scanning]
     if: always()
 
     steps:
@@ -150,14 +182,18 @@ jobs:
         echo "[+] Test Suite: ${{ needs.test.result }}"
         echo "[+] Security Lint: ${{ needs.security-lint.result }}"
         echo "[+] Code Quality: ${{ needs.code-quality.result }}"
+        echo "[+] Secret Scanning: ${{ needs.secret-scanning.result }}"
 
         # Only fail on test suite or code quality failures
-        # Security lint is informational only
+        # Security lint and secret scanning are informational only
         if [[ "${{ needs.test.result }}" == "failure" ]]; then
           echo "[X] Test suite failed!"
           exit 1
         elif [[ "${{ needs.code-quality.result }}" == "failure" ]]; then
           echo "[X] Code quality checks failed!"
+          exit 1
+        elif [[ "${{ needs.secret-scanning.result }}" == "failure" ]]; then
+          echo "[!] Secret scanning found issues - review required!"
           exit 1
         else
           echo "[OK] All required checks passed!"
