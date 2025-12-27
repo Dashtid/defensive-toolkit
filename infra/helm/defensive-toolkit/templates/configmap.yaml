@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "defensive-toolkit.configMapName" . }}
+  labels:
+    {{- include "defensive-toolkit.labels" . | nindent 4 }}
+data:
+  # Application Settings
+  DEBUG: {{ .Values.config.debug | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  LOG_FORMAT: {{ .Values.config.logFormat | quote }}
+  API_PREFIX: {{ .Values.config.apiPrefix | quote }}
+
+  # Rate Limiting
+  RATE_LIMIT_ENABLED: {{ .Values.config.rateLimitEnabled | quote }}
+  RATE_LIMIT_DEFAULT: {{ .Values.config.rateLimitDefault | quote }}
+  RATE_LIMIT_AUTH: {{ .Values.config.rateLimitAuth | quote }}
+  RATE_LIMIT_HEAVY: {{ .Values.config.rateLimitHeavy | quote }}
+  RATE_LIMIT_BY_USER: {{ .Values.config.rateLimitByUser | quote }}
+  RATE_LIMIT_BURST_MULTIPLIER: {{ .Values.config.rateLimitBurstMultiplier | quote }}
+
+  # CORS
+  CORS_ORIGINS: {{ .Values.config.corsOrigins | quote }}
+
+  # Feature Flags
+  ENABLE_SWAGGER_UI: {{ .Values.config.enableSwaggerUI | quote }}
+  ENABLE_REDOC: {{ .Values.config.enableRedoc | quote }}
+  REQUIRE_AUTHENTICATION: {{ .Values.config.requireAuthentication | quote }}

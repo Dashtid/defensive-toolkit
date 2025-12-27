@@ -1,0 +1,57 @@
+Defensive Toolkit has been deployed!
+
+1. Get the application URL:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "defensive-toolkit.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "defensive-toolkit.fullname" . }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "defensive-toolkit.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.service.port }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "defensive-toolkit.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. API Documentation:
+{{- if .Values.config.enableSwaggerUI }}
+   - Swagger UI: {{ .Values.config.apiPrefix }}/docs
+{{- end }}
+{{- if .Values.config.enableRedoc }}
+   - ReDoc: {{ .Values.config.apiPrefix }}/redoc
+{{- end }}
+
+3. Health Check:
+   - Endpoint: /health
+
+{{- if .Values.redis.enabled }}
+
+4. Redis Configuration:
+   - Host: {{ include "defensive-toolkit.redisHost" . }}
+   - Port: {{ .Values.redis.port }}
+   - Distributed rate limiting: ENABLED
+{{- else }}
+
+4. Rate Limiting:
+   - Using in-memory rate limiting (not distributed)
+   - For distributed deployments, enable Redis in values.yaml
+{{- end }}
+
+{{- if not .Values.secrets.create }}
+
+[!] IMPORTANT: You need to create a secret named "{{ include "defensive-toolkit.secretName" . }}" with:
+    - SECRET_KEY: Your JWT secret key
+    - VALID_API_KEYS: Comma-separated API keys (optional)
+{{- end }}
+
+For more information, visit: https://github.com/dashtid/defensive-toolkit

@@ -1,0 +1,34 @@
+# Defensive Toolkit Helm Chart
+# Parameterized Kubernetes deployment for the Defensive Toolkit API
+
+apiVersion: v2
+name: defensive-toolkit
+description: A Helm chart for deploying the Defensive Toolkit API - comprehensive blue team security platform
+type: application
+
+# Chart version - increment on chart changes
+version: 0.1.0
+
+# App version - matches the application release
+appVersion: "1.2.0"
+
+keywords:
+  - security
+  - blue-team
+  - defensive
+  - siem
+  - threat-detection
+  - incident-response
+
+home: https://github.com/dashtid/defensive-toolkit
+sources:
+  - https://github.com/dashtid/defensive-toolkit
+
+maintainers:
+  - name: David Dashti
+    email: david.dashti@example.com
+
+dependencies: []
+
+annotations:
+  category: Security
