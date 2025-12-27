@@ -15,7 +15,7 @@ import logging
 import time
 from collections import defaultdict
 from datetime import datetime
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
@@ -27,6 +27,15 @@ from defensive_toolkit.api.config import get_settings
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
+# Optional Redis import
+try:
+    import redis
+
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    logger.info("Redis not installed - using in-memory rate limiting")
+
 
 # ============================================================================
 # Rate Limiting Middleware
@@ -35,10 +44,14 @@ logger = logging.getLogger(__name__)
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
-    In-memory rate limiting middleware.
+    Rate limiting middleware with Redis and in-memory backends.
 
-    For production with multiple instances, use Redis-backed rate limiting
-    via slowapi or fastapi-limiter libraries.
+    Features:
+    - Sliding window algorithm for accurate limiting
+    - Per-user limits for authenticated requests
+    - Redis backend for distributed deployments
+    - Automatic fallback to in-memory if Redis unavailable
+    - Burst allowance above base limit
 
     Rate limit format: "requests/period"
     Examples: "100/minute", "1000/hour", "10000/day"
@@ -48,6 +61,29 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.default_limit = default_limit
         self.requests: Dict[str, list] = defaultdict(list)
+        self.redis_client: Optional[object] = None
+        self._init_redis()
+
+    def _init_redis(self):
+        """Initialize Redis client if enabled and available."""
+        if settings.redis_enabled and REDIS_AVAILABLE:
+            try:
+                self.redis_client = redis.Redis(
+                    host=settings.redis_host,
+                    port=settings.redis_port,
+                    db=settings.redis_db,
+                    password=settings.redis_password or None,
+                    ssl=settings.redis_ssl,
+                    decode_responses=True,
+                    socket_timeout=1.0,
+                    socket_connect_timeout=1.0,
+                )
+                # Test connection
+                self.redis_client.ping()
+                logger.info("Redis rate limiting enabled")
+            except Exception as e:
+                logger.warning(f"Redis connection failed, using in-memory: {e}")
+                self.redis_client = None
 
     def parse_limit(self, limit: str) -> tuple:
         """
@@ -73,7 +109,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return count, period_seconds
 
         except (ValueError, KeyError):
-            # Default to 100/minute if parsing fails
             logger.warning(f"Invalid rate limit format: {limit}, using default")
             return 100, 60
 
@@ -81,18 +116,99 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """
         Get unique client identifier.
 
-        Uses X-Forwarded-For if behind proxy, otherwise client IP.
+        For authenticated requests with per-user limiting enabled,
+        extracts user ID from the request state (set by auth middleware).
+        Otherwise uses IP address.
 
         Args:
             request: FastAPI request
 
         Returns:
-            str: Client identifier
+            str: Client identifier (user:ID or ip:ADDRESS)
         """
+        # Check for authenticated user (set by auth dependency)
+        if settings.rate_limit_by_user:
+            user = getattr(request.state, "user", None)
+            if user and hasattr(user, "id"):
+                return f"user:{user.id}"
+            # Also check for user_id in state
+            user_id = getattr(request.state, "user_id", None)
+            if user_id:
+                return f"user:{user_id}"
+
+        # Fall back to IP-based limiting
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
-            return forwarded.split(",")[0].strip()
-        return request.client.host
+            ip = forwarded.split(",")[0].strip()
+        else:
+            ip = request.client.host if request.client else "unknown"
+
+        return f"ip:{ip}"
+
+    def _check_redis(self, key: str, max_requests: int, window: int) -> tuple:
+        """
+        Check rate limit using Redis sliding window.
+
+        Args:
+            key: Rate limit key
+            max_requests: Maximum requests allowed
+            window: Time window in seconds
+
+        Returns:
+            tuple: (is_allowed, current_count, retry_after)
+        """
+        now = time.time()
+        window_start = now - window
+
+        pipe = self.redis_client.pipeline()
+        pipe.zremrangebyscore(key, 0, window_start)  # Remove old entries
+        pipe.zcard(key)  # Count current entries
+        pipe.zadd(key, {str(now): now})  # Add current request
+        pipe.expire(key, window + 1)  # Set expiry
+
+        try:
+            results = pipe.execute()
+            current_count = results[1]
+
+            if current_count >= max_requests:
+                # Get oldest timestamp to calculate retry_after
+                oldest = self.redis_client.zrange(key, 0, 0, withscores=True)
+                if oldest:
+                    retry_after = int(window - (now - oldest[0][1]))
+                else:
+                    retry_after = window
+                return False, current_count, retry_after
+
+            return True, current_count + 1, 0
+
+        except Exception as e:
+            logger.warning(f"Redis error, falling back to in-memory: {e}")
+            return self._check_memory(key, max_requests, window)
+
+    def _check_memory(self, key: str, max_requests: int, window: int) -> tuple:
+        """
+        Check rate limit using in-memory sliding window.
+
+        Args:
+            key: Rate limit key
+            max_requests: Maximum requests allowed
+            window: Time window in seconds
+
+        Returns:
+            tuple: (is_allowed, current_count, retry_after)
+        """
+        now = time.time()
+        request_times = self.requests[key]
+
+        # Clean up old requests
+        request_times[:] = [t for t in request_times if now - t < window]
+
+        if len(request_times) >= max_requests:
+            retry_after = int(window - (now - request_times[0]))
+            return False, len(request_times), retry_after
+
+        request_times.append(now)
+        return True, len(request_times), 0
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """
@@ -121,36 +237,42 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             limit = settings.rate_limit_default
 
         max_requests, window = self.parse_limit(limit)
+
+        # Apply burst multiplier
+        burst_limit = int(max_requests * settings.rate_limit_burst_multiplier)
+
         client_id = self.get_client_id(request)
-        now = time.time()
+        rate_key = f"ratelimit:{client_id}:{path}"
 
-        # Get request history for this client
-        request_times = self.requests[client_id]
+        # Check rate limit
+        if self.redis_client:
+            is_allowed, current_count, retry_after = self._check_redis(
+                rate_key, burst_limit, window
+            )
+        else:
+            is_allowed, current_count, retry_after = self._check_memory(
+                rate_key, burst_limit, window
+            )
 
-        # Clean up old requests outside the window
-        request_times[:] = [t for t in request_times if now - t < window]
-
-        # Check if limit exceeded
-        if len(request_times) >= max_requests:
-            retry_after = int(window - (now - request_times[0]))
+        if not is_allowed:
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={
                     "error": "Rate limit exceeded",
-                    "detail": f"Maximum {max_requests} requests per {window}s",
+                    "detail": f"Maximum {max_requests} requests per {window}s (burst: {burst_limit})",
                     "retry_after": retry_after,
                 },
                 headers={"Retry-After": str(retry_after)},
             )
 
-        # Add current request
-        request_times.append(now)
+        # Process request
+        response = await call_next(request)
 
         # Add rate limit headers
-        response = await call_next(request)
         response.headers["X-RateLimit-Limit"] = str(max_requests)
-        response.headers["X-RateLimit-Remaining"] = str(max_requests - len(request_times))
-        response.headers["X-RateLimit-Reset"] = str(int(now + window))
+        response.headers["X-RateLimit-Burst"] = str(burst_limit)
+        response.headers["X-RateLimit-Remaining"] = str(max(0, burst_limit - current_count))
+        response.headers["X-RateLimit-Reset"] = str(int(time.time() + window))
 
         return response
 

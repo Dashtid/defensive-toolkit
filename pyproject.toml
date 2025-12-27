@@ -70,9 +70,14 @@ advanced = [
     "unicorn>=2.0.1",
 ]
 
+# Optional Redis for distributed rate limiting
+redis = [
+    "redis>=5.0.0",
+]
+
 # All optional dependencies
 all = [
-    "defensive-toolkit[windows,threat-intel,advanced]",
+    "defensive-toolkit[windows,threat-intel,advanced,redis]",
 ]
 
 [project.urls]

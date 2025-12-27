@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     rate_limit_default: str = "100/minute"  # Default: 100 requests per minute
     rate_limit_auth: str = "5/minute"  # Login/token refresh: 5 attempts per minute
     rate_limit_heavy: str = "10/minute"  # Heavy operations: 10 per minute
+    rate_limit_by_user: bool = True  # Use user ID for authenticated requests (separate limits)
+    rate_limit_burst_multiplier: float = 1.5  # Allow 1.5x burst above limit
 
     # Redis Configuration (for distributed rate limiting)
     redis_enabled: bool = False
@@ -61,6 +63,7 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
     redis_password: str = ""
+    redis_ssl: bool = False
 
     # Logging Configuration
     log_level: str = "INFO"
