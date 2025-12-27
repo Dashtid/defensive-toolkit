@@ -23,6 +23,8 @@ permissions:
   contents: read
   security-events: write
   actions: read
+  packages: write      # Push and sign images
+  id-token: write      # OIDC for keyless signing
 
 env:
   REGISTRY: ghcr.io
@@ -296,6 +298,71 @@ jobs:
         path: sbom-*.json
 
   # ============================================================================
+  # Push and Sign Container Images
+  # ============================================================================
+  push-and-sign:
+    name: Push & Sign Images
+    runs-on: ubuntu-latest
+    needs: [build, security-scan, sbom-generation]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Download API image artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: api-image-linux-amd64
+        path: /tmp
+
+    - name: Load API image
+      run: |
+        docker load --input /tmp/api-image.tar
+        docker image ls -a
+
+    - name: Login to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Tag and push API image
+      run: |
+        # Get the loaded image
+        LOADED_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^ghcr.io.*api" | head -1)
+
+        # Tag with sha and latest
+        docker tag "$LOADED_IMAGE" ghcr.io/${{ github.repository }}-api:${{ github.sha }}
+        docker tag "$LOADED_IMAGE" ghcr.io/${{ github.repository }}-api:main
+
+        # Push both tags
+        docker push ghcr.io/${{ github.repository }}-api:${{ github.sha }}
+        docker push ghcr.io/${{ github.repository }}-api:main
+
+        echo "[+] Images pushed to GHCR"
+
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v3
+
+    - name: Sign container images
+      run: |
+        # Sign with keyless signing (OIDC)
+        cosign sign --yes ghcr.io/${{ github.repository }}-api:${{ github.sha }}
+        cosign sign --yes ghcr.io/${{ github.repository }}-api:main
+
+        echo "[+] Images signed with Cosign"
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+
+    - name: Verify signature
+      run: |
+        cosign verify \
+          --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+          --certificate-identity-regexp "https://github.com/${{ github.repository }}/*" \
+          ghcr.io/${{ github.repository }}-api:${{ github.sha }}
+
+        echo "[+] Signature verified"
+
+  # ============================================================================
   # Docker Bench for Security (CIS Benchmark)
   # ============================================================================
   docker-bench:
@@ -459,7 +526,7 @@ jobs:
   test-summary:
     name: CI/CD Test Results Summary
     runs-on: ubuntu-latest
-    needs: [dockerfile-lint, build, security-scan, sbom-generation, docker-bench, container-tests]
+    needs: [dockerfile-lint, build, security-scan, sbom-generation, push-and-sign, docker-bench, container-tests]
     if: always()
 
     steps:
@@ -471,10 +538,12 @@ jobs:
         echo "Build: ${{ needs.build.result }}"
         echo "Security Scan: ${{ needs.security-scan.result }}"
         echo "SBOM Generation: ${{ needs.sbom-generation.result }}"
+        echo "Push & Sign: ${{ needs.push-and-sign.result }}"
         echo "Docker Bench: ${{ needs.docker-bench.result }}"
         echo "Container Tests: ${{ needs.container-tests.result }}"
         echo "=================================="
 
+        # Core checks - must pass
         if [[ "${{ needs.dockerfile-lint.result }}" == "failure" ]] || \
            [[ "${{ needs.build.result }}" == "failure" ]] || \
            [[ "${{ needs.security-scan.result }}" == "failure" ]] || \
