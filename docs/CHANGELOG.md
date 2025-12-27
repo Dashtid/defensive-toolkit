@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2025-12-27
+
+### Added
+
+#### CI/CD Security Pipeline
+
+- **Dependency Scanning**: pip-audit integration for Python vulnerability detection
+- **Secret Detection**: gitleaks pre-commit scanning to prevent credential leaks
+- **SAST Analysis**: Semgrep with OWASP Top 10 and Python security rulesets
+- **SBOM Generation**: Syft-based Software Bill of Materials (SPDX, CycloneDX formats)
+- **Container Signing**: Cosign keyless signing with OIDC (Sigstore)
+- **Release Automation**: Release Please for semantic versioning and changelog generation
+
+#### Kubernetes Deployment
+
+- **Kustomize Manifests**: Production-ready K8s configs (`infra/kubernetes/`)
+  - Deployment with security contexts, probes, resource limits
+  - ConfigMap and Secret templates
+  - HorizontalPodAutoscaler and PodDisruptionBudget
+  - NetworkPolicy for traffic control
+  - Ingress with TLS support
+- **Helm Chart**: Parameterized deployment (`infra/helm/defensive-toolkit/`)
+  - 200+ configurable options
+  - Templates for all K8s resources
+  - Support for Redis, Prometheus metrics, and multi-replica deployments
+
+#### API Enhancements
+
+- **Redis Rate Limiting**: Distributed sliding window algorithm
+  - Per-user rate limiting with JWT user extraction
+  - Separate buckets for authenticated vs anonymous users
+  - Burst multiplier support (configurable)
+  - Fallback to in-memory when Redis unavailable
+- **Webhook Retry Service**: Robust delivery with exponential backoff
+  - Circuit breaker pattern per endpoint (failure threshold, recovery timeout)
+  - Dead letter queue for failed deliveries
+  - Configurable retry attempts and jitter
+- **Custom Prometheus Metrics**: Business-level observability
+  - Webhook triggers, delivery duration, signature verification
+  - Notification delivery, retries, queue size
+  - Circuit breaker state, failures, trips
+  - Dead letter queue size, adds, replays
+  - Rate limit hits
+- **Input Validation**: Security-focused validation utilities
+  - URL validation (http/https only, blocks internal networks)
+  - Payload size limits (configurable, default 10MB)
+  - Path sanitization (directory traversal prevention)
+  - Template variable validation
+- **Enhanced Health Checks**: Kubernetes-ready probes
+  - Component health (API, Redis, webhooks, notifications, rate limiting)
+  - System resource checks (memory, disk)
+  - `/health/live` liveness probe
+  - `/health/ready` readiness probe
+
+#### Testing
+
+- **Webhook Integration Tests**: 500+ lines of comprehensive tests
+  - CRUD operations, signature verification
+  - Rule matching, rate limiting
+  - Error handling, edge cases
+- **Webhook Delivery Tests**: Circuit breaker and DLQ coverage
+  - Retry logic, backoff verification
+  - Circuit breaker state transitions
+  - Dead letter queue operations
+
+#### Documentation
+
+- **API Authentication Guide** (`docs/API_AUTHENTICATION.md`)
+  - JWT authentication flow
+  - API key management
+  - RBAC and permissions
+  - Integration examples (Python, curl, JavaScript)
+- **Updated PROJECT_STATUS.md**: v1.2.0 enhancements section
+
+### Changed
+
+- CI/CD workflow now includes security scanning stages
+- Rate limiting middleware supports Redis backend
+- Health endpoints return detailed component status
+- Webhook router includes metrics recording
+
+### Infrastructure
+
+- Python 3.10+ requirement (updated from 3.8+)
+- Redis 5.0+ optional dependency for distributed deployments
+- Prometheus client for metrics export
+- psutil for system health monitoring
+
+---
+
 ## [1.1.0] - 2025-10-18
 
 ### Added
@@ -149,14 +239,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Future Releases
 
-### [1.2.0] - Planned
-- Docker containerization
-- REST API for toolkit access
-- Web dashboard for monitoring
+### [1.3.0] - Planned
+
 - Additional cloud platform detection rules (AWS, Azure, GCP)
 - Kubernetes threat hunting queries
+- Web dashboard for monitoring
+- OpenTelemetry tracing integration
 
 ### [2.0.0] - Future
+
 - Full SOAR platform (not just integrations)
 - Machine learning anomaly models
 - Mobile device forensics
@@ -167,10 +258,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
-| Version | Date | Description |
-|---------|------|-------------|
-| 1.1.0 | 2025-10-18 | Comprehensive testing, documentation, modernization |
-| 1.0.0 | 2025-10-15 | Initial release with 10 complete categories |
+| Version | Date       | Description                                              |
+|---------|------------|----------------------------------------------------------|
+| 1.2.0   | 2025-12-27 | CI/CD security, Kubernetes/Helm, API enhancements        |
+| 1.1.0   | 2025-10-18 | Comprehensive testing, documentation, modernization      |
+| 1.0.0   | 2025-10-15 | Initial release with 10 complete categories              |
 
 ---
 

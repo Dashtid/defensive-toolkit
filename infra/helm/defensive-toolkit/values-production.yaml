@@ -1,0 +1,172 @@
+# Production values for defensive-toolkit
+#
+# Usage:
+#   helm install defensive-toolkit . -f values-production.yaml
+#
+# This configuration includes:
+# - 3 replicas with anti-affinity for high availability
+# - Ingress with TLS enabled
+# - Redis for distributed rate limiting
+# - Network policies enabled
+# - Stricter resource limits
+# - Production-grade security settings
+
+replicaCount: 3
+
+image:
+  repository: ghcr.io/dashtid/defensive-toolkit-api
+  pullPolicy: Always
+  # Pin to specific version in production
+  tag: "1.2.0"
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/metrics"
+
+# Production resource allocation
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# Autoscaling tuned for production workloads
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
+
+# Anti-affinity to spread pods across nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - defensive-toolkit
+          topologyKey: kubernetes.io/hostname
+
+# Node selector for dedicated nodes (optional)
+# nodeSelector:
+#   node-role.kubernetes.io/app: "true"
+
+# Tolerations for dedicated nodes (optional)
+# tolerations:
+#   - key: "dedicated"
+#     operator: "Equal"
+#     value: "app"
+#     effect: "NoSchedule"
+
+# Ingress with TLS
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+  hosts:
+    - host: defensive-toolkit.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: defensive-toolkit-tls
+      hosts:
+        - defensive-toolkit.example.com
+
+# Application configuration for production
+config:
+  debug: false
+  logLevel: "INFO"
+  logFormat: "json"
+  apiPrefix: "/api/v1"
+
+  # Stricter rate limits for production
+  rateLimitEnabled: true
+  rateLimitDefault: "60/minute"
+  rateLimitAuth: "3/minute"
+  rateLimitHeavy: "5/minute"
+  rateLimitByUser: true
+  rateLimitBurstMultiplier: "1.2"
+
+  # Restrict CORS in production
+  corsOrigins: "https://defensive-toolkit.example.com"
+
+  # Disable Swagger UI in production for security
+  enableSwaggerUI: false
+  enableRedoc: false
+  requireAuthentication: true
+
+# Secrets - IMPORTANT: Use external secrets manager in production
+secrets:
+  create: false  # Use external-secrets or sealed-secrets instead
+  # If create: true, override these securely
+  # secretKey: "generate-with-openssl-rand-hex-32"
+  # validApiKeys: "key1,key2,key3"
+
+# Redis enabled for distributed rate limiting
+redis:
+  enabled: true
+  host: "redis-master"
+  port: 6379
+  db: 0
+  password: ""  # Set via external secret
+  ssl: true
+  external: true  # Using external Redis cluster
+
+# Persistence for logs
+persistence:
+  enabled: true
+  storageClass: "standard"
+  accessMode: ReadWriteOnce
+  size: 10Gi
+
+# Production-grade probes
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# PDB for high availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Network policy for production security
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - port: 8000
+          protocol: TCP
