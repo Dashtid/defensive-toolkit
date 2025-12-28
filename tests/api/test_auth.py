@@ -103,7 +103,7 @@ class TestPasswordSecurity:
 
     def test_password_hashing(self):
         """Test that passwords are hashed correctly"""
-        from api.auth import verify_password
+        from defensive_toolkit.api.auth import verify_password
 
         password = "testpassword123"
         hashed = get_password_hash(password)
@@ -117,7 +117,7 @@ class TestPasswordSecurity:
 
     def test_password_verification_fails_wrong_password(self):
         """Test that wrong password fails verification"""
-        from api.auth import verify_password
+        from defensive_toolkit.api.auth import verify_password
 
         password = "correctpassword"
         hashed = get_password_hash(password)
@@ -139,7 +139,7 @@ class TestTokenManagement:
 
     def test_verify_access_token(self):
         """Test verifying access token"""
-        from api.auth import verify_token
+        from defensive_toolkit.api.auth import verify_token
 
         token = create_token_pair("testuser")
 
@@ -148,7 +148,7 @@ class TestTokenManagement:
 
     def test_verify_refresh_token(self):
         """Test verifying refresh token"""
-        from api.auth import verify_token
+        from defensive_toolkit.api.auth import verify_token
 
         token = create_token_pair("testuser")
 
@@ -157,7 +157,7 @@ class TestTokenManagement:
 
     def test_verify_wrong_token_type(self):
         """Test that verifying wrong token type fails"""
-        from api.auth import verify_token
+        from defensive_toolkit.api.auth import verify_token
 
         token = create_token_pair("testuser")
 

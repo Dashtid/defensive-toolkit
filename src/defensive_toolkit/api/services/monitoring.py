@@ -166,7 +166,13 @@ class MonitoringService:
         """
         if not PSUTIL_AVAILABLE:
             logger.warning("psutil not available, returning placeholder metrics")
-            return self._get_placeholder_metrics()
+            metrics = self._get_placeholder_metrics()
+            # Still store in history for consistency
+            with self._lock:
+                self._metrics_history.append(metrics)
+                if len(self._metrics_history) > self._max_history_size:
+                    self._metrics_history = self._metrics_history[-self._max_history_size:]
+            return metrics
 
         try:
             # CPU
