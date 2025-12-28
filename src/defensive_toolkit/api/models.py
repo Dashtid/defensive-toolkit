@@ -200,12 +200,18 @@ class PlaybookExecutionResponse(BaseModel):
 
 
 class SIEMPlatformEnum(str, Enum):
-    """Supported open-source SIEM platforms"""
+    """Supported SIEM platforms for threat hunting"""
 
     WAZUH = "wazuh"
     ELASTIC = "elastic"
     OPENSEARCH = "opensearch"
     GRAYLOG = "graylog"
+    SPLUNK = "splunk"
+    SENTINEL = "sentinel"
+
+
+# Alias for backward compatibility with tests
+ThreatHuntPlatformEnum = SIEMPlatformEnum
 
 
 class ThreatHuntQuery(BaseModel):

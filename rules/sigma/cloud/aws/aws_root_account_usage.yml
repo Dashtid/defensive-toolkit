@@ -1,0 +1,39 @@
+title: AWS Root Account Usage Detected
+id: a1b2c3d4-1111-4000-8000-000000000004
+status: stable
+description: |
+    Detects usage of the AWS root account for any API operations. The root account
+    should rarely be used and is a high-value target for attackers. Best practice
+    is to use IAM users/roles with least-privilege access instead.
+references:
+    - https://attack.mitre.org/techniques/T1078/004/
+    - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html
+    - https://docs.aws.amazon.com/accounts/latest/reference/root-user-tasks.html
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.initial_access
+    - attack.privilege_escalation
+    - attack.t1078.004
+    - detection.cloud_threats
+    - cloud.aws
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection_root:
+        userIdentity.type: Root
+    filter_expected_actions:
+        eventName:
+            - ConsoleLogin
+            - GetAccountPasswordPolicy
+            - GetAccountSummary
+    filter_service_linked:
+        userIdentity.invokedBy|contains: amazonaws.com
+    condition: selection_root and not filter_expected_actions and not filter_service_linked
+falsepositives:
+    - Initial AWS account setup
+    - Root-only operations (account closure, support plan changes)
+    - Emergency break-glass procedures (should be documented)
+level: critical

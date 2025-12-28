@@ -1,0 +1,192 @@
+// Identity Threat Hunting Queries
+// Platform: Elastic Security (EQL - Event Query Language)
+// Author: Defensive Toolkit
+// Date: 2025-12-28
+// Description: Hunts for identity-based threats including authentication attacks,
+//              privilege escalation, Kerberos attacks, and account manipulation
+// MITRE ATT&CK: T1110, T1078, T1134, T1558, T1098, T1136
+
+// ============================================================================
+// Query 1: Password Spraying Detection
+// MITRE: T1110.003 - Brute Force: Password Spraying
+// ============================================================================
+sequence by source.ip with maxspan=10m
+  [authentication where event.outcome == "failure"] with runs=20
+
+// ============================================================================
+// Query 2: Credential Stuffing with Eventual Success
+// MITRE: T1110.004 - Brute Force: Credential Stuffing
+// ============================================================================
+sequence by source.ip with maxspan=1h
+  [authentication where event.outcome == "failure"] with runs=10
+  [authentication where event.outcome == "success"]
+
+// ============================================================================
+// Query 3: Brute Force on Single Account
+// MITRE: T1110.001 - Brute Force
+// ============================================================================
+sequence by user.name, source.ip with maxspan=30m
+  [authentication where event.outcome == "failure"] with runs=10
+
+// ============================================================================
+// Query 4: Admin Group Membership Change
+// MITRE: T1078.002 - Valid Accounts: Domain Accounts
+// ============================================================================
+iam where event.action == "group-member-added" and
+  group.name : (
+    "Domain Admins", "Enterprise Admins", "Schema Admins",
+    "Administrators", "Account Operators", "Backup Operators",
+    "Server Operators", "Print Operators"
+  )
+
+// ============================================================================
+// Query 5: Service Account Interactive Logon
+// MITRE: T1078.002 - Valid Accounts: Domain Accounts
+// ============================================================================
+authentication where event.outcome == "success" and
+  winlog.logon.type in ("Interactive", "RemoteInteractive") and
+  user.name : ("*svc*", "*service*", "sql*", "iis*", "*admin*")
+
+// ============================================================================
+// Query 6: Kerberoasting Activity (RC4 TGS Request)
+// MITRE: T1558.003 - Steal or Forge Kerberos Tickets: Kerberoasting
+// ============================================================================
+authentication where event.action == "kerberos_ticket_request" and
+  winlog.event_data.TicketEncryptionType in ("0x17", "0x18") and
+  not winlog.event_data.ServiceName : "*$"
+
+// ============================================================================
+// Query 7: AS-REP Roasting Detection
+// MITRE: T1558.004 - Steal or Forge Kerberos Tickets: AS-REP Roasting
+// ============================================================================
+authentication where event.action == "kerberos_preauth_failed" and
+  winlog.event_data.PreAuthType == "0"
+
+// ============================================================================
+// Query 8: Account Creation Followed by Privileged Access
+// MITRE: T1136 - Create Account
+// ============================================================================
+sequence with maxspan=1h
+  [iam where event.action == "account-created"]
+  [iam where event.action == "group-member-added" and
+   group.name : ("*Admin*", "*Privileged*")]
+
+// ============================================================================
+// Query 9: Suspicious Account Creation
+// MITRE: T1136.001 - Create Account: Local Account
+// ============================================================================
+iam where event.action == "account-created" and
+  not user.name : ("*MSSA_*", "*$", "HealthMailbox*") and
+  not winlog.event_data.SubjectUserName : ("SYSTEM", "*$")
+
+// ============================================================================
+// Query 10: Password Reset on Another User
+// MITRE: T1098 - Account Manipulation
+// ============================================================================
+iam where event.action == "password-reset" and
+  user.name != winlog.event_data.SubjectUserName and
+  not winlog.event_data.SubjectUserName : ("*admin*", "*helpdesk*", "SYSTEM")
+
+// ============================================================================
+// Query 11: Delegation Configuration Change
+// MITRE: T1134.001 - Access Token Manipulation: Token Impersonation
+// ============================================================================
+iam where event.action == "account-modified" and
+  winlog.event_data.AttributeLDAPDisplayName : (
+    "servicePrincipalName",
+    "msDS-AllowedToDelegateTo",
+    "userAccountControl"
+  )
+
+// ============================================================================
+// Query 12: Off-Hours Authentication
+// MITRE: T1078 - Valid Accounts
+// ============================================================================
+authentication where event.outcome == "success" and
+  (hour(timestamp) < 6 or hour(timestamp) > 22) and
+  not user.name : ("*svc*", "*service*", "SYSTEM", "*$")
+
+// ============================================================================
+// Query 13: Multiple Failed Authentications Then Success
+// MITRE: T1110 - Brute Force
+// ============================================================================
+sequence by user.name with maxspan=30m
+  [authentication where event.outcome == "failure"] with runs=5
+  [authentication where event.outcome == "success"]
+
+// ============================================================================
+// Query 14: NTLM Authentication from Non-DC
+// MITRE: T1550.002 - Use Alternate Authentication Material: Pass the Hash
+// ============================================================================
+authentication where event.outcome == "success" and
+  winlog.logon.type == "Network" and
+  winlog.event_data.AuthenticationPackageName == "NTLM" and
+  winlog.event_data.LogonProcessName != "NtLmSsp"
+
+// ============================================================================
+// Query 15: Privilege Escalation via Token Manipulation
+// MITRE: T1134 - Access Token Manipulation
+// ============================================================================
+process where event.type == "start" and
+  process.name : ("sekurlsa.exe", "mimikatz.exe") or
+  (process.name == "powershell.exe" and
+   process.command_line : ("*Invoke-TokenManipulation*", "*Get-System*"))
+
+// ============================================================================
+// Query 16: Unusual LogonType 9 (NewCredentials)
+// MITRE: T1550 - Use Alternate Authentication Material
+// ============================================================================
+authentication where event.outcome == "success" and
+  winlog.logon.type == "NewCredentials" and
+  not process.name : ("services.exe", "lsass.exe", "svchost.exe")
+
+// ============================================================================
+// Query 17: DCSync Attack Indicators
+// MITRE: T1003.006 - OS Credential Dumping: DCSync
+// ============================================================================
+sequence by host.id with maxspan=5m
+  [process where event.type == "start" and
+   process.name : ("mimikatz.exe", "secretsdump.py") and
+   process.args : ("lsadump::dcsync", "dcsync")]
+  [network where destination.port == 389]
+
+// ============================================================================
+// Query 18: User Added to Multiple Privileged Groups
+// MITRE: T1098 - Account Manipulation
+// ============================================================================
+sequence by winlog.event_data.MemberSid with maxspan=1h
+  [iam where event.action == "group-member-added" and
+   group.name : ("*Admin*", "*Privileged*")] with runs=3
+
+// ============================================================================
+// Query 19: Authentication from Disabled Account
+// MITRE: T1078 - Valid Accounts
+// ============================================================================
+authentication where event.action == "logon-failed" and
+  winlog.event_data.SubStatus : ("0xC0000072", "0xc0000072") // Account disabled
+
+// ============================================================================
+// Query 20: Unusual Process Creating Security Events
+// MITRE: T1562.002 - Impair Defenses: Disable Windows Event Logging
+// ============================================================================
+process where event.type == "start" and
+  process.name : ("wevtutil.exe", "auditpol.exe") and
+  process.args : ("clear-log", "cl", "Security", "/disable", "disable")
+
+// ============================================================================
+// Usage Instructions:
+// ============================================================================
+// 1. Copy queries to Kibana > Security > Rules > Detection rules (EQL)
+// 2. Adjust thresholds in "runs" parameter based on baseline
+// 3. Add exclusions for legitimate service accounts
+// 4. Test queries in Timeline before creating detection rules
+// 5. Create detection rules with appropriate severity levels
+// 6. Configure actions (email, Slack, SOAR integration)
+// 7. Review and tune regularly to reduce false positives
+//
+// Example: Running in Timeline
+// Timeline > New timeline > EQL > Paste query > Run
+//
+// Example: Creating Detection Rule
+// Security > Rules > Create new rule > Select "Event Correlation (EQL)"
+// > Paste query > Configure rule details > Create & activate

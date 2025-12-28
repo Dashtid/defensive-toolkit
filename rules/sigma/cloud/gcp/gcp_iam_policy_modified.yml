@@ -1,0 +1,53 @@
+title: GCP IAM Policy Modification
+id: c3d4e5f6-3333-4000-8000-000000000002
+status: stable
+description: |
+    Detects modifications to IAM policies at project, folder, or organization
+    level in GCP. Unauthorized IAM changes could grant attackers elevated
+    privileges or persistent access to cloud resources.
+references:
+    - https://attack.mitre.org/techniques/T1098/
+    - https://cloud.google.com/iam/docs/policies
+    - https://cloud.google.com/resource-manager/docs/access-control-proj
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.privilege_escalation
+    - attack.persistence
+    - attack.t1098
+    - detection.cloud_threats
+    - cloud.gcp
+logsource:
+    product: gcp
+    service: cloudaudit
+detection:
+    selection_set_policy:
+        protoPayload.methodName:
+            - SetIamPolicy
+            - google.iam.v1.IAMPolicy.SetIamPolicy
+    selection_resource_type:
+        protoPayload.resourceName|contains:
+            - projects/
+            - folders/
+            - organizations/
+    selection_privileged_roles:
+        protoPayload.request.policy.bindings.role|contains:
+            - roles/owner
+            - roles/editor
+            - roles/iam.securityAdmin
+            - roles/iam.serviceAccountAdmin
+            - roles/iam.serviceAccountKeyAdmin
+            - roles/resourcemanager.organizationAdmin
+            - roles/compute.admin
+            - roles/storage.admin
+    filter_service_account:
+        protoPayload.authenticationInfo.principalEmail|endswith:
+            - gserviceaccount.com
+            - system.gserviceaccount.com
+    condition: selection_set_policy and selection_resource_type and selection_privileged_roles and not filter_service_account
+falsepositives:
+    - Legitimate IAM administration
+    - Terraform/Deployment Manager operations
+    - Organization policy rollouts
+level: high

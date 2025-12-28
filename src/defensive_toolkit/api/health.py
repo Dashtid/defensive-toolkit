@@ -227,6 +227,50 @@ def check_rate_limiting_health() -> ComponentHealth:
     )
 
 
+def check_telemetry_health() -> ComponentHealth:
+    """Check OpenTelemetry status."""
+    if not settings.otel_enabled:
+        return ComponentHealth(
+            name="telemetry",
+            status="disabled",
+            message="OpenTelemetry is not enabled",
+        )
+
+    try:
+        from defensive_toolkit.api.telemetry import get_telemetry_status
+
+        status = get_telemetry_status()
+        if status.get("enabled"):
+            return ComponentHealth(
+                name="telemetry",
+                status="healthy",
+                details={
+                    "provider": status.get("provider"),
+                    "endpoint": settings.otel_exporter_endpoint,
+                    "sample_rate": settings.otel_trace_sample_rate,
+                },
+            )
+        else:
+            return ComponentHealth(
+                name="telemetry",
+                status="degraded",
+                message="OTEL enabled but not initialized",
+            )
+    except ImportError:
+        return ComponentHealth(
+            name="telemetry",
+            status="disabled",
+            message="OpenTelemetry packages not installed",
+        )
+    except Exception as e:
+        logger.warning(f"Telemetry health check failed: {e}")
+        return ComponentHealth(
+            name="telemetry",
+            status="degraded",
+            message=str(e),
+        )
+
+
 # ============================================================================
 # System Checks
 # ============================================================================
@@ -302,6 +346,7 @@ async def perform_health_check(
     webhooks_health = check_webhooks_health()
     notifications_health = check_notifications_health()
     rate_limiting_health = check_rate_limiting_health()
+    telemetry_health = check_telemetry_health()
 
     # Compile component statuses
     components = {
@@ -326,6 +371,11 @@ async def perform_health_check(
         "rate_limiting": {
             "status": rate_limiting_health.status,
             **(rate_limiting_health.details if include_details else {}),
+        },
+        "telemetry": {
+            "status": telemetry_health.status,
+            **(telemetry_health.details if include_details else {}),
+            **({"message": telemetry_health.message} if telemetry_health.message else {}),
         },
     }
 
@@ -386,6 +436,7 @@ async def perform_readiness_check() -> Dict[str, Any]:
     """
     # Check critical components
     redis_health = await check_redis_health()
+    telemetry_health = check_telemetry_health()
 
     # If Redis is enabled but unhealthy, not ready
     if settings.redis_enabled and redis_health.status == "unhealthy":
@@ -395,7 +446,17 @@ async def perform_readiness_check() -> Dict[str, Any]:
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
 
-    return {
+    # Build response with component statuses
+    response = {
         "status": "ready",
         "timestamp": datetime.utcnow().isoformat() + "Z",
+        "components": {
+            "telemetry": telemetry_health.status,
+        },
     }
+
+    # Add Redis status if enabled
+    if settings.redis_enabled:
+        response["components"]["redis"] = redis_health.status
+
+    return response

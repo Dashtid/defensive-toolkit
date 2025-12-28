@@ -1,0 +1,52 @@
+title: Kubernetes Pod Exec or Attach Command
+id: d4e5f6a7-4444-4000-8000-000000000004
+status: stable
+description: |
+    Detects execution of commands in pods using kubectl exec or attach.
+    While often legitimate, exec/attach access to pods can be used by
+    attackers for lateral movement and data access.
+references:
+    - https://attack.mitre.org/techniques/T1609/
+    - https://kubernetes.io/docs/tasks/debug/debug-application/get-shell-running-container/
+    - https://microsoft.github.io/Threat-Matrix-for-Kubernetes/techniques/Exec%20into%20container/
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.execution
+    - attack.t1609
+    - detection.cloud_threats
+    - cloud.kubernetes
+logsource:
+    product: kubernetes
+    service: audit
+detection:
+    selection_exec:
+        verb: create
+        objectRef.resource: pods
+        objectRef.subresource: exec
+    selection_attach:
+        verb: create
+        objectRef.resource: pods
+        objectRef.subresource: attach
+    selection_portforward:
+        verb: create
+        objectRef.resource: pods
+        objectRef.subresource: portforward
+    selection_sensitive_pods:
+        objectRef.name|contains:
+            - etcd
+            - api-server
+            - controller
+            - scheduler
+            - coredns
+    filter_system_namespaces:
+        objectRef.namespace:
+            - kube-system
+            - kube-public
+    condition: (selection_exec or selection_attach or selection_portforward) and (selection_sensitive_pods or not filter_system_namespaces)
+falsepositives:
+    - Legitimate debugging by developers
+    - CI/CD pipeline operations
+    - Automated health checks
+level: medium

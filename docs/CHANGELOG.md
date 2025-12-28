@@ -7,6 +7,542 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2025-12-28
+
+### Added
+
+#### Complete API Router Wiring (5 routers, ~65 new endpoints)
+
+All stub API routers are now fully wired to their backend implementations:
+
+- **Compliance Router** (`routers/compliance.py` - 32 → 400+ LOC)
+  - `POST /compliance/cis/run` - Run CIS Controls v8 checks
+  - `POST /compliance/nist/run` - Run NIST 800-53 Rev 5 checks
+  - `GET /compliance/mapping/{control_id}` - Map control across frameworks
+  - `GET /compliance/mapping/coverage` - Cross-framework coverage matrix
+  - `POST /compliance/policy/validate` - Validate against YAML policies
+  - `POST /compliance/drift/create-baseline` - Create config baseline
+  - `POST /compliance/drift/detect` - Detect configuration drift
+  - `POST /compliance/report/generate` - Generate HTML/JSON reports
+
+- **Vulnerability Router** (`routers/vulnerability.py` - 45 → 450+ LOC)
+  - `POST /vulnerability/scan/openvas` - Start OpenVAS/GVM scan
+  - `GET /vulnerability/scan/{task_id}` - Get scan status/results
+  - `POST /vulnerability/scan/container` - Scan Docker images (Trivy)
+  - `POST /vulnerability/scan/network` - Run nmap NSE vuln scan
+  - `POST /vulnerability/sbom/generate` - Generate CycloneDX/SPDX SBOM
+  - `POST /vulnerability/score` - Multi-factor risk scoring
+  - `POST /vulnerability/enrich` - CVE threat intel enrichment
+  - `GET /vulnerability/kev/{cve_id}` - CISA KEV catalog lookup
+
+- **Log Analysis Router** (`routers/log_analysis.py` - 33 → 250+ LOC)
+  - `POST /logs/parse` - Parse log lines (syslog, JSON, Apache, nginx)
+  - `POST /logs/parse-file` - Upload and parse log file
+  - `GET /logs/parser-info` - Get parser backend status
+  - `POST /logs/anomalies/detect` - Statistical anomaly detection
+  - `POST /logs/anomalies/create-baseline` - Create baseline statistics
+  - `GET /logs/anomalies/baseline/{id}` - Get saved baseline
+  - `POST /logs/stats` - Log statistics (counts, patterns)
+  - `POST /logs/filter` - Filter parsed logs
+
+- **Forensics Router** (`routers/forensics.py` - 32 → 400+ LOC)
+  - `POST /forensics/memory/analyze` - Volatility memory analysis
+  - `POST /forensics/memory/hunt` - Malware hunting in memory
+  - `GET /forensics/memory/plugins` - List Volatility plugins
+  - `POST /forensics/disk/parse-mft` - Parse NTFS MFT file
+  - `POST /forensics/disk/carve` - File carving from disk images
+  - `POST /forensics/artifacts/browser` - Browser history extraction
+  - `POST /forensics/timeline/generate` - Multi-source timeline
+  - `POST /forensics/timeline/analyze` - Timeline pattern analysis
+
+- **Automation Router** (`routers/automation.py` - 35 → 350+ LOC)
+  - `GET /automation/playbooks` - List available playbooks
+  - `POST /automation/playbooks` - Create new playbook
+  - `POST /automation/execute` - Execute playbook
+  - `GET /automation/execute/{id}/status` - Execution status
+  - `GET /automation/execute/{id}/logs` - Execution logs
+  - `POST /automation/actions/containment/isolate` - Host isolation
+  - `POST /automation/actions/containment/block-ip` - IP blocking
+  - `POST /automation/actions/enrichment/ioc` - IOC enrichment
+  - `POST /automation/actions/notification/*` - Email, Slack, webhook
+
+#### Linux Hardening Module (New)
+
+Built complete CIS Benchmark scanner from scratch:
+
+- **LinuxHardeningScanner** (`hardening/linux/cis_benchmarks.py` - 450 LOC)
+  - 18 CIS Benchmark checks across 5 categories:
+    - SSH (5 checks): Protocol version, root login, password auth, empty passwords, max auth tries
+    - File Permissions (4 checks): /etc/passwd, /etc/shadow, /etc/gshadow, /etc/group
+    - Services (3 checks): Telnet, RSH, TFTP disabled
+    - Kernel (4 checks): IP forwarding, ICMP redirects, source routing, SYN cookies
+    - Audit (2 checks): auditd installed and enabled
+  - CIS Level 1 and Level 2 support
+  - Remediation script generation
+  - Category-based compliance reporting
+
+- **Hardening Router** (`routers/hardening.py` - 42 → 300+ LOC)
+  - `POST /hardening/scan/linux` - Run Linux CIS Benchmark scan
+  - `POST /hardening/scan/windows` - Placeholder (not yet implemented)
+  - `POST /hardening/scan` - Auto-route by OS type
+  - `GET /hardening/scan/{scan_id}` - Get scan results
+  - `GET /hardening/scan/{scan_id}/summary` - Compliance summary
+  - `GET /hardening/scan/{scan_id}/failed` - Failed checks with severity filter
+  - `POST /hardening/remediate/{scan_id}` - Generate remediation script
+  - `GET /hardening/benchmarks` - List available benchmarks
+  - `GET /hardening/benchmarks/{id}` - Get benchmark details
+  - `GET /hardening/recommendations` - Prioritized security recommendations
+
+### Changed
+
+- All routers use lazy-loading pattern with graceful HTTP 503 degradation
+- Pinned bcrypt to `>=4.0.0,<5.0.0` for passlib 1.7.4 compatibility
+- Added `security` and `performance` pytest markers
+
+### Technical Details
+
+- **New Endpoints**: ~65 across 6 routers
+- **Router Code**: ~2,150 new LOC
+- **Backend Code**: ~450 new LOC (hardening module)
+- **Unit Tests**: 1501 passing, 169 skipped (platform-specific)
+- **All Routers Verified**: Load successfully with expected route counts
+
+### Migration Notes
+
+Run `uv sync` or `pip install -e .` to get the compatible bcrypt version.
+
+---
+
+## [1.6.0] - 2025-12-28
+
+### Added
+
+#### OpenTelemetry Integration
+
+- **Telemetry Module** (`src/defensive_toolkit/api/telemetry.py`)
+  - Distributed tracing with OTLP exporter support
+  - FastAPI auto-instrumentation for HTTP requests
+  - HTTPX instrumentation for outbound calls
+  - Redis instrumentation (when enabled)
+  - Custom tracer helper for manual span creation
+  - NoOpTracer fallback when OTEL packages not installed
+  - Graceful initialization and shutdown handling
+
+- **Configuration Settings** (added to `config.py`)
+  - `OTEL_ENABLED`: Enable/disable OpenTelemetry (default: False)
+  - `OTEL_SERVICE_NAME`: Service name in traces (default: "defensive-toolkit")
+  - `OTEL_EXPORTER_ENDPOINT`: OTLP endpoint (default: `http://localhost:4317`)
+  - `OTEL_TRACE_SAMPLE_RATE`: Sampling rate 0.0-1.0 (default: 1.0)
+
+- **Health Check Integration**
+  - Telemetry status in `/health` component list
+  - Telemetry status in `/health/ready` readiness check
+  - Telemetry logging in startup banner
+
+- **Optional Dependencies** (added to `pyproject.toml`)
+  - `opentelemetry-api>=1.20.0`
+  - `opentelemetry-sdk>=1.20.0`
+  - `opentelemetry-instrumentation-fastapi>=0.41b0`
+  - `opentelemetry-instrumentation-httpx>=0.41b0`
+  - `opentelemetry-instrumentation-redis>=0.41b0`
+  - `opentelemetry-exporter-otlp>=1.20.0`
+  - Install with: `pip install defensive-toolkit[otel]`
+
+#### Network Threat Hunting Queries (30 queries)
+
+- **KQL Queries** (`queries/kql/network_threat_hunting.kql` - 10 queries)
+  - DNS tunneling detection (high query length)
+  - Unusual TXT record queries
+  - DNS queries to newly registered domains
+  - C2 beaconing detection (periodic communication)
+  - Connections to rare external IPs
+  - HTTP/HTTPS to non-standard ports
+  - SMB enumeration patterns
+  - RDP brute force attempts
+  - Port scanning behavior
+  - Large outbound data transfers
+
+- **SPL Queries** (`queries/spl/network_threat_hunting.spl` - 10 queries)
+  - DNS tunneling via query length analysis
+  - TXT record abuse detection
+  - Newly registered domain queries
+  - Periodic beaconing pattern detection
+  - Rare destination IP connections
+  - Non-standard HTTP ports
+  - SMB lateral movement patterns
+  - RDP authentication attacks
+  - Port scan detection
+  - Data exfiltration via large transfers
+
+- **EQL Queries** (`queries/eql/network_threat_hunting.eql` - 20 queries)
+  - DNS tunneling (long query names, TXT records)
+  - High volume DNS queries
+  - Non-standard port connections
+  - Periodic network beaconing
+  - SMB multi-host connections
+  - RDP brute force sequences
+  - Port scanning activity
+  - Large data transfers
+  - Suspicious process network activity
+  - DNS queries after process start
+  - WMI lateral movement
+  - ICMP tunnel detection
+  - SSH to external hosts
+  - Encrypted channel to rare destinations
+  - RPC lateral movement
+  - Cloud storage exfiltration
+  - Dynamic DNS providers
+  - Scheduled task network activity
+  - Proxy/tunnel tool detection
+
+#### Identity Threat Hunting Queries (35 queries)
+
+- **KQL Queries** (`queries/kql/identity_threat_hunting.kql` - 15 queries)
+  - Password spraying detection
+  - Credential stuffing patterns
+  - Brute force from single IP
+  - Unusual admin group additions
+  - Service account abuse
+  - Token manipulation detection
+  - Kerberoasting (TGS requests)
+  - AS-REP roasting detection
+  - Suspicious account creation
+  - Password reset by non-admin
+  - Delegation abuse detection
+  - Unusual authentication patterns (time-based)
+  - Failed login followed by success
+  - MFA fatigue attack detection
+  - Impossible travel detection
+
+- **SPL Queries** (`queries/spl/identity_threat_hunting.spl` - 15 queries)
+  - Password spraying detection
+  - Credential stuffing with success rate analysis
+  - Brute force detection
+  - Admin group membership changes
+  - Service account lateral movement
+  - Kerberoasting (RC4 TGS requests)
+  - AS-REP roasting detection
+  - Golden/Silver ticket detection
+  - Suspicious account creation patterns
+  - Unauthorized password resets
+  - Delegation configuration changes
+  - Off-hours authentication
+  - Compromise indicator (failed then success)
+  - Group Policy privilege escalation
+  - Pass-the-Hash detection
+
+- **EQL Queries** (`queries/eql/identity_threat_hunting.eql` - 20 queries)
+  - Password spraying sequences
+  - Credential stuffing with success
+  - Brute force on single account
+  - Admin group membership changes
+  - Service account interactive logon
+  - Kerberoasting activity
+  - AS-REP roasting detection
+  - Account creation followed by privilege
+  - Suspicious account creation
+  - Password reset on another user
+  - Delegation configuration changes
+  - Off-hours authentication
+  - Multiple failures then success
+  - NTLM from non-DC (Pass-the-Hash)
+  - Token manipulation tools
+  - Unusual LogonType 9
+  - DCSync attack indicators
+  - User added to multiple privileged groups
+  - Disabled account authentication
+  - Security event tampering
+
+#### MITRE ATT&CK Coverage
+
+**Network Techniques:**
+
+- T1071.004: Application Layer Protocol: DNS
+- T1571: Non-Standard Port
+- T1573: Encrypted Channel
+- T1021.001: Remote Services: RDP
+- T1021.002: Remote Services: SMB
+- T1046: Network Service Discovery
+- T1048: Exfiltration Over Alternative Protocol
+- T1095: Non-Application Layer Protocol
+- T1090: Proxy
+- T1567: Exfiltration Over Web Service
+
+**Identity Techniques:**
+
+- T1110: Brute Force (Password Spraying, Credential Stuffing)
+- T1078: Valid Accounts
+- T1134: Access Token Manipulation
+- T1558: Steal or Forge Kerberos Tickets (Kerberoasting, AS-REP, Golden/Silver)
+- T1098: Account Manipulation
+- T1136: Create Account
+- T1550: Use Alternate Authentication Material
+- T1621: Multi-Factor Authentication Request Generation
+- T1484: Domain Policy Modification
+- T1003.006: DCSync
+
+#### Testing
+
+- **Telemetry Tests** (`tests/unit/test_telemetry.py`)
+  - Module import tests
+  - NoOpTracer and NoOpSpan functionality
+  - Setup/shutdown behavior
+  - Health check integration
+  - Configuration settings validation
+  - Main.py integration tests
+
+### Changed
+
+- Added OpenTelemetry to the "all" optional dependencies group
+- Startup logging now includes OpenTelemetry status
+- Readiness check now includes telemetry component status
+
+### Technical Details
+
+- **New Query Files**: 6 (network + identity × 3 languages)
+- **New Queries**: 65 total (30 network + 35 identity)
+- **Total Queries After**: ~147 (82 existing + 65 new)
+- **New MITRE Techniques**: 20+
+- **OpenTelemetry**: Full distributed tracing with OTLP export
+
+---
+
+## [1.5.0] - 2025-12-28
+
+### Added
+
+#### Complete API Implementation
+
+- **Threat Hunting Service** (`src/defensive_toolkit/api/services/threat_hunting.py`)
+  - Multi-language query support (KQL, SPL, EQL, Wazuh, Lucene)
+  - Query file parser with MITRE ATT&CK technique extraction
+  - Automatic query caching with force reload capability
+  - Category-based query organization
+  - Query execution against SIEM backends
+  - Search and filtering (by language, category, text search)
+  - Query summary statistics
+
+- **Monitoring Service** (`src/defensive_toolkit/api/services/monitoring.py`)
+  - Real system metrics collection via psutil
+    - CPU, memory, disk, network, swap usage
+    - Process count, network connections
+    - Boot time and uptime tracking
+  - Alert rule management (CRUD operations)
+    - Configurable thresholds and conditions (gt, lt, eq, gte, lte)
+    - Severity levels (info, warning, error, critical)
+    - Cooldown periods to prevent alert storms
+  - Alert triggering and resolution
+  - Alert acknowledgement workflow
+  - Alert history with severity filtering
+  - Notification handler registration
+  - Metrics history for trend analysis
+
+#### API Router Enhancements
+
+- **Threat Hunting Router** (expanded from 33 to 200+ lines)
+  - `GET /threat-hunting/queries` - List queries with filtering
+  - `GET /threat-hunting/queries/{query_id}` - Get specific query
+  - `POST /threat-hunting/queries/{query_id}/execute` - Execute against SIEM
+  - `GET /threat-hunting/summary` - Query statistics
+  - `POST /threat-hunting/reload` - Force reload queries from disk
+
+- **Monitoring Router** (expanded from 44 to 317 lines)
+  - `GET /monitoring/metrics` - Current system metrics
+  - `GET /monitoring/metrics/detailed` - Extended metrics with memory/disk sizes
+  - `GET /monitoring/metrics/history` - Historical metrics for graphing
+  - `POST /monitoring/alerts` - Create alert rule
+  - `GET /monitoring/alerts` - List all alert rules with status
+  - `GET /monitoring/alerts/active` - Currently triggered alerts
+  - `POST /monitoring/alerts/{rule_id}/acknowledge` - Acknowledge alert
+  - `GET /monitoring/alerts/history` - Alert history with severity filter
+  - `PATCH /monitoring/alerts/{rule_id}` - Update alert rule
+  - `DELETE /monitoring/alerts/{rule_id}` - Delete alert rule
+  - `GET /monitoring/summary` - Monitoring system overview
+
+#### Testing
+
+- **Threat Hunting Service Tests** (`tests/unit/test_services/test_threat_hunting_service.py`)
+  - Service initialization tests
+  - Query file parsing (KQL, SPL, EQL)
+  - Query loading and caching
+  - Query retrieval and filtering
+  - Query summary functionality
+  - Query execution tests
+
+- **Monitoring Service Tests** (`tests/unit/test_services/test_monitoring_service.py`)
+  - Service initialization and singleton pattern
+  - SystemMetrics serialization
+  - Metrics collection and history
+  - Alert rule CRUD operations
+  - Condition evaluation (all operators)
+  - Alert triggering and resolution
+  - Alert acknowledgement workflow
+  - Alert history filtering
+  - Notification handler registration
+  - Monitoring summary functionality
+
+### Changed
+
+- Services layer refactored to use dependency injection pattern
+- Routers now use real service implementations instead of stubs
+- Added psutil as optional dependency for system metrics
+- Query files parsed on-demand with caching
+
+### Technical Details
+
+- **MetricType Enum**: cpu_usage_percent, memory_usage_percent, disk_usage_percent, network_connections, network_bytes_sent, network_bytes_recv, process_count, swap_usage_percent, load_average
+- **AlertCondition Enum**: gt, lt, eq, gte, lte
+- **AlertSeverity Enum**: info, warning, error, critical
+- **AlertStatus Enum**: active, acknowledged, resolved
+- **QueryLanguage Enum**: KQL, SPL, EQL, WAZUH, LUCENE
+
+---
+
+## [1.4.0] - 2025-12-28
+
+### Added
+
+#### Kubernetes Threat Hunting Queries
+
+- **KQL Queries** (10 queries in `src/defensive_toolkit/threat_hunting/queries/kql/`)
+  - Secrets enumeration and mass access detection
+  - Privileged pod creation with dangerous capabilities
+  - RBAC ClusterRoleBinding escalation to cluster-admin
+  - Pod exec/attach command abuse
+  - Service account token theft
+  - Suspicious container image deployment
+  - Kubernetes API reconnaissance patterns
+  - ConfigMap manipulation in kube-system
+  - Node proxy/exec access attempts
+  - Namespace creation with suspicious names
+
+- **SPL Queries** (10 queries in `src/defensive_toolkit/threat_hunting/queries/spl/`)
+  - Secrets access from non-system users
+  - Privileged pod with host namespace access
+  - RBAC modifications with wildcard permissions
+  - Pod exec/attach interactive sessions
+  - Service account token creation
+  - Suspicious image sources (public registries)
+  - API server reconnaissance activity
+  - ConfigMap modifications in sensitive namespaces
+  - Node-level operations (proxy, exec, log)
+  - Falco runtime security alert integration
+
+- **EQL Queries** (25 queries in `src/defensive_toolkit/threat_hunting/queries/eql/`)
+  - Individual detection queries (17 queries)
+  - Sequence correlation queries (3 queries):
+    - Secret access followed by pod exec
+    - RBAC change followed by privileged pod
+    - Reconnaissance followed by sensitive access
+  - Covers all major MITRE ATT&CK Container techniques
+
+#### MITRE ATT&CK Container Coverage
+
+- T1552.007: Container API Secrets Access
+- T1611: Escape to Host (Privileged Pods, hostPath)
+- T1609: Container Administration Command (exec/attach)
+- T1078: Valid Accounts (Service Account Abuse)
+- T1098: Account Manipulation (RBAC Changes)
+- T1613: Container and Resource Discovery
+- T1610: Deploy Container (Malicious Images)
+- T1562: Impair Defenses (Audit Tampering)
+
+#### Testing
+
+- New `TestKubernetesQueryFilesExist` test class
+- `TestKQLQueryContent` - 7 content validation tests
+- `TestSPLQueryContent` - 7 content validation tests
+- `TestEQLQueryContent` - 7 content validation tests
+- `TestMITREATTACKCoverage` - technique reference tests
+- `TestQueryCount` - minimum query count validation
+
+### Changed
+
+- Updated threat hunting README with Kubernetes section
+- Added SPL to supported platform table
+- Expanded directory structure documentation
+
+### Documentation
+
+- Kubernetes threat hunting examples (KQL, SPL, EQL)
+- MITRE ATT&CK technique mapping table
+- Data source requirements (audit logs, Falco, runtime)
+- Platform deployment guides (Azure AKS, Splunk, Elastic)
+
+---
+
+## [1.3.0] - 2025-12-28
+
+### Added
+
+#### Cloud Platform Detection Rules
+
+- **AWS Detection Rules** (5 rules in `rules/sigma/cloud/aws/`)
+  - IAM privilege escalation (T1098)
+  - CloudTrail logging tampering (T1562.008)
+  - S3 bucket public access exposure (T1530)
+  - Root account usage detection (T1078.004)
+  - Security group opened to internet (T1562.007)
+
+- **Azure Detection Rules** (5 rules in `rules/sigma/cloud/azure/`)
+  - MFA disabled for users (T1556.006)
+  - Conditional Access policy modifications (T1562.001)
+  - Suspicious OAuth app consent grants (T1550.001)
+  - Privileged role assignments (T1098.003)
+  - Key Vault secret access patterns (T1552.001)
+
+- **GCP Detection Rules** (5 rules in `rules/sigma/cloud/gcp/`)
+  - Service account key creation (T1098.001)
+  - IAM policy modifications (T1098)
+  - VPC firewall rule changes (T1562.007)
+  - Cloud Logging sink tampering (T1562.008)
+  - Compute instance suspicious activity (T1578)
+
+- **Kubernetes Detection Rules** (5 rules in `rules/sigma/cloud/kubernetes/`)
+  - Privileged pod/container creation (T1611)
+  - Secrets enumeration and mass access (T1552.007)
+  - RBAC ClusterRole/Binding modifications (T1098)
+  - Pod exec/attach commands (T1609)
+  - Service account token creation (T1078)
+
+#### SIEM Deployment Enhancements
+
+- **Sigma Dry-Run Mode**: Preview rule conversions without deployment
+  - SPL query generation with metadata display
+  - Conversion statistics and success rate
+  - Error reporting for failed conversions
+
+- **OpenSearch Security Analytics API**: Full API implementation
+  - Rule creation via `POST /_plugins/_security_analytics/rules`
+  - Rule updates with forced overwrite
+  - Category auto-detection from logsource
+  - Cloud platform tag mapping (AWS -> cloudtrail, Azure -> azure, etc.)
+  - Rule listing with category filters
+
+#### Monitoring Improvements
+
+- **Email Alerting for Health Checks**: SMTP-based notifications
+  - HTML-formatted alert emails with styled tables
+  - SMTP server configuration (host, port, SSL)
+  - Credential-based authentication support
+  - Fallback to Windows Event Log on send failure
+  - Toast notification support (BurntToast)
+
+### Changed
+
+- Total Sigma rules increased from 39 to 59 (20 new cloud rules)
+- Test suite updated with `TestCloudPlatformCoverage` class (5 new tests)
+- COVERAGE_MATRIX.md updated with cloud platform section
+- Minimum Sigma rules test threshold increased to 50
+
+### Documentation
+
+- Updated COVERAGE_MATRIX.md with cloud platform detection tables
+- Added API reference links to OpenSearch deployer
+- Enhanced PowerShell script documentation with SMTP examples
+
+---
+
 ## [1.2.0] - 2025-12-27
 
 ### Added
@@ -239,12 +775,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Future Releases
 
-### [1.3.0] - Planned
+### [1.5.0] - Planned
 
-- Additional cloud platform detection rules (AWS, Azure, GCP)
-- Kubernetes threat hunting queries
 - Web dashboard for monitoring
 - OpenTelemetry tracing integration
+- Additional threat hunting query sets (network, identity)
 
 ### [2.0.0] - Future
 
@@ -258,11 +793,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
-| Version | Date       | Description                                              |
-|---------|------------|----------------------------------------------------------|
-| 1.2.0   | 2025-12-27 | CI/CD security, Kubernetes/Helm, API enhancements        |
-| 1.1.0   | 2025-10-18 | Comprehensive testing, documentation, modernization      |
-| 1.0.0   | 2025-10-15 | Initial release with 10 complete categories              |
+| Version | Date       | Description                                                |
+|---------|------------|------------------------------------------------------------|
+| 1.7.0   | 2025-12-28 | Wire up all routers, build hardening module (~65 endpoints)|
+| 1.6.0   | 2025-12-28 | OpenTelemetry integration, network/identity threat queries |
+| 1.5.0   | 2025-12-28 | Complete API implementation (services, monitoring, alerts) |
+| 1.4.0   | 2025-12-28 | Kubernetes threat hunting queries (KQL, SPL, EQL)          |
+| 1.3.0   | 2025-12-28 | Cloud detection rules, SIEM enhancements, email alerts     |
+| 1.2.0   | 2025-12-27 | CI/CD security, Kubernetes/Helm, API enhancements          |
+| 1.1.0   | 2025-10-18 | Comprehensive testing, documentation, modernization        |
+| 1.0.0   | 2025-10-15 | Initial release with 10 complete categories                |
 
 ---
 

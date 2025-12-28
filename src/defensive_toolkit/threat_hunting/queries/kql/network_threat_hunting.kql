@@ -1,0 +1,144 @@
+// Network Threat Hunting Queries
+// Platform: Azure Sentinel / Microsoft Defender
+// Author: Defensive Toolkit
+// Date: 2025-12-28
+// Description: Hunts for network-based threats including DNS tunneling,
+//              C2 beaconing, lateral movement, and data exfiltration
+// MITRE ATT&CK: T1071.004, T1571, T1573, T1021, T1046, T1048
+
+// Query 1: DNS Tunneling Detection (High Query Length)
+// MITRE: T1071.004 - Application Layer Protocol: DNS
+DnsEvents
+| where TimeGenerated > ago(24h)
+| extend QueryLength = strlen(Name)
+| where QueryLength > 50
+| extend SubdomainCount = countof(Name, ".")
+| where SubdomainCount >= 3
+| summarize QueryCount=count(), AvgQueryLength=avg(QueryLength),
+    UniqueQueries=dcount(Name), Domains=make_set(Name, 10)
+    by ClientIP, bin(TimeGenerated, 1h)
+| where QueryCount > 100 and AvgQueryLength > 60
+| order by QueryCount desc
+
+// Query 2: Unusual TXT Record Queries
+// MITRE: T1071.004 - Application Layer Protocol: DNS
+DnsEvents
+| where TimeGenerated > ago(24h)
+| where QueryType == "TXT"
+| summarize TXTQueryCount=count(), UniqueDomains=dcount(Name),
+    Domains=make_set(Name, 20) by ClientIP, bin(TimeGenerated, 1h)
+| where TXTQueryCount > 20
+| order by TXTQueryCount desc
+
+// Query 3: DNS Queries to Newly Registered Domains
+// MITRE: T1071.004 - Application Layer Protocol: DNS
+DnsEvents
+| where TimeGenerated > ago(7d)
+| extend Domain = tostring(split(Name, ".")[-2]) + "." + tostring(split(Name, ".")[-1])
+| join kind=leftanti (
+    ThreatIntelligenceIndicator
+    | where TimeGenerated > ago(90d)
+    | where IndicatorType == "domain"
+    | project Domain = DomainName
+) on Domain
+| summarize QueryCount=count(), FirstSeen=min(TimeGenerated),
+    Clients=make_set(ClientIP, 10) by Domain
+| where QueryCount > 5
+| order by FirstSeen desc
+
+// Query 4: C2 Beaconing Detection (Periodic Communication)
+// MITRE: T1571 - Non-Standard Port, T1573 - Encrypted Channel
+DeviceNetworkEvents
+| where TimeGenerated > ago(24h)
+| where ActionType == "ConnectionSuccess"
+| summarize ConnectionCount=count(), Times=make_list(TimeGenerated, 100)
+    by DeviceName, RemoteIP, RemotePort, bin(TimeGenerated, 1h)
+| where ConnectionCount >= 10
+| extend TimeDiffs = array_shift_right(Times, 1)
+| mv-expand Time = Times, PrevTime = TimeDiffs
+| where isnotnull(PrevTime)
+| extend Interval = datetime_diff('second', todatetime(Time), todatetime(PrevTime))
+| summarize AvgInterval=avg(Interval), StdDevInterval=stdev(Interval),
+    Connections=count() by DeviceName, RemoteIP, RemotePort
+| where StdDevInterval < 60 and AvgInterval between (30 .. 3600)
+| order by Connections desc
+
+// Query 5: Connections to Rare External IPs
+// MITRE: T1571 - Non-Standard Port
+DeviceNetworkEvents
+| where TimeGenerated > ago(7d)
+| where ActionType == "ConnectionSuccess"
+| where RemoteIPType == "Public"
+| summarize DeviceCount=dcount(DeviceName), TotalConnections=count(),
+    Devices=make_set(DeviceName, 10), Ports=make_set(RemotePort, 10)
+    by RemoteIP
+| where DeviceCount == 1 and TotalConnections > 50
+| order by TotalConnections desc
+
+// Query 6: HTTP/HTTPS to Non-Standard Ports
+// MITRE: T1571 - Non-Standard Port
+DeviceNetworkEvents
+| where TimeGenerated > ago(24h)
+| where ActionType == "ConnectionSuccess"
+| where RemotePort !in (80, 443, 8080, 8443)
+| where RemoteIPType == "Public"
+| summarize ConnectionCount=count(), UniqueDevices=dcount(DeviceName),
+    Devices=make_set(DeviceName, 10) by RemoteIP, RemotePort
+| where ConnectionCount > 20
+| order by ConnectionCount desc
+
+// Query 7: SMB Enumeration Patterns
+// MITRE: T1021.002 - Remote Services: SMB/Windows Admin Shares
+DeviceNetworkEvents
+| where TimeGenerated > ago(24h)
+| where RemotePort == 445
+| where ActionType in ("ConnectionSuccess", "ConnectionFailed")
+| summarize SuccessCount=countif(ActionType == "ConnectionSuccess"),
+    FailCount=countif(ActionType == "ConnectionFailed"),
+    UniqueTargets=dcount(RemoteIP), Targets=make_set(RemoteIP, 20)
+    by DeviceName, bin(TimeGenerated, 1h)
+| where UniqueTargets > 10
+| order by UniqueTargets desc
+
+// Query 8: RDP Brute Force Attempts
+// MITRE: T1021.001 - Remote Services: RDP
+SecurityEvent
+| where TimeGenerated > ago(24h)
+| where EventID == 4625
+| where LogonType == 10
+| summarize FailedAttempts=count(), UniqueAccounts=dcount(TargetUserName),
+    Accounts=make_set(TargetUserName, 20) by IpAddress, TargetMachine=Computer
+| where FailedAttempts > 20 and UniqueAccounts > 3
+| order by FailedAttempts desc
+
+// Query 9: Port Scanning Behavior
+// MITRE: T1046 - Network Service Discovery
+DeviceNetworkEvents
+| where TimeGenerated > ago(24h)
+| where ActionType in ("ConnectionFailed", "ConnectionSuccess")
+| summarize UniquePorts=dcount(RemotePort), Ports=make_set(RemotePort, 50),
+    TotalAttempts=count(), SuccessRate=round(countif(ActionType == "ConnectionSuccess") * 100.0 / count(), 2)
+    by DeviceName, RemoteIP, bin(TimeGenerated, 10m)
+| where UniquePorts > 15
+| order by UniquePorts desc
+
+// Query 10: Large Outbound Data Transfers
+// MITRE: T1048 - Exfiltration Over Alternative Protocol
+DeviceNetworkEvents
+| where TimeGenerated > ago(24h)
+| where ActionType == "ConnectionSuccess"
+| where RemoteIPType == "Public"
+| where SentBytes > 10000000  // > 10MB
+| summarize TotalBytesSent=sum(SentBytes), Connections=count(),
+    DestIPs=make_set(RemoteIP, 10), Ports=make_set(RemotePort, 10)
+    by DeviceName, bin(TimeGenerated, 1h)
+| where TotalBytesSent > 100000000  // > 100MB per hour
+| extend TotalMBSent = round(TotalBytesSent / 1000000.0, 2)
+| order by TotalBytesSent desc
+
+// Usage Instructions:
+// 1. Adjust time ranges based on investigation scope
+// 2. Whitelist known good IPs/domains in production
+// 3. Combine with ThreatIntelligenceIndicator for enrichment
+// 4. Create alerts for high-confidence detections
+// 5. Export results for SIEM correlation

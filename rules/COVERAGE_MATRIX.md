@@ -6,11 +6,12 @@ This document provides a visual representation of detection coverage mapped to t
 
 | Metric | Count |
 |--------|-------|
-| **Total Sigma Rules** | 39 |
+| **Total Sigma Rules** | 59 |
 | **Total YARA Rules** | 22 |
+| **Cloud Platform Rules** | 20 |
 | **ATT&CK Tactics Covered** | 11/14 (79%) |
-| **ATT&CK Techniques Covered** | 45+ |
-| **2025 Threat Coverage** | Infostealers, RaaS, APT, Loaders, C2 |
+| **ATT&CK Techniques Covered** | 55+ |
+| **2025 Threat Coverage** | Infostealers, RaaS, APT, Loaders, C2, Cloud |
 
 ## Sigma Rule Coverage by Tactic
 
@@ -53,6 +54,63 @@ This document provides a visual representation of detection coverage mapped to t
     | Suspicious Scripts  |   3   | PowerShell, VBS, JS     | Medium   |
     +------------------------------------------------------------------+
 ```
+
+## Cloud Platform Detection Coverage
+
+```
+    +------------------------------------------------------------------+
+    | Cloud Platform  | Rules | Key Detections              | Priority |
+    +------------------------------------------------------------------+
+    | AWS             |   5   | IAM Escalation, CloudTrail  | High     |
+    |                 |       | S3 Exposure, Root Account   |          |
+    | Azure           |   5   | MFA Disable, App Consent    | High     |
+    |                 |       | Privileged Roles, Key Vault |          |
+    | GCP             |   5   | Service Account Keys, IAM   | Medium   |
+    |                 |       | Firewall, Logging Tampering |          |
+    | Kubernetes      |   5   | Privileged Pods, Secrets    | Medium   |
+    |                 |       | RBAC, Pod Exec, SA Tokens   |          |
+    +------------------------------------------------------------------+
+```
+
+### AWS Detection Rules
+
+| Technique ID | Technique Name | Rule File | Status |
+|--------------|----------------|-----------|--------|
+| T1098 | IAM Privilege Escalation | aws_iam_privilege_escalation.yml | [OK] |
+| T1562.008 | CloudTrail Tampering | aws_cloudtrail_tampering.yml | [OK] |
+| T1530 | S3 Bucket Exposure | aws_s3_bucket_exposure.yml | [OK] |
+| T1078.004 | Root Account Usage | aws_root_account_usage.yml | [OK] |
+| T1562.007 | Security Group Open | aws_security_group_open.yml | [OK] |
+
+### Azure Detection Rules
+
+| Technique ID | Technique Name | Rule File | Status |
+|--------------|----------------|-----------|--------|
+| T1556.006 | MFA Disabled | azure_mfa_disabled.yml | [OK] |
+| T1562.001 | Conditional Access Modified | azure_conditional_access_modified.yml | [OK] |
+| T1550.001 | App Consent Grant | azure_app_consent_grant.yml | [OK] |
+| T1098.003 | Privileged Role Assignment | azure_privileged_role_assignment.yml | [OK] |
+| T1552.001 | Key Vault Secret Access | azure_keyvault_secret_access.yml | [OK] |
+
+### GCP Detection Rules
+
+| Technique ID | Technique Name | Rule File | Status |
+|--------------|----------------|-----------|--------|
+| T1098.001 | Service Account Key Created | gcp_service_account_key_created.yml | [OK] |
+| T1098 | IAM Policy Modified | gcp_iam_policy_modified.yml | [OK] |
+| T1562.007 | Firewall Rule Modified | gcp_firewall_rule_modified.yml | [OK] |
+| T1562.008 | Logging Sink Modified | gcp_logging_sink_modified.yml | [OK] |
+| T1578 | Compute Instance Suspicious | gcp_compute_instance_suspicious.yml | [OK] |
+
+### Kubernetes Detection Rules
+
+| Technique ID | Technique Name | Rule File | Status |
+|--------------|----------------|-----------|--------|
+| T1611 | Privileged Pod Created | k8s_privileged_pod_created.yml | [OK] |
+| T1552.007 | Secrets Enumeration | k8s_secrets_access.yml | [OK] |
+| T1098 | RBAC Modification | k8s_rbac_modification.yml | [OK] |
+| T1609 | Pod Exec/Attach | k8s_pod_exec_attach.yml | [OK] |
+| T1078 | Service Account Token | k8s_service_account_token_creation.yml | [OK] |
 
 ## Detailed Technique Coverage
 
@@ -231,6 +289,6 @@ To add new detection rules:
 
 ---
 
-**Last Updated**: 2025-11-26
-**Version**: 2.0.0
+**Last Updated**: 2025-12-28
+**Version**: 2.1.0
 **Maintainer**: Defensive Toolkit Project

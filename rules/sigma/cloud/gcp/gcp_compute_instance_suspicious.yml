@@ -1,0 +1,50 @@
+title: GCP Compute Instance Suspicious Activity
+id: c3d4e5f6-3333-4000-8000-000000000005
+status: stable
+description: |
+    Detects suspicious activities related to GCP Compute Engine instances including
+    serial console access, metadata modification, and disk snapshot operations
+    that could indicate data exfiltration or persistence attempts.
+references:
+    - https://attack.mitre.org/techniques/T1578/
+    - https://cloud.google.com/compute/docs/instances/interacting-with-serial-console
+    - https://rhinosecuritylabs.com/gcp/privilege-escalation-google-cloud-platform-part-1/
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.persistence
+    - attack.collection
+    - attack.t1578
+    - detection.cloud_threats
+    - cloud.gcp
+logsource:
+    product: gcp
+    service: cloudaudit
+detection:
+    selection_serial_console:
+        protoPayload.methodName|contains:
+            - ConnectToSerialPort
+            - v1.compute.instances.getSerialPortOutput
+    selection_metadata_modify:
+        protoPayload.methodName:
+            - v1.compute.instances.setMetadata
+            - v1.compute.projects.setCommonInstanceMetadata
+    selection_ssh_keys_metadata:
+        protoPayload.request.metadata.items.key:
+            - ssh-keys
+            - sshKeys
+    selection_disk_snapshot:
+        protoPayload.methodName:
+            - v1.compute.disks.createSnapshot
+            - v1.compute.snapshots.insert
+    selection_disk_export:
+        protoPayload.methodName:
+            - v1.compute.images.insert
+            - v1.compute.images.export
+    condition: selection_serial_console or (selection_metadata_modify and selection_ssh_keys_metadata) or selection_disk_snapshot or selection_disk_export
+falsepositives:
+    - Legitimate debugging via serial console
+    - SSH key rotation procedures
+    - Backup snapshot automation
+level: medium

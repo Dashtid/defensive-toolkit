@@ -1,0 +1,60 @@
+title: AWS S3 Bucket Public Access or Policy Modification
+id: a1b2c3d4-1111-4000-8000-000000000003
+status: stable
+description: |
+    Detects modifications to S3 bucket policies, ACLs, or public access settings that
+    could expose sensitive data. Public S3 buckets are a leading cause of cloud data
+    breaches and require immediate attention when detected.
+references:
+    - https://attack.mitre.org/techniques/T1530/
+    - https://attack.mitre.org/techniques/T1537/
+    - https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html
+    - https://www.wiz.io/blog/s3-bucket-misconfigurations
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.collection
+    - attack.exfiltration
+    - attack.t1530
+    - attack.t1537
+    - detection.cloud_threats
+    - cloud.aws
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection_bucket_policy:
+        eventSource: s3.amazonaws.com
+        eventName:
+            - PutBucketPolicy
+            - DeleteBucketPolicy
+    selection_bucket_acl:
+        eventSource: s3.amazonaws.com
+        eventName: PutBucketAcl
+    selection_public_access_block:
+        eventSource: s3.amazonaws.com
+        eventName:
+            - PutBucketPublicAccessBlock
+            - DeleteBucketPublicAccessBlock
+            - PutAccountPublicAccessBlock
+            - DeleteAccountPublicAccessBlock
+    selection_bucket_cors:
+        eventSource: s3.amazonaws.com
+        eventName: PutBucketCors
+    selection_bucket_website:
+        eventSource: s3.amazonaws.com
+        eventName: PutBucketWebsite
+    selection_object_acl:
+        eventSource: s3.amazonaws.com
+        eventName: PutObjectAcl
+        requestParameters.x-amz-acl|contains:
+            - public-read
+            - public-read-write
+            - authenticated-read
+    condition: selection_bucket_policy or selection_bucket_acl or selection_public_access_block or selection_bucket_cors or selection_bucket_website or selection_object_acl
+falsepositives:
+    - Legitimate bucket policy updates by authorized personnel
+    - Static website hosting configuration
+    - CDN origin bucket configuration
+level: high

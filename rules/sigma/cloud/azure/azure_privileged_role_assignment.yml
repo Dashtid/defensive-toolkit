@@ -1,0 +1,51 @@
+title: Azure AD Privileged Role Assignment
+id: b2c3d4e5-2222-4000-8000-000000000004
+status: stable
+description: |
+    Detects assignment of highly privileged Azure AD roles including Global
+    Administrator, Privileged Role Administrator, and other sensitive roles.
+    Unauthorized role assignments are a key indicator of privilege escalation.
+references:
+    - https://attack.mitre.org/techniques/T1098/003/
+    - https://docs.microsoft.com/en-us/azure/active-directory/roles/permissions-reference
+    - https://www.mandiant.com/resources/blog/azure-active-directory-compromises
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.privilege_escalation
+    - attack.persistence
+    - attack.t1098.003
+    - detection.cloud_threats
+    - cloud.azure
+logsource:
+    product: azure
+    service: auditlogs
+detection:
+    selection_role_assignment:
+        operationName:
+            - Add member to role
+            - Add eligible member to role
+            - Add scoped member to role
+    selection_privileged_roles:
+        targetResources.modifiedProperties.newValue|contains:
+            - Global Administrator
+            - Privileged Role Administrator
+            - Privileged Authentication Administrator
+            - Security Administrator
+            - Exchange Administrator
+            - SharePoint Administrator
+            - Intune Administrator
+            - Azure AD Joined Device Local Administrator
+            - Cloud Application Administrator
+            - Application Administrator
+    selection_pim_activation:
+        operationName:
+            - Add member to role in PIM completed (permanent)
+            - Add member to role in PIM completed (timebound)
+    condition: (selection_role_assignment and selection_privileged_roles) or selection_pim_activation
+falsepositives:
+    - Legitimate role assignments by Global Administrators
+    - Just-in-time access through PIM
+    - Onboarding of new administrators
+level: high

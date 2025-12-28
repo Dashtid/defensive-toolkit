@@ -290,8 +290,110 @@ def main():
             logger.info("[i] View in Splunk: Settings > Searches, reports, and alerts")
 
     else:
+        # Dry-run mode: convert rules and display results without deployment
         logger.info("[i] Dry run mode - rules will be converted but not deployed")
-        # TODO: Implement dry-run conversion only
+        dry_run_convert(args.rules_dir)
+
+
+def dry_run_convert(rules_dir: Path) -> Dict:
+    """
+    Convert all Sigma rules to SPL format without deploying.
+
+    Args:
+        rules_dir: Directory containing Sigma rules
+
+    Returns:
+        dict: Conversion statistics and results
+    """
+    import subprocess
+
+    import yaml
+
+    stats = {"total": 0, "converted": 0, "failed": 0, "rules": []}
+
+    sigma_files = list(rules_dir.rglob("*.yml"))
+    stats["total"] = len(sigma_files)
+
+    logger.info(f"Found {stats['total']} Sigma rule files for dry-run conversion")
+    logger.info("=" * 60)
+
+    for sigma_file in sigma_files:
+        try:
+            # Parse Sigma file for metadata
+            with open(sigma_file, "r", encoding="utf-8") as f:
+                sigma_rule = yaml.safe_load(f)
+
+            title = sigma_rule.get("title", sigma_file.stem)
+            rule_id = sigma_rule.get("id", "N/A")
+            level = sigma_rule.get("level", "medium")
+
+            # Convert to SPL using sigma-cli
+            result = subprocess.run(
+                ["sigma", "convert", "-t", "splunk", str(sigma_file)],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode == 0:
+                spl_query = result.stdout.strip()
+                stats["converted"] += 1
+
+                rule_info = {
+                    "file": sigma_file.name,
+                    "title": title,
+                    "id": rule_id,
+                    "level": level,
+                    "spl": spl_query,
+                    "status": "OK",
+                }
+                stats["rules"].append(rule_info)
+
+                # Display converted rule
+                logger.info(f"\n[+] {title}")
+                logger.info(f"    File: {sigma_file.name}")
+                logger.info(f"    ID: {rule_id}")
+                logger.info(f"    Level: {level}")
+                logger.info(f"    SPL Query:")
+                # Truncate long queries for display
+                display_query = spl_query[:200] + "..." if len(spl_query) > 200 else spl_query
+                logger.info(f"    {display_query}")
+
+            else:
+                stats["failed"] += 1
+                error_msg = result.stderr.strip() or "Unknown conversion error"
+                stats["rules"].append(
+                    {
+                        "file": sigma_file.name,
+                        "title": title,
+                        "status": "FAILED",
+                        "error": error_msg,
+                    }
+                )
+                logger.error(f"\n[X] Failed: {title}")
+                logger.error(f"    Error: {error_msg}")
+
+        except subprocess.TimeoutExpired:
+            stats["failed"] += 1
+            logger.error(f"\n[X] Timeout converting: {sigma_file.name}")
+        except Exception as e:
+            stats["failed"] += 1
+            logger.error(f"\n[X] Error processing {sigma_file.name}: {e}")
+
+    # Print summary
+    logger.info("\n" + "=" * 60)
+    logger.info("Dry Run Conversion Summary:")
+    logger.info(f"  Total rules:     {stats['total']}")
+    logger.info(f"  Converted:       {stats['converted']}")
+    logger.info(f"  Failed:          {stats['failed']}")
+    logger.info(f"  Success rate:    {stats['converted']/max(stats['total'], 1)*100:.1f}%")
+    logger.info("=" * 60)
+
+    if stats["converted"] > 0:
+        logger.info("\n[i] To deploy these rules, run without --dry-run flag")
+        logger.info("[i] Example: python deploy_sigma_rules.py --config config.yml")
+
+    return stats
 
 
 if __name__ == "__main__":

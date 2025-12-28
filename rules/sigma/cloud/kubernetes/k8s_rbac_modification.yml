@@ -1,0 +1,64 @@
+title: Kubernetes RBAC ClusterRole or Binding Modified
+id: d4e5f6a7-4444-4000-8000-000000000003
+status: stable
+description: |
+    Detects creation or modification of ClusterRoles and ClusterRoleBindings
+    that grant cluster-wide permissions. Unauthorized RBAC changes could grant
+    attackers persistent elevated access to the cluster.
+references:
+    - https://attack.mitre.org/techniques/T1098/
+    - https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+    - https://microsoft.github.io/Threat-Matrix-for-Kubernetes/techniques/Cluster-admin%20binding/
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.privilege_escalation
+    - attack.persistence
+    - attack.t1098
+    - detection.cloud_threats
+    - cloud.kubernetes
+logsource:
+    product: kubernetes
+    service: audit
+detection:
+    selection_rbac_modify:
+        verb:
+            - create
+            - update
+            - patch
+        objectRef.resource:
+            - clusterroles
+            - clusterrolebindings
+            - roles
+            - rolebindings
+    selection_privileged_role:
+        requestObject.roleRef.name:
+            - cluster-admin
+            - admin
+            - edit
+    selection_dangerous_verbs:
+        requestObject.rules.verbs|contains:
+            - '*'
+            - create
+            - delete
+            - patch
+            - update
+    selection_dangerous_resources:
+        requestObject.rules.resources|contains:
+            - '*'
+            - secrets
+            - pods/exec
+            - pods/attach
+            - serviceaccounts
+            - clusterroles
+            - clusterrolebindings
+    filter_system_users:
+        user.username|startswith:
+            - system:
+    condition: selection_rbac_modify and (selection_privileged_role or (selection_dangerous_verbs and selection_dangerous_resources)) and not filter_system_users
+falsepositives:
+    - Legitimate RBAC configuration by cluster administrators
+    - Helm chart installations
+    - Operator deployments
+level: high

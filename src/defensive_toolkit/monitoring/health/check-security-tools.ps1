@@ -21,11 +21,33 @@
 .PARAMETER AlertEmail
     Email address for alerts
 
+.PARAMETER SmtpServer
+    SMTP server hostname or IP (default: localhost)
+
+.PARAMETER SmtpPort
+    SMTP server port (default: 25)
+
+.PARAMETER FromEmail
+    Sender email address (default: security-alerts@<hostname>)
+
+.PARAMETER UseSsl
+    Use SSL/TLS for SMTP connection
+
+.PARAMETER SmtpCredential
+    PSCredential for SMTP authentication
+
 .EXAMPLE
     .\check-security-tools.ps1
 
 .EXAMPLE
     .\check-security-tools.ps1 -OutputFormat JSON
+
+.EXAMPLE
+    .\check-security-tools.ps1 -SendAlert -AlertEmail "security@company.com" -SmtpServer "mail.company.com"
+
+.EXAMPLE
+    $cred = Get-Credential
+    .\check-security-tools.ps1 -SendAlert -AlertEmail "alerts@company.com" -SmtpServer "smtp.office365.com" -SmtpPort 587 -UseSsl -SmtpCredential $cred
 
 .NOTES
     Author: Defensive Toolkit
@@ -42,7 +64,22 @@ param(
     [switch]$SendAlert,
 
     [Parameter()]
-    [string]$AlertEmail
+    [string]$AlertEmail,
+
+    [Parameter()]
+    [string]$SmtpServer = "localhost",
+
+    [Parameter()]
+    [int]$SmtpPort = 25,
+
+    [Parameter()]
+    [string]$FromEmail = "security-alerts@$env:COMPUTERNAME",
+
+    [Parameter()]
+    [switch]$UseSsl,
+
+    [Parameter()]
+    [System.Management.Automation.PSCredential]$SmtpCredential
 )
 
 $ErrorActionPreference = "Continue"
@@ -286,8 +323,112 @@ else {
 # Send alert if requested and issues found
 if ($SendAlert -and $results.IssuesFound -gt 0 -and $AlertEmail) {
     Write-Host "[i] Sending alert email to $AlertEmail"
-    # TODO: Implement email alerting
-    # Send-MailMessage -To $AlertEmail -Subject "Security Tools Health Alert - $($results.Hostname)" -Body $html -BodyAsHtml
+
+    # Generate HTML body for email
+    $emailHtml = @"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #d9534f; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #333; color: white; }
+        .ok { background-color: #dff0d8; }
+        .fail { background-color: #f2dede; }
+        .error { background-color: #fcf8e3; }
+        .summary { background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .critical { color: #d9534f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Security Tools Health Alert</h1>
+    <div class="summary">
+        <p><strong>Hostname:</strong> $($results.Hostname)</p>
+        <p><strong>Timestamp:</strong> $($results.Timestamp)</p>
+        <p><strong>Overall Status:</strong> <span class="critical">$($results.OverallStatus)</span></p>
+        <p><strong>Issues Found:</strong> <span class="critical">$($results.IssuesFound)</span></p>
+    </div>
+    <table>
+        <tr>
+            <th>Check</th>
+            <th>Status</th>
+            <th>Message</th>
+        </tr>
+"@
+
+    foreach ($check in $results.Checks) {
+        $rowClass = $check.Status.ToLower()
+        $emailHtml += @"
+        <tr class="$rowClass">
+            <td><strong>$($check.Name)</strong><br><small>$($check.Description)</small></td>
+            <td>$($check.Status)</td>
+            <td>$($check.Message)</td>
+        </tr>
+"@
+    }
+
+    $emailHtml += @"
+    </table>
+    <p style="margin-top: 20px; color: #666;">
+        This is an automated alert from the Defensive Toolkit security monitoring system.
+        Please investigate and remediate the issues listed above.
+    </p>
+</body>
+</html>
+"@
+
+    $subject = "[ALERT] Security Tools Health - $($results.IssuesFound) issue(s) on $($results.Hostname)"
+
+    try {
+        $mailParams = @{
+            From       = $FromEmail
+            To         = $AlertEmail
+            Subject    = $subject
+            Body       = $emailHtml
+            BodyAsHtml = $true
+            SmtpServer = $SmtpServer
+            Port       = $SmtpPort
+        }
+
+        if ($UseSsl) {
+            $mailParams.UseSsl = $true
+        }
+
+        if ($SmtpCredential) {
+            $mailParams.Credential = $SmtpCredential
+        }
+
+        Send-MailMessage @mailParams -ErrorAction Stop
+        Write-Host "[OK] Alert email sent successfully to $AlertEmail" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "[X] Failed to send alert email: $_" -ForegroundColor Red
+
+        # Fallback: Try Windows built-in notification (if available)
+        if (Get-Command -Name "New-BurntToastNotification" -ErrorAction SilentlyContinue) {
+            try {
+                New-BurntToastNotification -Text "Security Alert", "$($results.IssuesFound) issue(s) detected" -AppLogo "C:\Windows\System32\SecurityHealthAgent.dll"
+            }
+            catch {
+                # Silently ignore toast notification errors
+            }
+        }
+
+        # Log to Windows Event Log as fallback
+        try {
+            $eventMessage = "Security Tools Health Check Alert`n`nHostname: $($results.Hostname)`nIssues Found: $($results.IssuesFound)`n`nFailed Checks:`n"
+            foreach ($check in $results.Checks | Where-Object { $_.Status -ne "OK" }) {
+                $eventMessage += "- $($check.Name): $($check.Message)`n"
+            }
+            Write-EventLog -LogName "Application" -Source "Defensive Toolkit" -EventId 1001 -EntryType Warning -Message $eventMessage -ErrorAction SilentlyContinue
+            Write-Host "[i] Alert logged to Windows Event Log (Application)" -ForegroundColor Yellow
+        }
+        catch {
+            # Event log source may not be registered, ignore
+        }
+    }
 }
 
 # Exit code reflects health status

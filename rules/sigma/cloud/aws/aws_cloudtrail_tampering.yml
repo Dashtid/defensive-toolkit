@@ -1,0 +1,46 @@
+title: AWS CloudTrail Logging Disabled or Modified
+id: a1b2c3d4-1111-4000-8000-000000000002
+status: stable
+description: |
+    Detects attempts to disable, delete, or modify CloudTrail logging configuration.
+    Attackers commonly disable logging to cover their tracks after gaining access.
+    This is a critical security event that requires immediate investigation.
+references:
+    - https://attack.mitre.org/techniques/T1562/008/
+    - https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-concepts.html
+    - https://www.elastic.co/guide/en/security/current/aws-cloudtrail-log-deleted.html
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.defense_evasion
+    - attack.t1562.008
+    - detection.cloud_threats
+    - cloud.aws
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection_stop_logging:
+        eventSource: cloudtrail.amazonaws.com
+        eventName: StopLogging
+    selection_delete_trail:
+        eventSource: cloudtrail.amazonaws.com
+        eventName: DeleteTrail
+    selection_update_trail:
+        eventSource: cloudtrail.amazonaws.com
+        eventName: UpdateTrail
+    selection_disable_logging:
+        eventSource: cloudtrail.amazonaws.com
+        eventName:
+            - DeleteEventDataStore
+            - StopEventDataStoreIngestion
+    selection_put_event_selectors:
+        eventSource: cloudtrail.amazonaws.com
+        eventName: PutEventSelectors
+    condition: selection_stop_logging or selection_delete_trail or selection_update_trail or selection_disable_logging or selection_put_event_selectors
+falsepositives:
+    - Legitimate CloudTrail maintenance by security team
+    - Trail consolidation during AWS organization setup
+    - Cost optimization activities (should be documented)
+level: critical

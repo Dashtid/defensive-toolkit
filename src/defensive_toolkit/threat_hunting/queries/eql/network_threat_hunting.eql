@@ -1,0 +1,219 @@
+// Network Threat Hunting Queries
+// Platform: Elastic Security (EQL - Event Query Language)
+// Author: Defensive Toolkit
+// Date: 2025-12-28
+// Description: Hunts for network-based threats including DNS tunneling,
+//              C2 beaconing, lateral movement, and data exfiltration
+// MITRE ATT&CK: T1071.004, T1571, T1573, T1021, T1046, T1048
+
+// ============================================================================
+// Query 1: DNS Tunneling - Long Query Names
+// MITRE: T1071.004 - Application Layer Protocol: DNS
+// ============================================================================
+dns where dns.question.type == "A" and
+  length(dns.question.name) > 50 and
+  stringContains(dns.question.name, ".") and
+  not dns.question.name : (
+    "*.microsoft.com",
+    "*.windows.com",
+    "*.google.com"
+  )
+
+// ============================================================================
+// Query 2: DNS TXT Record Queries (Data Exfiltration Channel)
+// MITRE: T1071.004 - Application Layer Protocol: DNS
+// ============================================================================
+dns where dns.question.type == "TXT" and
+  not dns.question.name : (
+    "*._dmarc.*",
+    "*._domainkey.*",
+    "*._spf.*",
+    "*.microsoft.com",
+    "*.google.com"
+  )
+
+// ============================================================================
+// Query 3: High Volume DNS Queries to Single Domain
+// MITRE: T1071.004 - Application Layer Protocol: DNS
+// ============================================================================
+sequence by source.ip with maxspan=5m
+  [dns where event.type == "query"] with runs=100
+
+// ============================================================================
+// Query 4: Outbound Connection to Non-Standard Port
+// MITRE: T1571 - Non-Standard Port
+// ============================================================================
+network where event.action == "connection_attempted" and
+  destination.port not in (80, 443, 53, 22, 25, 993, 587, 8080, 8443) and
+  not destination.ip : ("10.*", "172.16.*", "172.17.*", "172.18.*", "172.19.*",
+    "172.20.*", "172.21.*", "172.22.*", "172.23.*", "172.24.*", "172.25.*",
+    "172.26.*", "172.27.*", "172.28.*", "172.29.*", "172.30.*", "172.31.*",
+    "192.168.*", "127.*")
+
+// ============================================================================
+// Query 5: Periodic Network Beaconing (C2 Detection)
+// MITRE: T1571 - Non-Standard Port, T1573 - Encrypted Channel
+// ============================================================================
+sequence by process.entity_id, destination.ip with maxspan=1h
+  [network where event.action == "connection_attempted"] with runs=10
+
+// ============================================================================
+// Query 6: SMB Connection to Multiple Hosts
+// MITRE: T1021.002 - Remote Services: SMB/Windows Admin Shares
+// ============================================================================
+sequence by source.ip with maxspan=10m
+  [network where destination.port == 445 and event.action == "connection_attempted"] with runs=10
+
+// ============================================================================
+// Query 7: RDP Brute Force Sequence
+// MITRE: T1021.001 - Remote Services: RDP
+// ============================================================================
+sequence by source.ip, destination.ip with maxspan=5m
+  [authentication where event.action == "logon-failed" and
+   winlog.logon.type == "RemoteInteractive"] with runs=5
+
+// ============================================================================
+// Query 8: Port Scanning Activity
+// MITRE: T1046 - Network Service Discovery
+// ============================================================================
+sequence by source.ip, destination.ip with maxspan=1m
+  [network where event.action in ("connection_attempted", "connection_failed")] with runs=15
+
+// ============================================================================
+// Query 9: Large Data Transfer to External IP
+// MITRE: T1048 - Exfiltration Over Alternative Protocol
+// ============================================================================
+network where event.action == "connection_attempted" and
+  network.bytes > 10000000 and
+  not destination.ip : ("10.*", "172.16.*", "172.17.*", "172.18.*", "172.19.*",
+    "172.20.*", "172.21.*", "172.22.*", "172.23.*", "172.24.*", "172.25.*",
+    "172.26.*", "172.27.*", "172.28.*", "172.29.*", "172.30.*", "172.31.*",
+    "192.168.*", "127.*")
+
+// ============================================================================
+// Query 10: Outbound Connection from Suspicious Process
+// MITRE: T1071 - Application Layer Protocol
+// ============================================================================
+network where event.action == "connection_attempted" and
+  process.name : ("certutil.exe", "bitsadmin.exe", "mshta.exe", "wscript.exe",
+    "cscript.exe", "regsvr32.exe", "rundll32.exe", "msiexec.exe") and
+  not destination.ip : ("10.*", "172.16.*", "192.168.*", "127.*")
+
+// ============================================================================
+// Query 11: DNS Query After Process Start (Staging Detection)
+// MITRE: T1071.004 - Application Layer Protocol: DNS
+// ============================================================================
+sequence by process.entity_id with maxspan=30s
+  [process where event.type == "start" and
+   process.name : ("powershell.exe", "cmd.exe", "wscript.exe", "cscript.exe")]
+  [dns where event.type == "query" and
+   not dns.question.name : ("*.microsoft.com", "*.windows.com", "*.windowsupdate.com")]
+
+// ============================================================================
+// Query 12: Lateral Movement via WMI
+// MITRE: T1021.006 - Remote Services: WMI
+// ============================================================================
+sequence by source.ip with maxspan=5m
+  [process where event.type == "start" and
+   process.name : "wmic.exe" and
+   process.args : "/node:*"]
+  [network where destination.port in (135, 445) and
+   event.action == "connection_attempted"]
+
+// ============================================================================
+// Query 13: ICMP Tunnel Detection
+// MITRE: T1095 - Non-Application Layer Protocol
+// ============================================================================
+network where network.protocol == "icmp" and
+  network.bytes > 1000 and
+  not destination.ip : ("10.*", "172.16.*", "192.168.*", "127.*")
+
+// ============================================================================
+// Query 14: SSH to External Host from Non-Admin
+// MITRE: T1021.004 - Remote Services: SSH
+// ============================================================================
+network where destination.port == 22 and
+  event.action == "connection_attempted" and
+  not destination.ip : ("10.*", "172.16.*", "192.168.*", "127.*") and
+  not user.name : ("root", "admin", "*admin*")
+
+// ============================================================================
+// Query 15: Encrypted Channel to Rare Destination
+// MITRE: T1573 - Encrypted Channel
+// ============================================================================
+sequence by process.entity_id with maxspan=1m
+  [network where destination.port == 443 and
+   event.action == "connection_attempted" and
+   not destination.ip : ("10.*", "172.16.*", "192.168.*")]
+  [tls where tls.client.server_name not in (
+    "*.microsoft.com", "*.google.com", "*.amazonaws.com",
+    "*.cloudflare.com", "*.azure.com")]
+
+// ============================================================================
+// Query 16: RPC Lateral Movement
+// MITRE: T1021.003 - Remote Services: Distributed Component Object Model
+// ============================================================================
+network where destination.port in (135, 139, 593) and
+  event.action == "connection_attempted" and
+  process.name : ("mmc.exe", "wmic.exe", "wmiprvse.exe", "dllhost.exe")
+
+// ============================================================================
+// Query 17: Potential Data Staging via Cloud Storage
+// MITRE: T1567 - Exfiltration Over Web Service
+// ============================================================================
+network where event.action == "connection_attempted" and
+  destination.port in (80, 443) and
+  (destination.domain : (
+    "*.dropbox.com", "*.drive.google.com", "*.onedrive.live.com",
+    "*.box.com", "*.mega.nz", "*.mediafire.com"
+  ) or
+  process.name : ("rclone.exe", "megasync.exe", "dropbox.exe"))
+
+// ============================================================================
+// Query 18: DNS Query to Dynamic DNS Provider
+// MITRE: T1568.002 - Dynamic Resolution: Domain Generation
+// ============================================================================
+dns where dns.question.name : (
+  "*.duckdns.org", "*.no-ip.org", "*.no-ip.com", "*.ddns.net",
+  "*.freedns.afraid.org", "*.dynu.com", "*.hopto.org",
+  "*.zapto.org", "*.sytes.net")
+
+// ============================================================================
+// Query 19: Network Connection After Scheduled Task
+// MITRE: T1053 - Scheduled Task/Job
+// ============================================================================
+sequence with maxspan=1m
+  [process where event.type == "start" and
+   process.parent.name == "svchost.exe" and
+   process.parent.args : "*Schedule*"]
+  [network where event.action == "connection_attempted" and
+   not destination.ip : ("10.*", "172.16.*", "192.168.*", "127.*")]
+
+// ============================================================================
+// Query 20: Proxy/Tunnel Tool Execution with Network Activity
+// MITRE: T1090 - Proxy
+// ============================================================================
+sequence by host.id with maxspan=5m
+  [process where event.type == "start" and
+   process.name : ("plink.exe", "chisel.exe", "ngrok.exe", "frpc.exe",
+     "socat.exe", "ncat.exe", "stunnel.exe")]
+  [network where event.action == "connection_attempted"]
+
+// ============================================================================
+// Usage Instructions:
+// ============================================================================
+// 1. Copy queries to Kibana > Security > Rules > Detection rules (EQL)
+// 2. Adjust IP ranges in exclusions for your environment
+// 3. Test queries in Timeline before creating detection rules
+// 4. Tune "runs" parameter for sequence queries based on baseline
+// 5. Add additional domain exclusions for legitimate services
+// 6. Create detection rules with appropriate severity levels
+// 7. Configure alerting actions (email, Slack, SOAR)
+// 8. Review and tune regularly to reduce false positives
+//
+// Example: Running in Timeline
+// Timeline > New timeline > EQL > Paste query > Run
+//
+// Example: Creating Detection Rule
+// Security > Rules > Create new rule > Select "Event Correlation (EQL)"
+// > Paste query > Configure rule details > Create & activate

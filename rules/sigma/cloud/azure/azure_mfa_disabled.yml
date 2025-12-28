@@ -1,0 +1,42 @@
+title: Azure AD MFA Disabled for User
+id: b2c3d4e5-2222-4000-8000-000000000001
+status: stable
+description: |
+    Detects when multi-factor authentication is disabled for a user account in
+    Azure Active Directory. MFA bypass is a critical security event that could
+    indicate account compromise or insider threat activity.
+references:
+    - https://attack.mitre.org/techniques/T1556/006/
+    - https://docs.microsoft.com/en-us/azure/active-directory/authentication/howto-mfa-userstates
+    - https://www.microsoft.com/en-us/security/blog/2023/06/08/detecting-and-mitigating-a-multi-stage-aitm-phishing-and-bec-campaign/
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.credential_access
+    - attack.defense_evasion
+    - attack.t1556.006
+    - detection.cloud_threats
+    - cloud.azure
+logsource:
+    product: azure
+    service: auditlogs
+detection:
+    selection_operation:
+        operationName:
+            - Disable Strong Authentication
+            - Disable per-user MFA
+            - Update user
+    selection_mfa_property:
+        targetResources.modifiedProperties.displayName:
+            - StrongAuthenticationRequirements
+            - StrongAuthenticationMethods
+            - StrongAuthenticationPhoneAppDetails
+    selection_auth_method_removed:
+        operationName: Delete authentication method
+    condition: selection_operation or selection_mfa_property or selection_auth_method_removed
+falsepositives:
+    - Legitimate MFA reconfiguration by IT helpdesk
+    - User device replacement procedures
+    - MFA method migration (e.g., SMS to Authenticator app)
+level: high

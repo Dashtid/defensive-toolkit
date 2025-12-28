@@ -65,6 +65,12 @@ class Settings(BaseSettings):
     redis_password: str = ""
     redis_ssl: bool = False
 
+    # OpenTelemetry Configuration (for distributed tracing)
+    otel_enabled: bool = False
+    otel_service_name: str = "defensive-toolkit"
+    otel_exporter_endpoint: str = "http://localhost:4317"
+    otel_trace_sample_rate: float = 1.0  # 1.0 = 100% sampling, 0.1 = 10%
+
     # Logging Configuration
     log_level: str = "INFO"
     log_format: str = "json"  # "json" or "text"

@@ -1,6 +1,6 @@
 [project]
 name = "defensive-toolkit"
-version = "1.2.0"
+version = "1.7.0"
 description = "Blue team security tools for detection, monitoring, incident response, and threat hunting"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -46,6 +46,7 @@ dependencies = [
     "httpx>=0.27.0",
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0.0,<5.0.0",  # bcrypt 5.0 incompatible with passlib 1.7.4
     "python-multipart>=0.0.9",
     "prometheus-fastapi-instrumentator>=7.0.0",
 ]
@@ -75,9 +76,19 @@ redis = [
     "redis>=5.0.0",
 ]
 
+# Optional OpenTelemetry for distributed tracing
+otel = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-instrumentation-fastapi>=0.41b0",
+    "opentelemetry-instrumentation-httpx>=0.41b0",
+    "opentelemetry-instrumentation-redis>=0.41b0",
+    "opentelemetry-exporter-otlp>=1.20.0",
+]
+
 # All optional dependencies
 all = [
-    "defensive-toolkit[windows,threat-intel,advanced,redis]",
+    "defensive-toolkit[windows,threat-intel,advanced,redis,otel]",
 ]
 
 [project.urls]
@@ -153,6 +164,8 @@ markers = [
     "linux: marks tests that require Linux platform",
     "requires_network: marks tests that require network access",
     "requires_root: marks tests that require root/admin privileges",
+    "security: marks security-focused tests",
+    "performance: marks performance/load tests",
 ]
 filterwarnings = [
     "error",  # Turn warnings into errors

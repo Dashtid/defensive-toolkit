@@ -19,6 +19,7 @@ threat-hunting/
 ├── queries/
 │   ├── eql/              # Elastic/OpenSearch Event Query Language
 │   ├── kql/              # Kibana Query Language (Elastic/OpenSearch)
+│   ├── spl/              # Splunk Processing Language
 │   ├── wazuh/            # Wazuh-specific queries
 │   └── lucene/           # Lucene query syntax (universal)
 ├── methodologies/
@@ -38,6 +39,8 @@ threat-hunting/
 | **Wazuh** | Wazuh QL, Lucene | `queries/wazuh/`, `queries/lucene/` |
 | **Elastic** | EQL, KQL, Lucene | `queries/eql/`, `queries/kql/`, `queries/lucene/` |
 | **OpenSearch** | EQL, KQL, Lucene | `queries/eql/`, `queries/kql/`, `queries/lucene/` |
+| **Splunk** | SPL | `queries/spl/` |
+| **Azure Sentinel** | KQL | `queries/kql/` |
 | **Graylog** | Lucene, Graylog QL | `queries/lucene/` |
 
 ## Quick Start
@@ -217,6 +220,88 @@ network where destination.port in (21, 22, 25, 80, 443, 8080)
 event.category: "authentication" and event.outcome: "success"
   and @timestamp > now-1d and @timestamp.hour: (0 or 1 or 2 or 3 or 4 or 5 or 22 or 23)
 ```
+
+## Kubernetes Threat Hunting
+
+Comprehensive threat hunting queries for Kubernetes environments, covering MITRE ATT&CK Container techniques.
+
+### Available Query Files
+
+| File | Platform | Queries | Focus Areas |
+|------|----------|---------|-------------|
+| `kubernetes_threat_hunting.kql` | Azure Sentinel/AKS | 10 | Secrets, RBAC, privileged pods |
+| `kubernetes_threat_hunting.spl` | Splunk | 10 | Audit logs, Falco integration |
+| `kubernetes_threat_hunting.eql` | Elastic | 25 | Sequences, correlations |
+
+### MITRE ATT&CK Techniques Covered
+
+| Technique | Description | Detection Method |
+|-----------|-------------|------------------|
+| T1552.007 | Container API Secrets Access | Secrets enumeration patterns |
+| T1611 | Escape to Host | Privileged pods, hostPath mounts |
+| T1609 | Container Admin Command | kubectl exec/attach abuse |
+| T1078 | Valid Accounts | Service account token theft |
+| T1098 | Account Manipulation | RBAC modifications |
+| T1613 | Container Discovery | API reconnaissance |
+| T1610 | Deploy Container | Suspicious image deployment |
+| T1562 | Impair Defenses | Audit log tampering |
+
+### Kubernetes Hunting Examples
+
+**Secrets Enumeration (KQL - Azure Sentinel):**
+```kql
+AzureDiagnostics
+| where Category == "kube-audit"
+| where log_s has "secrets" and log_s has_any ("list", "get")
+| extend parsed = parse_json(log_s)
+| extend user = tostring(parsed.user.username)
+| where user !startswith "system:"
+| summarize SecretAccessCount = count() by user, bin(TimeGenerated, 1h)
+| where SecretAccessCount > 5
+```
+
+**Privileged Pod Creation (SPL - Splunk):**
+```spl
+index=kubernetes sourcetype=kube:audit
+verb=create objectRef.resource=pods
+| spath path=requestObject.spec.containers{}.securityContext.privileged output=privileged
+| search privileged=true
+| table _time user.username objectRef.name objectRef.namespace
+```
+
+**Reconnaissance Followed by Sensitive Access (EQL - Elastic):**
+```eql
+sequence by kubernetes.audit.sourceIPs with maxspan=15m
+  [any where kubernetes.audit.verb == "list" and
+   kubernetes.audit.objectRef.resource in ("pods", "services", "deployments")] with runs=5
+  [any where kubernetes.audit.objectRef.resource in ("secrets", "serviceaccounts") and
+   kubernetes.audit.verb in ("get", "list")]
+```
+
+### Kubernetes Data Sources
+
+| Source | Description | Required Fields |
+|--------|-------------|-----------------|
+| Kubernetes Audit Logs | API server audit events | verb, objectRef, user, sourceIPs |
+| Falco Events | Runtime security alerts | rule, output, priority |
+| Container Runtime Logs | containerd/Docker logs | container_id, image, action |
+
+### Deployment Guides
+
+**Azure AKS:**
+1. Enable diagnostic settings for `kube-audit` logs
+2. Send to Log Analytics Workspace
+3. Import KQL queries to Azure Sentinel
+
+**Splunk:**
+1. Install Splunk Connect for Kubernetes
+2. Configure audit log collection
+3. Create saved searches from SPL queries
+
+**Elastic:**
+1. Deploy Elastic Agent with Kubernetes integration
+2. Enable audit log collection
+3. Import EQL rules to Security > Rules
 
 ## Advanced Hunting Techniques
 

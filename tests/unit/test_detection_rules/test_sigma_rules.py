@@ -271,8 +271,8 @@ class TestSigmaRuleCounts:
             rules = load_sigma_rules(f)
             total_rules += len(rules)
 
-        # We should have at least 30 rules
-        assert total_rules >= 30, f"Expected at least 30 Sigma rules, found {total_rules}"
+        # We should have at least 50 rules (30 base + 20 cloud)
+        assert total_rules >= 50, f"Expected at least 50 Sigma rules, found {total_rules}"
 
     def test_coverage_by_tactic(self):
         """Test that we have coverage across tactics."""
@@ -300,3 +300,82 @@ class TestSigmaRuleCounts:
             if tactic_path.exists():
                 files = list(tactic_path.glob("*.yml"))
                 assert len(files) > 0, f"No rules in tactic: {tactic}"
+
+
+class TestCloudPlatformCoverage:
+    """Test cloud platform detection rule coverage."""
+
+    CLOUD_PLATFORMS = ["aws", "azure", "gcp", "kubernetes"]
+
+    def test_cloud_directory_exists(self):
+        """Test that cloud rules directory exists."""
+        rules_path = get_detection_rules_path()
+        cloud_path = rules_path / "sigma" / "cloud"
+        assert cloud_path.exists(), "Cloud rules directory not found"
+
+    def test_all_cloud_platforms_present(self):
+        """Test that all cloud platforms have detection rules."""
+        rules_path = get_detection_rules_path()
+        cloud_path = rules_path / "sigma" / "cloud"
+        if not cloud_path.exists():
+            pytest.skip("Cloud directory not found")
+
+        for platform in self.CLOUD_PLATFORMS:
+            platform_path = cloud_path / platform
+            assert platform_path.exists(), f"Missing cloud platform directory: {platform}"
+            files = list(platform_path.glob("*.yml"))
+            assert len(files) >= 3, (
+                f"Expected at least 3 rules for {platform}, found {len(files)}"
+            )
+
+    def test_minimum_cloud_rules(self):
+        """Test that we have minimum cloud detection rules."""
+        rules_path = get_detection_rules_path()
+        cloud_path = rules_path / "sigma" / "cloud"
+        if not cloud_path.exists():
+            pytest.skip("Cloud directory not found")
+
+        files = list(cloud_path.rglob("*.yml"))
+        total_rules = 0
+        for f in files:
+            rules = load_sigma_rules(f)
+            total_rules += len(rules)
+
+        # We should have at least 15 cloud rules
+        assert total_rules >= 15, f"Expected at least 15 cloud rules, found {total_rules}"
+
+    def test_cloud_rules_have_cloud_tags(self):
+        """Test that cloud rules have appropriate cloud tags."""
+        rules_path = get_detection_rules_path()
+        cloud_path = rules_path / "sigma" / "cloud"
+        if not cloud_path.exists():
+            pytest.skip("Cloud directory not found")
+
+        for f in cloud_path.rglob("*.yml"):
+            rules = load_sigma_rules(f)
+            for idx, rule in enumerate(rules):
+                if "tags" in rule:
+                    tags = rule["tags"]
+                    cloud_tags = [t for t in tags if t.startswith("cloud.")]
+                    assert len(cloud_tags) > 0, (
+                        f"Rule {idx + 1} in {f.name} missing cloud.* tag"
+                    )
+
+    def test_cloud_rules_have_logsource(self):
+        """Test that cloud rules specify appropriate log sources."""
+        rules_path = get_detection_rules_path()
+        cloud_path = rules_path / "sigma" / "cloud"
+        if not cloud_path.exists():
+            pytest.skip("Cloud directory not found")
+
+        valid_products = ["aws", "azure", "gcp", "kubernetes"]
+
+        for f in cloud_path.rglob("*.yml"):
+            rules = load_sigma_rules(f)
+            for idx, rule in enumerate(rules):
+                if "logsource" in rule:
+                    logsource = rule["logsource"]
+                    product = logsource.get("product", "")
+                    assert product in valid_products, (
+                        f"Invalid logsource product '{product}' in {f.name}"
+                    )

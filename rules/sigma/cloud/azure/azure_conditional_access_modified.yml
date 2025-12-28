@@ -1,0 +1,44 @@
+title: Azure AD Conditional Access Policy Modified
+id: b2c3d4e5-2222-4000-8000-000000000002
+status: stable
+description: |
+    Detects modifications to Azure AD Conditional Access policies including
+    creation, deletion, or updates. These policies control access to cloud
+    resources and their modification could indicate an attempt to bypass security.
+references:
+    - https://attack.mitre.org/techniques/T1562/001/
+    - https://docs.microsoft.com/en-us/azure/active-directory/conditional-access/overview
+    - https://www.microsoft.com/en-us/security/blog/2022/08/15/disrupting-seaborgiums-ongoing-phishing-operations/
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.defense_evasion
+    - attack.t1562.001
+    - detection.cloud_threats
+    - cloud.azure
+logsource:
+    product: azure
+    service: auditlogs
+detection:
+    selection_policy_operations:
+        operationName:
+            - Add conditional access policy
+            - Update conditional access policy
+            - Delete conditional access policy
+    selection_named_locations:
+        operationName:
+            - Add named location
+            - Update named location
+            - Delete named location
+    selection_auth_strength:
+        operationName:
+            - Create authentication strength policy
+            - Update authentication strength policy
+            - Delete authentication strength policy
+    condition: selection_policy_operations or selection_named_locations or selection_auth_strength
+falsepositives:
+    - Legitimate security policy updates by administrators
+    - Conditional Access policy testing in development tenants
+    - Rollout of new security controls
+level: medium

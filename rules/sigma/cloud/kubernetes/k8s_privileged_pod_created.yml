@@ -1,0 +1,58 @@
+title: Kubernetes Privileged Pod or Container Created
+id: d4e5f6a7-4444-4000-8000-000000000001
+status: stable
+description: |
+    Detects creation of pods with privileged containers, host network/PID/IPC
+    namespaces, or dangerous capabilities. Privileged containers can escape
+    to the host and compromise the entire cluster.
+references:
+    - https://attack.mitre.org/techniques/T1611/
+    - https://kubernetes.io/docs/concepts/security/pod-security-standards/
+    - https://microsoft.github.io/Threat-Matrix-for-Kubernetes/
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.privilege_escalation
+    - attack.t1611
+    - detection.cloud_threats
+    - cloud.kubernetes
+logsource:
+    product: kubernetes
+    service: audit
+detection:
+    selection_create_pod:
+        verb:
+            - create
+            - update
+            - patch
+        objectRef.resource: pods
+    selection_privileged:
+        requestObject.spec.containers.securityContext.privileged: true
+    selection_host_namespaces:
+        requestObject.spec.hostNetwork: true
+    selection_host_pid:
+        requestObject.spec.hostPID: true
+    selection_host_ipc:
+        requestObject.spec.hostIPC: true
+    selection_dangerous_caps:
+        requestObject.spec.containers.securityContext.capabilities.add|contains:
+            - SYS_ADMIN
+            - SYS_PTRACE
+            - SYS_RAWIO
+            - NET_ADMIN
+            - NET_RAW
+            - DAC_OVERRIDE
+    selection_root_user:
+        requestObject.spec.containers.securityContext.runAsUser: 0
+    filter_system_namespaces:
+        objectRef.namespace:
+            - kube-system
+            - kube-public
+            - kube-node-lease
+    condition: selection_create_pod and (selection_privileged or selection_host_namespaces or selection_host_pid or selection_host_ipc or selection_dangerous_caps) and not filter_system_namespaces
+falsepositives:
+    - Legitimate system pods in kube-system
+    - CNI plugins requiring host networking
+    - Monitoring agents (node-exporter, etc.)
+level: high

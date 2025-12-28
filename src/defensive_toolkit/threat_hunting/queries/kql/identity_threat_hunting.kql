@@ -1,0 +1,196 @@
+// Identity Threat Hunting Queries
+// Platform: Azure Sentinel / Microsoft Defender
+// Author: Defensive Toolkit
+// Date: 2025-12-28
+// Description: Hunts for identity-based threats including authentication attacks,
+//              privilege escalation, Kerberos attacks, and account manipulation
+// MITRE ATT&CK: T1110, T1078, T1134, T1558, T1098, T1136
+
+// Query 1: Password Spraying Detection
+// MITRE: T1110.003 - Brute Force: Password Spraying
+SigninLogs
+| where TimeGenerated > ago(24h)
+| where ResultType != 0
+| summarize FailedAttempts=count(), UniqueUsers=dcount(UserPrincipalName),
+    Users=make_set(UserPrincipalName, 50), Apps=make_set(AppDisplayName, 10)
+    by IPAddress, bin(TimeGenerated, 10m)
+| where UniqueUsers > 10 and FailedAttempts > 20
+| order by UniqueUsers desc
+
+// Query 2: Credential Stuffing Pattern
+// MITRE: T1110.004 - Brute Force: Credential Stuffing
+SigninLogs
+| where TimeGenerated > ago(24h)
+| summarize
+    TotalAttempts=count(),
+    FailedAttempts=countif(ResultType != 0),
+    SuccessAttempts=countif(ResultType == 0),
+    UniqueUsers=dcount(UserPrincipalName)
+    by IPAddress, bin(TimeGenerated, 1h)
+| where FailedAttempts > 50 and SuccessAttempts > 0
+| extend SuccessRate = round(SuccessAttempts * 100.0 / TotalAttempts, 2)
+| where SuccessRate between (1 .. 20)
+| order by TotalAttempts desc
+
+// Query 3: Brute Force from Single IP
+// MITRE: T1110.001 - Brute Force
+SigninLogs
+| where TimeGenerated > ago(24h)
+| where ResultType != 0
+| summarize FailedAttempts=count(),
+    FirstAttempt=min(TimeGenerated),
+    LastAttempt=max(TimeGenerated)
+    by UserPrincipalName, IPAddress
+| where FailedAttempts > 20
+| extend Duration = LastAttempt - FirstAttempt
+| where Duration < 1h
+| order by FailedAttempts desc
+
+// Query 4: Unusual Admin Group Additions
+// MITRE: T1078.002 - Valid Accounts: Domain Accounts
+AuditLogs
+| where TimeGenerated > ago(7d)
+| where OperationName has_any ("Add member to role", "Add member to group")
+| where TargetResources has_any ("Global Administrator", "Privileged Role Administrator",
+    "Domain Admins", "Enterprise Admins", "Schema Admins", "Account Operators")
+| extend InitiatedBy = tostring(InitiatedBy.user.userPrincipalName)
+| extend TargetUser = tostring(TargetResources[0].userPrincipalName)
+| extend RoleName = tostring(TargetResources[0].displayName)
+| project TimeGenerated, InitiatedBy, TargetUser, RoleName, OperationName
+| order by TimeGenerated desc
+
+// Query 5: Service Account Abuse
+// MITRE: T1078.002 - Valid Accounts: Domain Accounts
+SigninLogs
+| where TimeGenerated > ago(7d)
+| where UserPrincipalName has_any ("svc_", "service_", "_svc", "_service", "admin_", "_admin")
+| where IPAddress !in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
+| summarize LoginCount=count(), UniqueIPs=dcount(IPAddress),
+    IPs=make_set(IPAddress, 10), Apps=make_set(AppDisplayName, 10)
+    by UserPrincipalName
+| where UniqueIPs > 3
+| order by UniqueIPs desc
+
+// Query 6: Token Manipulation - Unusual Token Refresh
+// MITRE: T1134 - Access Token Manipulation
+AuditLogs
+| where TimeGenerated > ago(24h)
+| where OperationName == "Refresh token"
+| summarize RefreshCount=count() by UserPrincipalName, bin(TimeGenerated, 1h)
+| where RefreshCount > 50
+| order by RefreshCount desc
+
+// Query 7: Kerberoasting Detection (TGS Requests)
+// MITRE: T1558.003 - Steal or Forge Kerberos Tickets: Kerberoasting
+SecurityEvent
+| where TimeGenerated > ago(24h)
+| where EventID == 4769
+| where ServiceName !endswith "$"
+| where TicketEncryptionType in ("0x17", "0x18")  // RC4 encryption (weak)
+| summarize TGSRequests=count(), UniqueServices=dcount(ServiceName),
+    Services=make_set(ServiceName, 20)
+    by Account, ClientAddress
+| where TGSRequests > 10 and UniqueServices > 5
+| order by TGSRequests desc
+
+// Query 8: AS-REP Roasting Detection
+// MITRE: T1558.004 - Steal or Forge Kerberos Tickets: AS-REP Roasting
+SecurityEvent
+| where TimeGenerated > ago(24h)
+| where EventID == 4768
+| where PreAuthType == 0 or PreAuthType == ""
+| summarize ASREPRequests=count() by TargetUserName, IpAddress
+| where ASREPRequests > 5
+| order by ASREPRequests desc
+
+// Query 9: Suspicious Account Creation
+// MITRE: T1136.001 - Create Account: Local Account
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4720
+| extend CreatedBy = SubjectUserName, CreatedAccount = TargetUserName
+| where CreatedAccount !has "MSSA_" and CreatedAccount !has "$"
+| summarize AccountsCreated=count(), Accounts=make_set(CreatedAccount, 20)
+    by CreatedBy, Computer
+| where AccountsCreated > 3
+| order by AccountsCreated desc
+
+// Query 10: Password Reset by Non-Admin
+// MITRE: T1098 - Account Manipulation
+AuditLogs
+| where TimeGenerated > ago(7d)
+| where OperationName has_any ("Reset password", "Change password")
+| extend InitiatedBy = tostring(InitiatedBy.user.userPrincipalName)
+| extend TargetUser = tostring(TargetResources[0].userPrincipalName)
+| where InitiatedBy != TargetUser
+| join kind=leftanti (
+    AuditLogs
+    | where OperationName has "Add member to role"
+    | where TargetResources has_any ("Password Administrator", "Helpdesk Administrator", "Global Administrator")
+    | extend Admin = tostring(TargetResources[0].userPrincipalName)
+    | project Admin
+) on $left.InitiatedBy == $right.Admin
+| project TimeGenerated, InitiatedBy, TargetUser, OperationName, Result
+| order by TimeGenerated desc
+
+// Query 11: Delegation Abuse Detection
+// MITRE: T1134.001 - Access Token Manipulation: Token Impersonation
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4742
+| where AccountType == "User"
+| where Message has "TrustedForDelegation"
+| project TimeGenerated, Computer, Account, SubjectUserName
+| order by TimeGenerated desc
+
+// Query 12: Unusual Authentication Patterns (Time-based)
+// MITRE: T1078 - Valid Accounts
+SigninLogs
+| where TimeGenerated > ago(7d)
+| extend Hour = hourofday(TimeGenerated)
+| where Hour < 6 or Hour > 22
+| where ResultType == 0
+| summarize LoginCount=count(), UniqueHours=dcount(Hour)
+    by UserPrincipalName, AppDisplayName
+| where LoginCount > 5
+| order by LoginCount desc
+
+// Query 13: Failed Login Followed by Success (Compromise Indicator)
+// MITRE: T1110 - Brute Force
+SigninLogs
+| where TimeGenerated > ago(24h)
+| summarize FailedBefore=countif(ResultType != 0),
+    SuccessAfter=countif(ResultType == 0),
+    Times=make_list(TimeGenerated)
+    by UserPrincipalName, IPAddress
+| where FailedBefore >= 5 and SuccessAfter >= 1
+| order by FailedBefore desc
+
+// Query 14: Multi-Factor Authentication Fatigue Attack
+// MITRE: T1621 - Multi-Factor Authentication Request Generation
+SigninLogs
+| where TimeGenerated > ago(24h)
+| where ResultType == 50074 or AuthenticationRequirement == "multiFactorAuthentication"
+| summarize MFAPrompts=count(), UniqueIPs=dcount(IPAddress)
+    by UserPrincipalName, bin(TimeGenerated, 10m)
+| where MFAPrompts > 10
+| order by MFAPrompts desc
+
+// Query 15: Impossible Travel Detection
+// MITRE: T1078 - Valid Accounts
+SigninLogs
+| where TimeGenerated > ago(24h)
+| where ResultType == 0
+| summarize Locations=make_set(Location), LoginTimes=make_list(TimeGenerated)
+    by UserPrincipalName
+| where array_length(Locations) > 2
+| mv-expand Location=Locations, LoginTime=LoginTimes
+| order by UserPrincipalName, todatetime(LoginTime)
+
+// Usage Instructions:
+// 1. Adjust time ranges based on investigation scope
+// 2. Tune thresholds based on your environment baseline
+// 3. Add exclusions for legitimate service accounts
+// 4. Combine with Identity Protection alerts
+// 5. Create alerts for high-confidence detections
+// 6. Export results for SOAR automation

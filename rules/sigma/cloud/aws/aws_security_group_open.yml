@@ -1,0 +1,51 @@
+title: AWS Security Group Opened to Internet
+id: a1b2c3d4-1111-4000-8000-000000000005
+status: stable
+description: |
+    Detects security group modifications that allow inbound traffic from any IP
+    address (0.0.0.0/0 or ::/0). This could expose internal services to the internet
+    and is a common misconfiguration leading to breaches.
+references:
+    - https://attack.mitre.org/techniques/T1562/007/
+    - https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html
+    - https://www.cisecurity.org/benchmark/amazon_web_services
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.defense_evasion
+    - attack.t1562.007
+    - detection.cloud_threats
+    - cloud.aws
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection_sg_modify:
+        eventSource: ec2.amazonaws.com
+        eventName:
+            - AuthorizeSecurityGroupIngress
+            - ModifySecurityGroupRules
+    selection_open_cidr:
+        requestParameters.ipPermissions.items.ipRanges.items.cidrIp:
+            - '0.0.0.0/0'
+    selection_open_ipv6:
+        requestParameters.ipPermissions.items.ipv6Ranges.items.cidrIpv6:
+            - '::/0'
+    selection_sensitive_ports:
+        requestParameters.ipPermissions.items.fromPort:
+            - 22      # SSH
+            - 23      # Telnet
+            - 3389    # RDP
+            - 5432    # PostgreSQL
+            - 3306    # MySQL
+            - 1433    # MSSQL
+            - 27017   # MongoDB
+            - 6379    # Redis
+            - 9200    # Elasticsearch
+    condition: selection_sg_modify and (selection_open_cidr or selection_open_ipv6)
+falsepositives:
+    - Public-facing load balancers (ports 80, 443)
+    - Bastion host setup (should use specific IPs)
+    - Development/testing environments
+level: high

@@ -1,0 +1,326 @@
+// ============================================================================
+// Kubernetes Threat Hunting Queries - EQL (Event Query Language)
+// ============================================================================
+// Platform: Elastic Security, OpenSearch
+// Author: Defensive Toolkit
+// Date: 2025-12-28
+// Description: Threat hunting queries for Kubernetes using EQL
+// Data Sources: Kubernetes audit logs, Falco events, container runtime logs
+//
+// MITRE ATT&CK Techniques Covered:
+//   - T1078: Valid Accounts (Service Account Abuse)
+//   - T1552.007: Container API (Secrets Access)
+//   - T1611: Escape to Host (Container Breakout)
+//   - T1613: Container and Resource Discovery
+//   - T1609: Container Administration Command
+//   - T1610: Deploy Container (Malicious Image)
+//   - T1098: Account Manipulation (RBAC Changes)
+//   - T1562.001: Impair Defenses (Audit Log Tampering)
+//
+// Data Field Mapping:
+//   kubernetes.audit.verb -> API verb (create, get, list, etc.)
+//   kubernetes.audit.objectRef.resource -> Resource type
+//   kubernetes.audit.user.username -> User performing action
+//   kubernetes.audit.sourceIPs -> Source IP addresses
+//   kubernetes.audit.objectRef.namespace -> Target namespace
+//
+// References:
+//   - https://attack.mitre.org/matrices/enterprise/containers/
+//   - https://www.elastic.co/guide/en/security/current/kubernetes-queries.html
+// ============================================================================
+
+
+// ----------------------------------------------------------------------------
+// Query 1: Kubernetes Secrets Access from Non-System Users
+// MITRE: T1552.007 - Credentials from Cloud Instance Metadata API
+// Description: Detect secrets access from human users (non-system accounts)
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "secrets" and
+  kubernetes.audit.verb in ("get", "list", "watch") and
+  not kubernetes.audit.user.username : "system:*"
+
+
+// ----------------------------------------------------------------------------
+// Query 2: Privileged Pod Creation
+// MITRE: T1611 - Escape to Host
+// Description: Detect creation of pods with privileged security context
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "pods" and
+  kubernetes.audit.verb == "create" and
+  (
+    kubernetes.audit.requestObject.spec.containers.securityContext.privileged == true or
+    kubernetes.audit.requestObject.spec.hostNetwork == true or
+    kubernetes.audit.requestObject.spec.hostPID == true or
+    kubernetes.audit.requestObject.spec.hostIPC == true
+  )
+
+
+// ----------------------------------------------------------------------------
+// Query 3: Privileged Pod with Dangerous Capabilities
+// MITRE: T1611 - Escape to Host
+// Description: Detect pods requesting dangerous Linux capabilities
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "pods" and
+  kubernetes.audit.verb == "create" and
+  kubernetes.audit.requestObject.spec.containers.securityContext.capabilities.add : (
+    "SYS_ADMIN",
+    "SYS_PTRACE",
+    "SYS_RAWIO",
+    "NET_ADMIN",
+    "NET_RAW",
+    "DAC_OVERRIDE",
+    "DAC_READ_SEARCH",
+    "SETUID",
+    "SETGID"
+  )
+
+
+// ----------------------------------------------------------------------------
+// Query 4: ClusterRoleBinding to cluster-admin
+// MITRE: T1098 - Account Manipulation
+// Description: Detect binding of users/groups to cluster-admin role
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "clusterrolebindings" and
+  kubernetes.audit.verb in ("create", "update", "patch") and
+  kubernetes.audit.requestObject.roleRef.name == "cluster-admin"
+
+
+// ----------------------------------------------------------------------------
+// Query 5: RBAC Role with Wildcard Permissions
+// MITRE: T1098 - Account Manipulation
+// Description: Detect creation of roles with * (wildcard) permissions
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource in ("clusterroles", "roles") and
+  kubernetes.audit.verb in ("create", "update", "patch") and
+  (
+    kubernetes.audit.requestObject.rules.verbs : "*" or
+    kubernetes.audit.requestObject.rules.resources : "*"
+  )
+
+
+// ----------------------------------------------------------------------------
+// Query 6: Pod Exec Command Execution
+// MITRE: T1609 - Container Administration Command
+// Description: Detect kubectl exec into pods
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "pods" and
+  kubernetes.audit.objectRef.subresource == "exec" and
+  kubernetes.audit.verb == "create"
+
+
+// ----------------------------------------------------------------------------
+// Query 7: Pod Attach for Interactive Access
+// MITRE: T1609 - Container Administration Command
+// Description: Detect kubectl attach for interactive container access
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "pods" and
+  kubernetes.audit.objectRef.subresource == "attach" and
+  kubernetes.audit.verb == "create"
+
+
+// ----------------------------------------------------------------------------
+// Query 8: Port Forwarding to Pods
+// MITRE: T1609 - Container Administration Command
+// Description: Detect kubectl port-forward which may indicate lateral movement
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "pods" and
+  kubernetes.audit.objectRef.subresource == "portforward" and
+  kubernetes.audit.verb == "create"
+
+
+// ----------------------------------------------------------------------------
+// Query 9: Service Account Token Creation
+// MITRE: T1078.004 - Cloud Accounts
+// Description: Detect explicit creation of service account tokens
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "serviceaccounts" and
+  kubernetes.audit.objectRef.subresource == "token" and
+  kubernetes.audit.verb == "create"
+
+
+// ----------------------------------------------------------------------------
+// Query 10: Secrets Access in kube-system Namespace
+// MITRE: T1552.007 - Credentials from Cloud Instance Metadata API
+// Description: Detect access to secrets in sensitive kube-system namespace
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "secrets" and
+  kubernetes.audit.objectRef.namespace == "kube-system" and
+  kubernetes.audit.verb in ("get", "list") and
+  not kubernetes.audit.user.username : "system:*"
+
+
+// ----------------------------------------------------------------------------
+// Query 11: Node Proxy Access
+// MITRE: T1611 - Escape to Host
+// Description: Detect access to node proxy which can enable host access
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "nodes" and
+  kubernetes.audit.objectRef.subresource == "proxy"
+
+
+// ----------------------------------------------------------------------------
+// Query 12: Node Exec (Direct Node Access)
+// MITRE: T1611 - Escape to Host
+// Description: Detect attempts to exec directly on nodes
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "nodes" and
+  kubernetes.audit.objectRef.subresource in ("exec", "log")
+
+
+// ----------------------------------------------------------------------------
+// Query 13: ConfigMap Modification in kube-system
+// MITRE: T1565 - Data Manipulation
+// Description: Detect modifications to ConfigMaps in kube-system
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "configmaps" and
+  kubernetes.audit.objectRef.namespace == "kube-system" and
+  kubernetes.audit.verb in ("create", "update", "patch", "delete")
+
+
+// ----------------------------------------------------------------------------
+// Query 14: Namespace Creation with Suspicious Names
+// MITRE: T1578 - Modify Cloud Compute Infrastructure
+// Description: Detect creation of namespaces with potentially malicious names
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "namespaces" and
+  kubernetes.audit.verb == "create" and
+  kubernetes.audit.objectRef.name : ("*test*", "*temp*", "*debug*", "*hack*", "*pwn*", "*c2*")
+
+
+// ----------------------------------------------------------------------------
+// Query 15: DaemonSet Creation (Cluster-Wide Persistence)
+// MITRE: T1053 - Scheduled Task/Job
+// Description: Detect creation of DaemonSets which run on all nodes
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "daemonsets" and
+  kubernetes.audit.verb == "create"
+
+
+// ----------------------------------------------------------------------------
+// Query 16: CronJob Creation (Scheduled Persistence)
+// MITRE: T1053 - Scheduled Task/Job
+// Description: Detect creation of CronJobs for scheduled execution
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "cronjobs" and
+  kubernetes.audit.verb == "create"
+
+
+// ----------------------------------------------------------------------------
+// Query 17: Failed API Requests (Brute Force Indicator)
+// MITRE: T1110 - Brute Force
+// Description: Detect failed API requests that may indicate brute force
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.annotations.authorization_k8s_io_decision == "forbid" and
+  kubernetes.audit.verb in ("get", "list", "create", "update", "delete")
+
+
+// ----------------------------------------------------------------------------
+// Query 18: Sequence - Secret Access Followed by Pod Exec
+// MITRE: T1552.007 + T1609 - Credential Access + Execution
+// Description: Detect pattern of reading secrets then executing in pods
+// ----------------------------------------------------------------------------
+sequence by kubernetes.audit.sourceIPs with maxspan=5m
+  [any where kubernetes.audit.objectRef.resource == "secrets" and
+   kubernetes.audit.verb in ("get", "list")]
+  [any where kubernetes.audit.objectRef.resource == "pods" and
+   kubernetes.audit.objectRef.subresource == "exec" and
+   kubernetes.audit.verb == "create"]
+
+
+// ----------------------------------------------------------------------------
+// Query 19: Sequence - RBAC Change Followed by Privileged Pod
+// MITRE: T1098 + T1611 - Privilege Escalation Chain
+// Description: Detect RBAC escalation followed by privileged pod creation
+// ----------------------------------------------------------------------------
+sequence by kubernetes.audit.user.username with maxspan=10m
+  [any where kubernetes.audit.objectRef.resource in ("clusterroles", "clusterrolebindings", "roles", "rolebindings") and
+   kubernetes.audit.verb in ("create", "update", "patch")]
+  [any where kubernetes.audit.objectRef.resource == "pods" and
+   kubernetes.audit.verb == "create" and
+   kubernetes.audit.requestObject.spec.containers.securityContext.privileged == true]
+
+
+// ----------------------------------------------------------------------------
+// Query 20: Sequence - Reconnaissance Followed by Sensitive Access
+// MITRE: T1613 + T1552 - Discovery + Credential Access
+// Description: Detect API discovery followed by secrets/token access
+// ----------------------------------------------------------------------------
+sequence by kubernetes.audit.sourceIPs with maxspan=15m
+  [any where kubernetes.audit.verb == "list" and
+   kubernetes.audit.objectRef.resource in ("pods", "services", "deployments", "namespaces")] with runs=5
+  [any where kubernetes.audit.objectRef.resource in ("secrets", "serviceaccounts") and
+   kubernetes.audit.verb in ("get", "list")]
+
+
+// ----------------------------------------------------------------------------
+// Query 21: Pod Running as Root (UID 0)
+// MITRE: T1611 - Escape to Host
+// Description: Detect pods explicitly running as root user
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "pods" and
+  kubernetes.audit.verb == "create" and
+  kubernetes.audit.requestObject.spec.containers.securityContext.runAsUser == 0
+
+
+// ----------------------------------------------------------------------------
+// Query 22: hostPath Volume Mount
+// MITRE: T1611 - Escape to Host
+// Description: Detect pods mounting host filesystem paths
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "pods" and
+  kubernetes.audit.verb == "create" and
+  kubernetes.audit.requestObject.spec.volumes.hostPath.path : "*"
+
+
+// ----------------------------------------------------------------------------
+// Query 23: Service Account Token Mount (Auto-mounted)
+// MITRE: T1078.004 - Cloud Accounts
+// Description: Detect pods that don't disable service account token auto-mount
+// Note: Look for explicitly enabled when default should be disabled
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "pods" and
+  kubernetes.audit.verb == "create" and
+  kubernetes.audit.requestObject.spec.automountServiceAccountToken == true
+
+
+// ----------------------------------------------------------------------------
+// Query 24: Webhook Configuration Changes
+// MITRE: T1562 - Impair Defenses
+// Description: Detect modifications to admission webhooks
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource in (
+  "mutatingwebhookconfigurations",
+  "validatingwebhookconfigurations"
+) and kubernetes.audit.verb in ("create", "update", "patch", "delete")
+
+
+// ----------------------------------------------------------------------------
+// Query 25: Audit Policy Changes
+// MITRE: T1562.001 - Disable or Modify Tools
+// Description: Detect attempts to modify audit logging configuration
+// ----------------------------------------------------------------------------
+any where kubernetes.audit.objectRef.resource == "configmaps" and
+  kubernetes.audit.objectRef.name : "*audit*" and
+  kubernetes.audit.verb in ("update", "patch", "delete")
+
+
+// ============================================================================
+// Usage Instructions:
+// 1. Import these queries into Elastic Security Detection Rules or Timelines
+// 2. Ensure Kubernetes audit logs are being ingested via Filebeat/Elastic Agent
+// 3. Field mappings assume standard Kubernetes audit log format
+// 4. Adjust field names if using custom index patterns
+// 5. Sequence queries require sequence event correlation to be enabled
+// 6. Create custom detection rules from high-value queries
+//
+// Field Reference:
+//   kubernetes.audit.verb - API verb (create, get, list, update, delete)
+//   kubernetes.audit.objectRef.resource - Resource type (pods, secrets, etc.)
+//   kubernetes.audit.objectRef.subresource - Subresource (exec, attach, token)
+//   kubernetes.audit.objectRef.namespace - Target namespace
+//   kubernetes.audit.objectRef.name - Resource name
+//   kubernetes.audit.user.username - User performing the action
+//   kubernetes.audit.sourceIPs - Source IP addresses
+//   kubernetes.audit.requestObject - Request body (for create/update)
+//   kubernetes.audit.annotations - Audit annotations including auth decision
+// ============================================================================

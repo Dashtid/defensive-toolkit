@@ -1,0 +1,49 @@
+title: Azure AD Suspicious Application Consent Grant
+id: b2c3d4e5-2222-4000-8000-000000000003
+status: stable
+description: |
+    Detects consent grants to OAuth applications, especially those with high-risk
+    permissions. Illicit consent grants are a common attack vector where users
+    are tricked into granting access to malicious applications.
+references:
+    - https://attack.mitre.org/techniques/T1550/001/
+    - https://docs.microsoft.com/en-us/azure/active-directory/manage-apps/grant-admin-consent
+    - https://www.microsoft.com/en-us/security/blog/2021/07/14/microsoft-discovers-threat-actor-targeting-saas-applications/
+author: Defensive Toolkit
+date: 2025-12-28
+modified: 2025-12-28
+tags:
+    - attack.credential_access
+    - attack.persistence
+    - attack.t1550.001
+    - detection.cloud_threats
+    - cloud.azure
+logsource:
+    product: azure
+    service: auditlogs
+detection:
+    selection_consent:
+        operationName:
+            - Consent to application
+            - Add delegated permission grant
+            - Add app role assignment grant to user
+    selection_admin_consent:
+        operationName:
+            - Add admin consent to application
+            - Add service principal
+    selection_high_risk_permissions:
+        targetResources.modifiedProperties.newValue|contains:
+            - Mail.Read
+            - Mail.ReadWrite
+            - Mail.Send
+            - Files.ReadWrite.All
+            - Directory.ReadWrite.All
+            - User.ReadWrite.All
+            - Application.ReadWrite.All
+            - RoleManagement.ReadWrite.Directory
+    condition: (selection_consent or selection_admin_consent) and selection_high_risk_permissions
+falsepositives:
+    - Legitimate application onboarding by IT
+    - Microsoft first-party application integrations
+    - Approved third-party SaaS integrations
+level: high

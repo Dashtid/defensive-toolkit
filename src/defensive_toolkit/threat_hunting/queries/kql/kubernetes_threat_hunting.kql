@@ -1,0 +1,355 @@
+// ============================================================================
+// Kubernetes Threat Hunting Queries - KQL (Azure Sentinel / Microsoft Defender)
+// ============================================================================
+// Platform: Azure Sentinel, Microsoft Defender for Cloud, AKS
+// Author: Defensive Toolkit
+// Date: 2025-12-28
+// Description: Threat hunting queries for Kubernetes audit logs and AKS
+// Data Sources: AzureDiagnostics, ContainerLog, KubeEvents, AKSAuditLogs
+//
+// MITRE ATT&CK Techniques Covered:
+//   - T1078: Valid Accounts (Service Account Abuse)
+//   - T1552.007: Container API (Secrets Access)
+//   - T1611: Escape to Host (Container Breakout)
+//   - T1613: Container and Resource Discovery
+//   - T1609: Container Administration Command
+//   - T1610: Deploy Container (Malicious Image)
+//   - T1098: Account Manipulation (RBAC Changes)
+//   - T1562.001: Impair Defenses (Audit Log Tampering)
+//
+// References:
+//   - https://attack.mitre.org/matrices/enterprise/containers/
+//   - https://microsoft.github.io/Threat-Matrix-for-Kubernetes/
+//   - https://msrc.microsoft.com/blog/2023/03/azure-kubernetes-service-aks-threat-hunting/
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// Query 1: Kubernetes Secrets Enumeration
+// MITRE: T1552.007 - Credentials from Cloud Instance Metadata API
+// Description: Detect bulk listing or access to secrets across namespaces
+// ----------------------------------------------------------------------------
+AzureDiagnostics
+| where Category == "kube-apiserver" or Category == "kube-audit"
+| where log_s has "secrets"
+| extend AuditLog = parse_json(log_s)
+| extend
+    Verb = tostring(AuditLog.verb),
+    Resource = tostring(AuditLog.objectRef.resource),
+    Namespace = tostring(AuditLog.objectRef.namespace),
+    User = tostring(AuditLog.user.username),
+    SourceIP = tostring(AuditLog.sourceIPs[0]),
+    UserAgent = tostring(AuditLog.userAgent)
+| where Resource == "secrets" and Verb in ("list", "get", "watch")
+| summarize
+    SecretAccessCount = count(),
+    NamespacesAccessed = dcount(Namespace),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated)
+    by User, SourceIP, UserAgent
+| where SecretAccessCount > 10 or NamespacesAccessed > 3
+| extend RiskScore = SecretAccessCount + (NamespacesAccessed * 5)
+| order by RiskScore desc
+
+
+// ----------------------------------------------------------------------------
+// Query 2: Privileged Pod Creation Detection
+// MITRE: T1611 - Escape to Host
+// Description: Detect creation of privileged containers that can escape to host
+// ----------------------------------------------------------------------------
+AzureDiagnostics
+| where Category == "kube-apiserver" or Category == "kube-audit"
+| where log_s has "pods" and log_s has "create"
+| extend AuditLog = parse_json(log_s)
+| extend
+    Verb = tostring(AuditLog.verb),
+    Resource = tostring(AuditLog.objectRef.resource),
+    PodName = tostring(AuditLog.objectRef.name),
+    Namespace = tostring(AuditLog.objectRef.namespace),
+    User = tostring(AuditLog.user.username),
+    RequestObject = tostring(AuditLog.requestObject)
+| where Resource == "pods" and Verb == "create"
+| where RequestObject has_any ("privileged", "hostNetwork", "hostPID", "hostIPC", "hostPath")
+    or RequestObject has_any ("SYS_ADMIN", "SYS_PTRACE", "NET_ADMIN", "NET_RAW")
+| extend
+    IsPrivileged = RequestObject has "privileged",
+    HasHostNetwork = RequestObject has "hostNetwork",
+    HasHostPID = RequestObject has "hostPID",
+    HasHostPath = RequestObject has "hostPath",
+    HasDangerousCaps = RequestObject has_any ("SYS_ADMIN", "SYS_PTRACE")
+| extend RiskScore =
+    iff(IsPrivileged, 10, 0) +
+    iff(HasHostNetwork, 5, 0) +
+    iff(HasHostPID, 5, 0) +
+    iff(HasHostPath, 3, 0) +
+    iff(HasDangerousCaps, 8, 0)
+| where RiskScore > 0
+| project TimeGenerated, User, Namespace, PodName, RiskScore,
+    IsPrivileged, HasHostNetwork, HasHostPID, HasHostPath, HasDangerousCaps
+| order by RiskScore desc
+
+
+// ----------------------------------------------------------------------------
+// Query 3: RBAC Privilege Escalation Attempts
+// MITRE: T1098 - Account Manipulation
+// Description: Detect cluster-admin binding or suspicious RBAC changes
+// ----------------------------------------------------------------------------
+AzureDiagnostics
+| where Category == "kube-apiserver" or Category == "kube-audit"
+| where log_s has_any ("clusterroles", "clusterrolebindings", "roles", "rolebindings")
+| extend AuditLog = parse_json(log_s)
+| extend
+    Verb = tostring(AuditLog.verb),
+    Resource = tostring(AuditLog.objectRef.resource),
+    ResourceName = tostring(AuditLog.objectRef.name),
+    User = tostring(AuditLog.user.username),
+    SourceIP = tostring(AuditLog.sourceIPs[0]),
+    RequestObject = tostring(AuditLog.requestObject)
+| where Verb in ("create", "update", "patch")
+| where Resource in ("clusterroles", "clusterrolebindings", "roles", "rolebindings")
+| extend
+    IsClusterAdmin = RequestObject has "cluster-admin",
+    HasWildcardVerbs = RequestObject has '"*"' and RequestObject has "verbs",
+    HasSecretAccess = RequestObject has "secrets",
+    BindsToClusterAdmin = RequestObject has "cluster-admin" and Resource endswith "bindings"
+| where IsClusterAdmin or HasWildcardVerbs or BindsToClusterAdmin
+| extend RiskLevel = case(
+    BindsToClusterAdmin, "Critical",
+    IsClusterAdmin and HasWildcardVerbs, "High",
+    IsClusterAdmin, "High",
+    HasWildcardVerbs, "Medium",
+    "Low")
+| project TimeGenerated, User, SourceIP, Resource, ResourceName, Verb,
+    RiskLevel, IsClusterAdmin, HasWildcardVerbs, BindsToClusterAdmin
+| order by TimeGenerated desc
+
+
+// ----------------------------------------------------------------------------
+// Query 4: Pod Exec/Attach Command Abuse
+// MITRE: T1609 - Container Administration Command
+// Description: Detect interactive access to pods which may indicate compromise
+// ----------------------------------------------------------------------------
+AzureDiagnostics
+| where Category == "kube-apiserver" or Category == "kube-audit"
+| where log_s has "pods" and log_s has_any ("exec", "attach", "portforward")
+| extend AuditLog = parse_json(log_s)
+| extend
+    Verb = tostring(AuditLog.verb),
+    Subresource = tostring(AuditLog.objectRef.subresource),
+    PodName = tostring(AuditLog.objectRef.name),
+    Namespace = tostring(AuditLog.objectRef.namespace),
+    User = tostring(AuditLog.user.username),
+    SourceIP = tostring(AuditLog.sourceIPs[0]),
+    UserAgent = tostring(AuditLog.userAgent)
+| where Subresource in ("exec", "attach", "portforward")
+| summarize
+    ExecCount = countif(Subresource == "exec"),
+    AttachCount = countif(Subresource == "attach"),
+    PortForwardCount = countif(Subresource == "portforward"),
+    UniquePods = dcount(PodName),
+    UniqueNamespaces = dcount(Namespace),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated)
+    by User, SourceIP, UserAgent
+| extend TotalCommands = ExecCount + AttachCount + PortForwardCount
+| where TotalCommands > 5 or UniquePods > 3
+| extend RiskScore = TotalCommands + (UniquePods * 2) + (UniqueNamespaces * 3)
+| order by RiskScore desc
+
+
+// ----------------------------------------------------------------------------
+// Query 5: Service Account Token Creation/Theft
+// MITRE: T1078.004 - Cloud Accounts
+// Description: Detect creation of service account tokens or suspicious token usage
+// ----------------------------------------------------------------------------
+AzureDiagnostics
+| where Category == "kube-apiserver" or Category == "kube-audit"
+| where log_s has "serviceaccounts" or log_s has "tokens"
+| extend AuditLog = parse_json(log_s)
+| extend
+    Verb = tostring(AuditLog.verb),
+    Resource = tostring(AuditLog.objectRef.resource),
+    Subresource = tostring(AuditLog.objectRef.subresource),
+    Name = tostring(AuditLog.objectRef.name),
+    Namespace = tostring(AuditLog.objectRef.namespace),
+    User = tostring(AuditLog.user.username),
+    SourceIP = tostring(AuditLog.sourceIPs[0])
+| where (Resource == "serviceaccounts" and Subresource == "token" and Verb == "create")
+    or (Resource == "secrets" and Verb == "get" and Name has "token")
+| extend
+    IsTokenCreation = Subresource == "token",
+    IsTokenSecretAccess = Resource == "secrets" and Name has "token"
+| summarize
+    TokenCreations = countif(IsTokenCreation),
+    TokenSecretAccesses = countif(IsTokenSecretAccess),
+    UniqueServiceAccounts = dcount(Name)
+    by User, SourceIP, Namespace
+| where TokenCreations > 2 or TokenSecretAccesses > 5
+| extend RiskScore = (TokenCreations * 5) + TokenSecretAccesses
+| order by RiskScore desc
+
+
+// ----------------------------------------------------------------------------
+// Query 6: Suspicious Image Pulls from External Registries
+// MITRE: T1610 - Deploy Container
+// Description: Detect pods pulling images from untrusted or unusual registries
+// ----------------------------------------------------------------------------
+KubePodInventory
+| where TimeGenerated > ago(24h)
+| extend ContainerImage = ContainerImage
+| where ContainerImage !startswith "mcr.microsoft.com"
+    and ContainerImage !startswith "docker.io/library"
+    and ContainerImage !startswith "gcr.io"
+    and ContainerImage !startswith "quay.io"
+    and ContainerImage !startswith "k8s.gcr.io"
+    and ContainerImage !startswith "registry.k8s.io"
+| where ContainerImage !has ".azurecr.io"
+| extend
+    Registry = extract(@"^([^/]+)", 1, ContainerImage),
+    ImageName = extract(@"/([^:]+)", 1, ContainerImage),
+    ImageTag = extract(@":(.+)$", 1, ContainerImage)
+| summarize
+    PodCount = dcount(Name),
+    Pods = make_set(Name, 10),
+    Namespaces = make_set(Namespace, 10)
+    by Registry, ContainerImage
+| where PodCount > 0
+| extend
+    IsSuspiciousRegistry = Registry has_any ("pastebin", "raw.githubusercontent", "temp", "test"),
+    UsesLatestTag = ImageTag == "latest" or isempty(ImageTag)
+| extend RiskScore =
+    iff(IsSuspiciousRegistry, 10, 2) +
+    iff(UsesLatestTag, 3, 0) +
+    PodCount
+| order by RiskScore desc
+
+
+// ----------------------------------------------------------------------------
+// Query 7: Kubernetes API Discovery and Reconnaissance
+// MITRE: T1613 - Container and Resource Discovery
+// Description: Detect API enumeration patterns that may indicate reconnaissance
+// ----------------------------------------------------------------------------
+AzureDiagnostics
+| where Category == "kube-apiserver" or Category == "kube-audit"
+| where log_s has "list" or log_s has "watch"
+| extend AuditLog = parse_json(log_s)
+| extend
+    Verb = tostring(AuditLog.verb),
+    Resource = tostring(AuditLog.objectRef.resource),
+    User = tostring(AuditLog.user.username),
+    SourceIP = tostring(AuditLog.sourceIPs[0]),
+    UserAgent = tostring(AuditLog.userAgent),
+    AuthDecision = tostring(AuditLog.annotations["authorization.k8s.io/decision"])
+| where Verb in ("list", "watch", "get")
+| where User !startswith "system:"
+| summarize
+    TotalRequests = count(),
+    UniqueResources = dcount(Resource),
+    ResourceList = make_set(Resource, 50),
+    FailedRequests = countif(AuthDecision == "forbid"),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated)
+    by User, SourceIP, UserAgent
+| where UniqueResources > 10 or TotalRequests > 100 or FailedRequests > 5
+| extend
+    ReconScore = UniqueResources + (TotalRequests / 10) + (FailedRequests * 2),
+    HasBruteForce = FailedRequests > 10
+| order by ReconScore desc
+
+
+// ----------------------------------------------------------------------------
+// Query 8: ConfigMap Manipulation (Potential Data Injection)
+// MITRE: T1565 - Data Manipulation
+// Description: Detect suspicious modifications to ConfigMaps
+// ----------------------------------------------------------------------------
+AzureDiagnostics
+| where Category == "kube-apiserver" or Category == "kube-audit"
+| where log_s has "configmaps"
+| extend AuditLog = parse_json(log_s)
+| extend
+    Verb = tostring(AuditLog.verb),
+    ConfigMapName = tostring(AuditLog.objectRef.name),
+    Namespace = tostring(AuditLog.objectRef.namespace),
+    User = tostring(AuditLog.user.username),
+    SourceIP = tostring(AuditLog.sourceIPs[0])
+| where Verb in ("create", "update", "patch", "delete")
+| summarize
+    CreateCount = countif(Verb == "create"),
+    UpdateCount = countif(Verb == "update"),
+    DeleteCount = countif(Verb == "delete"),
+    UniqueConfigMaps = dcount(ConfigMapName),
+    ConfigMaps = make_set(ConfigMapName, 20)
+    by User, SourceIP, Namespace
+| where (CreateCount + UpdateCount + DeleteCount) > 5 or DeleteCount > 2
+| extend RiskScore = CreateCount + (UpdateCount * 2) + (DeleteCount * 5)
+| order by RiskScore desc
+
+
+// ----------------------------------------------------------------------------
+// Query 9: Node-Level Access Attempts
+// MITRE: T1611 - Escape to Host
+// Description: Detect attempts to access or modify node resources
+// ----------------------------------------------------------------------------
+AzureDiagnostics
+| where Category == "kube-apiserver" or Category == "kube-audit"
+| where log_s has "nodes"
+| extend AuditLog = parse_json(log_s)
+| extend
+    Verb = tostring(AuditLog.verb),
+    Resource = tostring(AuditLog.objectRef.resource),
+    Subresource = tostring(AuditLog.objectRef.subresource),
+    NodeName = tostring(AuditLog.objectRef.name),
+    User = tostring(AuditLog.user.username),
+    SourceIP = tostring(AuditLog.sourceIPs[0]),
+    AuthDecision = tostring(AuditLog.annotations["authorization.k8s.io/decision"])
+| where Resource == "nodes"
+| where Verb in ("get", "list", "update", "patch", "delete")
+    or Subresource in ("proxy", "exec", "log")
+| extend
+    IsSensitiveAccess = Subresource in ("proxy", "exec", "log") or Verb in ("update", "patch", "delete"),
+    WasDenied = AuthDecision == "forbid"
+| summarize
+    TotalAccess = count(),
+    SensitiveAccess = countif(IsSensitiveAccess),
+    DeniedAccess = countif(WasDenied),
+    NodesAccessed = dcount(NodeName)
+    by User, SourceIP
+| where SensitiveAccess > 0 or DeniedAccess > 3
+| extend RiskScore = (SensitiveAccess * 5) + (DeniedAccess * 2)
+| order by RiskScore desc
+
+
+// ----------------------------------------------------------------------------
+// Query 10: Namespace Creation/Deletion (Potential Persistence or Evasion)
+// MITRE: T1578 - Modify Cloud Compute Infrastructure
+// Description: Detect unusual namespace operations that may indicate persistence
+// ----------------------------------------------------------------------------
+AzureDiagnostics
+| where Category == "kube-apiserver" or Category == "kube-audit"
+| where log_s has "namespaces"
+| extend AuditLog = parse_json(log_s)
+| extend
+    Verb = tostring(AuditLog.verb),
+    Resource = tostring(AuditLog.objectRef.resource),
+    NamespaceName = tostring(AuditLog.objectRef.name),
+    User = tostring(AuditLog.user.username),
+    SourceIP = tostring(AuditLog.sourceIPs[0])
+| where Resource == "namespaces" and Verb in ("create", "delete")
+| extend
+    IsSuspiciousName = NamespaceName has_any ("test", "temp", "debug", "hack", "pwn", "c2", "beacon")
+| project TimeGenerated, User, SourceIP, Verb, NamespaceName, IsSuspiciousName
+| extend RiskLevel = case(
+    IsSuspiciousName and Verb == "create", "High",
+    Verb == "delete" and NamespaceName !in ("default", "kube-system", "kube-public"), "Medium",
+    Verb == "create", "Low",
+    "Info")
+| order by TimeGenerated desc
+
+
+// ============================================================================
+// Usage Instructions:
+// 1. Run these queries in Azure Sentinel Log Analytics or Microsoft Defender
+// 2. Ensure AKS diagnostic logging is enabled for kube-apiserver and kube-audit
+// 3. Adjust time ranges as needed (default: last 24 hours for most queries)
+// 4. Tune thresholds based on your environment's baseline activity
+// 5. Create alert rules for high-risk queries with appropriate thresholds
+// ============================================================================

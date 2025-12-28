@@ -27,6 +27,7 @@ from defensive_toolkit.api.health import (
     set_start_time,
 )
 from defensive_toolkit.api.middleware import general_exception_handler, setup_middleware
+from defensive_toolkit.api.telemetry import get_telemetry_status, setup_telemetry, shutdown_telemetry
 from defensive_toolkit.api.models import (
     APIResponse,
     HealthCheckResponse,
@@ -81,11 +82,13 @@ async def lifespan(app: FastAPI):
     logger.info(f"Debug mode: {settings.debug}")
     logger.info(f"Rate limiting: {settings.rate_limit_enabled}")
     logger.info(f"Authentication required: {settings.require_authentication}")
+    logger.info(f"OpenTelemetry: {settings.otel_enabled}")
 
     yield
 
     # Shutdown
     logger.info("Shutting down Defensive Toolkit API...")
+    shutdown_telemetry()
 
 
 # Create FastAPI application
@@ -101,6 +104,9 @@ app = FastAPI(
 
 # Setup middleware (CORS, rate limiting, logging, security headers)
 setup_middleware(app)
+
+# Setup OpenTelemetry (after middleware, before Prometheus)
+setup_telemetry(app, settings)
 
 # Exception handlers
 app.add_exception_handler(Exception, general_exception_handler)
