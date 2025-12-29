@@ -1109,25 +1109,6 @@ async def list_notifications(
     )
 
 
-@router.get("/{notification_id}", response_model=NotificationResponse)
-async def get_notification(
-    notification_id: str,
-    current_user: str = Depends(get_current_active_user),
-):
-    """Get details of a specific notification."""
-    if notification_id not in notifications_db:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Notification {notification_id} not found"},
-        )
-
-    return NotificationResponse(
-        status=StatusEnum.SUCCESS,
-        message="Notification retrieved successfully",
-        notification=Notification(**notifications_db[notification_id]),
-    )
-
-
 @router.post("/", response_model=NotificationResponse)
 async def send_notification(
     request: NotificationCreate,
@@ -1243,59 +1224,6 @@ async def send_notification(
         status=StatusEnum.SUCCESS,
         message="Notification sent successfully",
         notification=Notification(**notification_data),
-    )
-
-
-@router.post("/{notification_id}/retry", response_model=NotificationResponse)
-async def retry_notification(
-    notification_id: str,
-    background_tasks: BackgroundTasks,
-    request: Optional[NotificationRetryRequest] = None,
-    current_user: str = Depends(get_current_active_user),
-):
-    """Retry a failed notification."""
-    if notification_id not in notifications_db:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "message": f"Notification {notification_id} not found"},
-        )
-
-    notification = notifications_db[notification_id]
-
-    if notification["status"] not in [
-        NotificationStatusEnum.FAILED.value,
-        NotificationStatusEnum.PARTIAL.value,
-    ]:
-        return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={
-                "status": "error",
-                "message": "Only failed or partial notifications can be retried",
-            },
-        )
-
-    # Increment retry count
-    notification["retry_count"] = notification.get("retry_count", 0) + 1
-    notification["status"] = NotificationStatusEnum.RETRYING.value
-    notification["updated_at"] = datetime.utcnow().isoformat()
-
-    # If specific channels requested, filter recipients
-    if request and request.channels:
-        notification["recipients"] = [
-            r for r in notification["recipients"] if r["channel_id"] in request.channels
-        ]
-
-    notifications_db[notification_id] = notification
-
-    # Process retry in background
-    background_tasks.add_task(process_notification, notification_id)
-
-    logger.info(f"Retrying notification {notification_id} (attempt {notification['retry_count']})")
-
-    return NotificationResponse(
-        status=StatusEnum.SUCCESS,
-        message=f"Notification retry initiated (attempt {notification['retry_count']})",
-        notification=Notification(**notification),
     )
 
 
@@ -1916,4 +1844,81 @@ async def get_notification_health(
         },
         recent_failures=recent_failures,
         recommendations=recommendations,
+    )
+
+
+# ============================================================================
+# Dynamic Path Routes (MUST be at the end to avoid catching other routes)
+# ============================================================================
+
+
+@router.get("/{notification_id}", response_model=NotificationResponse)
+async def get_notification(
+    notification_id: str,
+    current_user: str = Depends(get_current_active_user),
+):
+    """Get details of a specific notification."""
+    if notification_id not in notifications_db:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"status": "error", "message": f"Notification {notification_id} not found"},
+        )
+
+    return NotificationResponse(
+        status=StatusEnum.SUCCESS,
+        message="Notification retrieved successfully",
+        notification=Notification(**notifications_db[notification_id]),
+    )
+
+
+@router.post("/{notification_id}/retry", response_model=NotificationResponse)
+async def retry_notification(
+    notification_id: str,
+    background_tasks: BackgroundTasks,
+    request: Optional[NotificationRetryRequest] = None,
+    current_user: str = Depends(get_current_active_user),
+):
+    """Retry a failed notification."""
+    if notification_id not in notifications_db:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"status": "error", "message": f"Notification {notification_id} not found"},
+        )
+
+    notification = notifications_db[notification_id]
+
+    if notification["status"] not in [
+        NotificationStatusEnum.FAILED.value,
+        NotificationStatusEnum.PARTIAL.value,
+    ]:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "status": "error",
+                "message": "Only failed or partial notifications can be retried",
+            },
+        )
+
+    # Increment retry count
+    notification["retry_count"] = notification.get("retry_count", 0) + 1
+    notification["status"] = NotificationStatusEnum.RETRYING.value
+    notification["updated_at"] = datetime.utcnow().isoformat()
+
+    # If specific channels requested, filter recipients
+    if request and request.channels:
+        notification["recipients"] = [
+            r for r in notification["recipients"] if r["channel_id"] in request.channels
+        ]
+
+    notifications_db[notification_id] = notification
+
+    # Process retry in background
+    background_tasks.add_task(process_notification, notification_id)
+
+    logger.info(f"Retrying notification {notification_id} (attempt {notification['retry_count']})")
+
+    return NotificationResponse(
+        status=StatusEnum.SUCCESS,
+        message=f"Notification retry initiated (attempt {notification['retry_count']})",
+        notification=Notification(**notification),
     )

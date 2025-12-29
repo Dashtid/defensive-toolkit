@@ -26,26 +26,6 @@ from defensive_toolkit.api.models import (
 )
 
 
-@pytest.fixture
-def client():
-    """Create test client."""
-    return TestClient(app)
-
-
-@pytest.fixture
-def mock_auth():
-    """Mock authentication for all requests."""
-    with patch(
-        "defensive_toolkit.api.dependencies.get_current_active_user",
-        return_value="test_user",
-    ):
-        with patch(
-            "defensive_toolkit.api.dependencies.require_write_scope",
-            return_value="test_user",
-        ):
-            yield
-
-
 @pytest.fixture(autouse=True)
 def clear_caches():
     """Clear caches before each test."""
@@ -110,9 +90,9 @@ class TestIOCTypeDetection:
         assert threat_intel._detect_ioc_type("CVE-2021-44228") == IOCTypeEnum.CVE
         assert threat_intel._detect_ioc_type("cve-2023-1234") == IOCTypeEnum.CVE
 
-    def test_detect_type_endpoint(self, client, mock_auth):
+    def test_detect_type_endpoint(self, test_client, auth_headers):
         """Test IOC type detection endpoint."""
-        response = client.get("/api/v1/threat-intel/detect-type/8.8.8.8")
+        response = test_client.get("/api/v1/threat-intel/detect-type/8.8.8.8", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["detected_type"] == "ip"
@@ -187,7 +167,7 @@ class TestCaching:
         cached = threat_intel._check_cache("expiry-test")
         assert cached is None
 
-    def test_clear_cache_endpoint(self, client, mock_auth):
+    def test_clear_cache_endpoint(self, test_client, auth_headers):
         """Test cache clearing endpoint."""
         # Add something to cache
         from defensive_toolkit.api.models import IOCEnrichmentResult
@@ -206,7 +186,7 @@ class TestCaching:
         assert len(threat_intel.ioc_cache) > 0
 
         # Clear cache
-        response = client.delete("/api/v1/threat-intel/cache")
+        response = test_client.delete("/api/v1/threat-intel/cache", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
         assert len(threat_intel.ioc_cache) == 0
 
@@ -399,9 +379,9 @@ class TestRecommendations:
 class TestSourceStatus:
     """Tests for source status endpoint."""
 
-    def test_get_source_status(self, client, mock_auth):
+    def test_get_source_status(self, test_client, auth_headers):
         """Test getting source status."""
-        response = client.get("/api/v1/threat-intel/sources")
+        response = test_client.get("/api/v1/threat-intel/sources", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
@@ -422,22 +402,22 @@ class TestSourceStatus:
 class TestStatistics:
     """Tests for statistics endpoint."""
 
-    def test_get_stats(self, client, mock_auth):
+    def test_get_stats(self, test_client, auth_headers):
         """Test getting statistics."""
-        response = client.get("/api/v1/threat-intel/stats")
+        response = test_client.get("/api/v1/threat-intel/stats", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "total_iocs_cached" in data
         assert "cache_hit_rate" in data
         assert "sources_status" in data
 
-    def test_stats_cache_hit_rate(self, client, mock_auth):
+    def test_stats_cache_hit_rate(self, test_client, auth_headers):
         """Test cache hit rate calculation."""
         # Simulate some queries
         threat_intel.query_stats["total_queries"] = 100
         threat_intel.query_stats["cache_hits"] = 25
 
-        response = client.get("/api/v1/threat-intel/stats")
+        response = test_client.get("/api/v1/threat-intel/stats", headers=auth_headers)
         data = response.json()
         assert data["cache_hit_rate"] == 0.25
 
@@ -450,49 +430,51 @@ class TestStatistics:
 class TestFeedManagement:
     """Tests for threat intel feed management."""
 
-    def test_list_feeds_empty(self, client, mock_auth):
+    def test_list_feeds_empty(self, test_client, auth_headers):
         """Test listing feeds when none exist."""
-        response = client.get("/api/v1/threat-intel/feeds")
+        response = test_client.get("/api/v1/threat-intel/feeds", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["total"] == 0
         assert data["feeds"] == []
 
-    def test_create_feed(self, client, mock_auth):
+    def test_create_feed(self, test_client, auth_headers):
         """Test creating a feed."""
         feed_data = {
             "name": "Test Feed",
-            "feed_type": "ip_blocklist",
-            "url": "https://example.com/feed.txt",
+            "source": "virustotal",
+            "feed_type": "iocs",
+            "feed_url": "https://example.com/feed.txt",
             "enabled": True,
-            "update_interval_hours": 24,
+            "sync_interval_minutes": 60,
         }
 
-        response = client.post("/api/v1/threat-intel/feeds", json=feed_data)
+        response = test_client.post("/api/v1/threat-intel/feeds", json=feed_data, headers=auth_headers)
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
         assert data["status"] == "success"
         assert "feed_id" in data["data"]
 
-    def test_delete_feed_not_found(self, client, mock_auth):
+    def test_delete_feed_not_found(self, test_client, auth_headers):
         """Test deleting non-existent feed."""
-        response = client.delete("/api/v1/threat-intel/feeds/FEED-NONEXISTENT")
+        response = test_client.delete("/api/v1/threat-intel/feeds/FEED-NONEXISTENT", headers=auth_headers)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_delete_feed(self, client, mock_auth):
+    def test_delete_feed(self, test_client, auth_headers):
         """Test deleting a feed."""
         # Create feed first
         feed_data = {
             "name": "Delete Test Feed",
-            "feed_type": "domain_blocklist",
-            "url": "https://example.com/domains.txt",
+            "source": "alienvault_otx",
+            "feed_type": "stix",
+            "feed_url": "https://example.com/domains.txt",
             "enabled": True,
         }
-        create_response = client.post("/api/v1/threat-intel/feeds", json=feed_data)
+        create_response = test_client.post("/api/v1/threat-intel/feeds", json=feed_data, headers=auth_headers)
         feed_id = create_response.json()["data"]["feed_id"]
 
         # Delete it
-        response = client.delete(f"/api/v1/threat-intel/feeds/{feed_id}")
+        response = test_client.delete(f"/api/v1/threat-intel/feeds/{feed_id}", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
 
 
@@ -504,7 +486,7 @@ class TestFeedManagement:
 class TestIOCEnrichment:
     """Tests for IOC enrichment functionality."""
 
-    def test_enrich_single_ioc_endpoint(self, client, mock_auth):
+    def test_enrich_single_ioc_endpoint(self, test_client, auth_headers):
         """Test single IOC enrichment endpoint."""
         # Mock the actual API calls
         with patch.object(
@@ -522,12 +504,12 @@ class TestIOCEnrichment:
                 source_results=[],
             )
 
-            response = client.get("/api/v1/threat-intel/enrich/8.8.8.8")
+            response = test_client.get("/api/v1/threat-intel/enrich/8.8.8.8", headers=auth_headers)
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
             assert data["ioc"] == "8.8.8.8"
 
-    def test_bulk_enrich_endpoint(self, client, mock_auth):
+    def test_bulk_enrich_endpoint(self, test_client, auth_headers):
         """Test bulk IOC enrichment endpoint."""
         with patch.object(
             threat_intel, "_enrich_single_ioc", new_callable=AsyncMock
@@ -544,12 +526,13 @@ class TestIOCEnrichment:
                 source_results=[],
             )
 
-            response = client.post(
+            response = test_client.post(
                 "/api/v1/threat-intel/enrich",
                 json={
                     "iocs": ["example.com", "evil.com"],
                     "sources": ["virustotal"],
                 },
+                headers=auth_headers,
             )
             assert response.status_code == status.HTTP_200_OK
             data = response.json()

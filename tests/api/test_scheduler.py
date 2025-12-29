@@ -48,7 +48,7 @@ def sample_interval_job():
         "job_type": "siem_health_check",
         "schedule_type": "interval",
         "interval_seconds": 300,
-        "priority": "medium",
+        "priority": "normal",
         "timeout_seconds": 60,
         "concurrent_allowed": False,
         "parameters": {"include_metrics": True},
@@ -632,9 +632,9 @@ class TestJobDependencies:
         response = client.post(
             f"/api/v1/scheduler/jobs/{job_id_1}/dependencies",
             json={
+                "job_id": job_id_1,
                 "depends_on_job_id": job_id_2,
-                "condition": "success",
-                "description": "Must complete before running",
+                "dependency_type": "success",
             },
             headers=auth_headers,
         )
@@ -664,14 +664,14 @@ class TestJobDependencies:
         # Add dependency: job_id_1 depends on job_id_2
         client.post(
             f"/api/v1/scheduler/jobs/{job_id_1}/dependencies",
-            json={"depends_on_job_id": job_id_2, "condition": "success"},
+            json={"job_id": job_id_1, "depends_on_job_id": job_id_2, "dependency_type": "success"},
             headers=auth_headers,
         )
 
         # Try to add circular dependency: job_id_2 depends on job_id_1
         response = client.post(
             f"/api/v1/scheduler/jobs/{job_id_2}/dependencies",
-            json={"depends_on_job_id": job_id_1, "condition": "success"},
+            json={"job_id": job_id_2, "depends_on_job_id": job_id_1, "dependency_type": "success"},
             headers=auth_headers,
         )
         assert response.status_code == 400
@@ -692,7 +692,7 @@ class TestJobDependencies:
 
         client.post(
             f"/api/v1/scheduler/jobs/{job_id_1}/dependencies",
-            json={"depends_on_job_id": job_id_2, "condition": "success"},
+            json={"job_id": job_id_1, "depends_on_job_id": job_id_2, "dependency_type": "success"},
             headers=auth_headers,
         )
 

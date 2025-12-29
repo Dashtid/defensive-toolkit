@@ -320,10 +320,11 @@ class TestDeadLetterQueue:
         """Test dead letter queue statistics."""
         dlq = DeadLetterQueue()
 
-        for reason in ["max_retries", "max_retries", "circuit_open"]:
-            payload = WebhookPayload(id=f"test-{reason}", url="https://example.com")
+        # Use unique IDs to avoid DLQ deduplication
+        for i, reason in enumerate(["max_retries", "max_retries", "circuit_open"]):
+            payload = WebhookPayload(id=f"test-{reason}-{i}", url="https://example.com")
             result = DeliveryResult(
-                payload_id=f"test-{reason}",
+                payload_id=f"test-{reason}-{i}",
                 status=DeliveryStatus.FAILED,
                 attempts=1,
                 last_attempt_at=datetime.utcnow(),

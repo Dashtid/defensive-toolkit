@@ -24,12 +24,14 @@ def sample_email_channel():
         "description": "Email channel for security alerts",
         "enabled": True,
         "categories": ["security_alert", "incident"],
-        "priority_threshold": "medium",
+        "priority_threshold": "normal",
         "rate_limit_per_minute": 30,
         "rate_limit_per_hour": 200,
         "config": {
             "smtp_host": "smtp.example.com",
             "smtp_port": 587,
+            "smtp_username": "security@example.com",
+            "smtp_password": "test-password",
             "from_address": "security@example.com",
             "default_recipients": ["soc@example.com"],
         },
@@ -260,10 +262,10 @@ class TestNotificationChannels:
         )
         channel_id = create_response.json()["channel"]["id"]
 
-        # Test channel
+        # Test channel - request body must include channel_id
         response = client.post(
             f"/api/v1/notifications/channels/{channel_id}/test",
-            json={"test_message": "This is a test notification"},
+            json={"channel_id": channel_id, "test_message": "This is a test notification"},
             headers=auth_headers,
         )
         assert response.status_code == 200
@@ -579,7 +581,7 @@ class TestNotifications:
 
         notification = {
             "category": "security_alert",
-            "priority": "medium",
+            "priority": "normal",
             "subject": "Test Alert",
             "body": "Test notification body",
             "recipients": [{"channel_id": channel_id}],
@@ -650,7 +652,7 @@ class TestNotifications:
                 },
                 {
                     "category": "security_alert",
-                    "priority": "medium",
+                    "priority": "normal",
                     "subject": "Bulk Test 2",
                     "body": "Second bulk notification",
                     "recipients": [{"channel_id": channel_id}],
@@ -808,7 +810,7 @@ class TestSubscriptions:
             "subscriber_id": "user-123",
             "subscriber_type": "user",
             "categories": ["security_alert", "incident"],
-            "min_priority": "medium",
+            "min_priority": "normal",
             "channels": ["email", "slack"],
             "schedule": None,
         }
@@ -854,7 +856,7 @@ class TestSubscriptions:
             "subscriber_id": "user-789",
             "subscriber_type": "user",
             "categories": ["incident"],
-            "min_priority": "medium",
+            "min_priority": "normal",
             "channels": ["slack"],
         }
         create_response = client.post(

@@ -225,6 +225,8 @@ async def run_cis_checks(
             results = checker.run_all_checks()
 
         return results
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"CIS check failed: {e}")
         raise HTTPException(
@@ -290,6 +292,8 @@ async def run_nist_checks(
             results = checker.run_all_checks()
 
         return results
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"NIST check failed: {e}")
         raise HTTPException(
@@ -318,43 +322,8 @@ async def list_nist_families(
 
 # ============================================================================
 # Framework Mapping Endpoints
+# Note: Specific routes must come BEFORE dynamic {control_id} route
 # ============================================================================
-
-
-@router.get("/mapping/{control_id}", response_model=ControlMappingResponse)
-async def get_control_mapping(
-    control_id: str,
-    current_user: str = Depends(get_current_active_user),
-):
-    """
-    Get cross-framework mappings for a specific control.
-
-    Maps controls between CIS, NIST 800-53, ISO 27001, PCI-DSS, and SOC2.
-    Example control_id: "CIS-1", "NIST-AC", "PCI-8"
-    """
-    try:
-        mapper = get_framework_mapper()
-        mapping = mapper.map_control(control_id.upper())
-
-        if not mapping:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Control {control_id} not found in mapping database",
-            )
-
-        return ControlMappingResponse(
-            control_id=control_id.upper(),
-            title=mapping.get("title", "Unknown"),
-            mappings=mapping.get("mappings", {}),
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Control mapping failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Control mapping lookup failed: {str(e)}",
-        )
 
 
 @router.get("/mapping/overlaps", response_model=Dict[str, Any])
@@ -443,6 +412,43 @@ async def get_implementation_recommendations(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Recommendation generation failed: {str(e)}",
+        )
+
+
+# Dynamic route MUST come after specific routes
+@router.get("/mapping/{control_id}", response_model=ControlMappingResponse)
+async def get_control_mapping(
+    control_id: str,
+    current_user: str = Depends(get_current_active_user),
+):
+    """
+    Get cross-framework mappings for a specific control.
+
+    Maps controls between CIS, NIST 800-53, ISO 27001, PCI-DSS, and SOC2.
+    Example control_id: "CIS-1", "NIST-AC", "PCI-8"
+    """
+    try:
+        mapper = get_framework_mapper()
+        mapping = mapper.map_control(control_id.upper())
+
+        if not mapping:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Control {control_id} not found in mapping database",
+            )
+
+        return ControlMappingResponse(
+            control_id=control_id.upper(),
+            title=mapping.get("title", "Unknown"),
+            mappings=mapping.get("mappings", {}),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Control mapping failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Control mapping lookup failed: {str(e)}",
         )
 
 
