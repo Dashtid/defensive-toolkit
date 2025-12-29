@@ -799,3 +799,173 @@ class TestValidation:
         )
 
         assert response.status_code == 422
+
+
+# =============================================================================
+# Helper Function Import Error Tests
+# =============================================================================
+
+
+class TestHelperImportErrors:
+    """Tests for helper function import error handling."""
+
+    def test_cis_checker_import_error(self, auth_headers):
+        """Test CIS checker import error handling."""
+        with patch(
+            "defensive_toolkit.api.routers.compliance.get_cis_checker"
+        ) as mock_get:
+            mock_get.side_effect = HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="CIS Checker module not available",
+            )
+            response = client.post(
+                "/api/v1/compliance/cis/run",
+                json={},
+                headers=auth_headers,
+            )
+            assert response.status_code == 503
+            assert "CIS Checker" in response.json()["detail"]
+
+    def test_nist_checker_import_error(self, auth_headers):
+        """Test NIST checker import error handling."""
+        with patch(
+            "defensive_toolkit.api.routers.compliance.get_nist_checker"
+        ) as mock_get:
+            mock_get.side_effect = HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="NIST Checker module not available",
+            )
+            response = client.post(
+                "/api/v1/compliance/nist/run",
+                json={},
+                headers=auth_headers,
+            )
+            assert response.status_code == 503
+            assert "NIST Checker" in response.json()["detail"]
+
+    def test_framework_mapper_import_error(self, auth_headers):
+        """Test framework mapper import error handling."""
+        with patch(
+            "defensive_toolkit.api.routers.compliance.get_framework_mapper"
+        ) as mock_get:
+            mock_get.side_effect = HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Framework Mapper module not available",
+            )
+            response = client.get(
+                "/api/v1/compliance/mapping/CIS-1",
+                headers=auth_headers,
+            )
+            assert response.status_code == 503
+            assert "Framework Mapper" in response.json()["detail"]
+
+    def test_policy_checker_import_error(self, auth_headers):
+        """Test policy checker import error handling."""
+        with patch(
+            "defensive_toolkit.api.routers.compliance.get_policy_checker"
+        ) as mock_get:
+            mock_get.side_effect = HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Policy Checker module not available",
+            )
+            response = client.post(
+                "/api/v1/compliance/policy/validate",
+                json={"policy_file": "/path/to/policy.yaml"},
+                headers=auth_headers,
+            )
+            assert response.status_code == 503
+            assert "Policy Checker" in response.json()["detail"]
+
+    def test_drift_detector_import_error(self, auth_headers):
+        """Test drift detector import error handling."""
+        with patch(
+            "defensive_toolkit.api.routers.compliance.get_drift_detector"
+        ) as mock_get:
+            mock_get.side_effect = HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Drift Detector module not available",
+            )
+            response = client.post(
+                "/api/v1/compliance/drift/create-baseline",
+                json={"config_files": ["/etc/passwd"], "baseline_name": "test"},
+                headers=auth_headers,
+            )
+            # Router catches all exceptions and returns 500
+            assert response.status_code == 500
+            assert "Baseline creation failed" in response.json()["detail"]
+
+
+# =============================================================================
+# Additional Exception Path Tests
+# =============================================================================
+
+
+class TestAdditionalExceptionPaths:
+    """Tests for additional exception handling paths."""
+
+    def test_framework_overlaps_exception(self, auth_headers):
+        """Test framework overlaps exception handling."""
+        with patch(
+            "defensive_toolkit.api.routers.compliance.get_framework_mapper"
+        ) as mock_get:
+            mapper = MagicMock()
+            # Method is find_overlaps, not get_overlapping_controls
+            mapper.find_overlaps.side_effect = Exception("Overlap check failed")
+            mock_get.return_value = mapper
+
+            # Query parameter is comma-separated string, not list
+            response = client.get(
+                "/api/v1/compliance/mapping/overlaps?frameworks=CIS,NIST",
+                headers=auth_headers,
+            )
+            assert response.status_code == 500
+            assert "overlap" in response.json()["detail"].lower()
+
+    def test_coverage_matrix_exception(self, auth_headers):
+        """Test coverage matrix exception handling."""
+        with patch(
+            "defensive_toolkit.api.routers.compliance.get_framework_mapper"
+        ) as mock_get:
+            mapper = MagicMock()
+            # Method is generate_coverage_matrix
+            mapper.generate_coverage_matrix.side_effect = Exception("Matrix generation failed")
+            mock_get.return_value = mapper
+
+            # target_framework is required
+            response = client.get(
+                "/api/v1/compliance/mapping/coverage?target_framework=CIS",
+                headers=auth_headers,
+            )
+            assert response.status_code == 500
+
+    def test_drift_detection_exception(self, auth_headers):
+        """Test drift detection exception handling."""
+        with patch(
+            "defensive_toolkit.api.routers.compliance.get_drift_detector"
+        ) as mock_get:
+            detector = MagicMock()
+            detector.detect_drift.side_effect = Exception("Drift detection failed")
+            mock_get.return_value = detector
+            with patch("pathlib.Path.exists", return_value=True):
+                response = client.post(
+                    "/api/v1/compliance/drift/detect",
+                    json={"baseline_file": "baseline.json", "config_files": ["/etc/passwd"]},
+                    headers=auth_headers,
+                )
+                assert response.status_code == 500
+                assert "drift" in response.json()["detail"].lower()
+
+    def test_report_generation_exception(self, auth_headers, mock_cis_checker):
+        """Test report generation exception handling."""
+        with patch(
+            "defensive_toolkit.api.routers.compliance.get_cis_checker"
+        ) as mock_get:
+            mock_cis_checker.run_all_checks.side_effect = Exception("Report generation failed")
+            mock_get.return_value = mock_cis_checker
+
+            response = client.post(
+                "/api/v1/compliance/report/generate",
+                json={"framework": "cis", "output_format": "html"},
+                headers=auth_headers,
+            )
+            assert response.status_code == 500
