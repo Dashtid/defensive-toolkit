@@ -143,11 +143,11 @@ def sample_discovery_scan():
     return {
         "config": {
             "name": "Network Discovery Scan",
-            "scan_type": "network",
-            "target_subnets": ["192.168.1.0/24", "192.168.10.0/24"],
-            "enabled": True,
-            "schedule": "0 2 * * *",
-            "settings": {"ping_sweep": True, "port_scan": True, "service_detection": True},
+            "scan_type": "network_only",
+            "target_networks": ["192.168.1.0/24", "192.168.10.0/24"],
+            "use_network_scan": True,
+            "schedule_enabled": False,
+            "scan_timeout_seconds": 300,
         },
         "run_immediately": False,
     }
@@ -856,9 +856,8 @@ class TestCMDBIntegration:
         config = {
             "name": "ServiceNow CMDB",
             "cmdb_type": "servicenow",
-            "url": "https://example.service-now.com",
+            "endpoint_url": "https://example.service-now.com",
             "auth_type": "basic",
-            "username": "admin",
             "sync_direction": "bidirectional",
             "enabled": True,
         }
@@ -873,7 +872,7 @@ class TestCMDBIntegration:
         config = {
             "name": "Test CMDB",
             "cmdb_type": "servicenow",
-            "url": "https://test.service-now.com",
+            "endpoint_url": "https://test.service-now.com",
             "sync_direction": "import",
         }
         test_client.post("/api/v1/assets/cmdb/configs", json=config, headers=auth_headers)
@@ -889,7 +888,7 @@ class TestCMDBIntegration:
         config = {
             "name": "Test CMDB",
             "cmdb_type": "servicenow",
-            "url": "https://test.service-now.com",
+            "endpoint_url": "https://test.service-now.com",
             "sync_direction": "import",
         }
         create_response = test_client.post(
@@ -907,7 +906,7 @@ class TestCMDBIntegration:
         config = {
             "name": "Test CMDB",
             "cmdb_type": "servicenow",
-            "url": "https://test.service-now.com",
+            "endpoint_url": "https://test.service-now.com",
             "sync_direction": "import",
         }
         create_response = test_client.post(
@@ -928,7 +927,7 @@ class TestCMDBIntegration:
         config = {
             "name": "Test CMDB",
             "cmdb_type": "servicenow",
-            "url": "https://test.service-now.com",
+            "endpoint_url": "https://test.service-now.com",
             "sync_direction": "import",
         }
         create_response = test_client.post(

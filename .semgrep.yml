@@ -1,0 +1,31 @@
+# Semgrep Configuration for Defensive Toolkit
+# Enables security scanning with OWASP and Python-specific rules
+
+rules:
+  # Use Semgrep registry rules for comprehensive coverage
+  - id: use-defusedxml
+    pattern: import xml.etree.ElementTree
+    message: "Use defusedxml instead of xml.etree.ElementTree to prevent XXE attacks"
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-611"
+
+  - id: no-eval
+    pattern: eval(...)
+    message: "Avoid eval() - use ast.literal_eval() for safe evaluation"
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-94"
+
+  - id: no-shell-true
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+    message: "Avoid shell=True in subprocess calls - use list of arguments instead"
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-78"

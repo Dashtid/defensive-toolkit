@@ -23,8 +23,10 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Body, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 
+from defensive_toolkit.api.auth import get_current_active_user
+from defensive_toolkit.api.dependencies import require_write_scope
 from defensive_toolkit.api.models import (
     Asset,
     # Activity Models
@@ -308,12 +310,15 @@ def apply_search_filters(asset: Dict[str, Any], query: AssetSearchQuery) -> bool
 
 
 @router.post("", response_model=Asset, status_code=201)
-async def create_asset(asset: AssetCreate):
+async def create_asset(
+    asset: AssetCreate,
+    current_user: str = Depends(require_write_scope),
+):
     """
     Create a new asset in the inventory.
 
     Automatically calculates risk score based on criticality, vulnerabilities,
-    and security controls.
+    and security controls. Requires write scope.
     """
     asset_id = generate_id()
     now = datetime.utcnow()
@@ -357,9 +362,10 @@ async def list_assets(
     is_cloud: Optional[bool] = Query(None, description="Filter cloud assets"),
     sort_by: str = Query("last_seen", description="Sort field"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
+    current_user: str = Depends(get_current_active_user),
 ):
     """
-    List all assets with pagination and filtering.
+    List all assets with pagination and filtering. Requires authentication.
     """
     # Apply filters
     filtered = list(assets_store.values())
@@ -400,82 +406,18 @@ async def list_assets(
     )
 
 
-@router.get("/{asset_id}", response_model=Asset)
-async def get_asset(asset_id: str):
-    """
-    Get a specific asset by ID.
-    """
-    if asset_id not in assets_store:
-        raise HTTPException(status_code=404, detail="Asset not found")
-    return Asset(**assets_store[asset_id])
-
-
-@router.put("/{asset_id}", response_model=Asset)
-async def update_asset(asset_id: str, update: AssetUpdate):
-    """
-    Update an existing asset.
-    """
-    if asset_id not in assets_store:
-        raise HTTPException(status_code=404, detail="Asset not found")
-
-    asset = assets_store[asset_id]
-    update_data = update.model_dump(exclude_unset=True)
-
-    # Track changes for activity log
-    changes = {}
-    for key, value in update_data.items():
-        if key in asset and asset[key] != value:
-            changes[key] = {"old": asset[key], "new": value}
-
-    # Apply updates
-    for key, value in update_data.items():
-        if value is not None:
-            asset[key] = value
-
-    asset["updated_at"] = datetime.utcnow().isoformat()
-    asset["last_seen"] = datetime.utcnow().isoformat()
-
-    # Recalculate risk score
-    risk_score = calculate_risk_score(asset)
-    asset["risk_score"] = risk_score.model_dump()
-
-    # Log activity
-    if changes:
-        log_activity(asset_id, "updated", "Asset updated", {"changes": changes})
-
-    logger.info(f"Updated asset: {asset_id}")
-    return Asset(**asset)
-
-
-@router.delete("/{asset_id}")
-async def delete_asset(asset_id: str, soft_delete: bool = Query(True)):
-    """
-    Delete an asset. By default performs soft delete (sets status to decommissioned).
-    """
-    if asset_id not in assets_store:
-        raise HTTPException(status_code=404, detail="Asset not found")
-
-    if soft_delete:
-        assets_store[asset_id]["status"] = "decommissioned"
-        assets_store[asset_id]["updated_at"] = datetime.utcnow().isoformat()
-        log_activity(asset_id, "decommissioned", "Asset marked as decommissioned")
-        return {"status": "success", "message": "Asset marked as decommissioned"}
-    else:
-        asset_name = assets_store[asset_id].get("name", "Unknown")
-        del assets_store[asset_id]
-        logger.info(f"Deleted asset: {asset_id}")
-        return {"status": "success", "message": f"Asset '{asset_name}' permanently deleted"}
-
-
 # =============================================================================
 # Advanced Search
 # =============================================================================
 
 
 @router.post("/search", response_model=AssetListResponse)
-async def search_assets(query: AssetSearchQuery):
+async def search_assets(
+    query: AssetSearchQuery,
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Advanced asset search with comprehensive filtering options.
+    Advanced asset search with comprehensive filtering options. Requires authentication.
     """
     # Apply filters
     filtered = [a for a in assets_store.values() if apply_search_filters(a, query)]
@@ -511,9 +453,13 @@ async def search_assets(query: AssetSearchQuery):
 
 
 @router.post("/{asset_id}/relationships", response_model=AssetRelationship, status_code=201)
-async def create_relationship(asset_id: str, relationship: AssetRelationshipCreate):
+async def create_relationship(
+    asset_id: str,
+    relationship: AssetRelationshipCreate,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Create a relationship between two assets.
+    Create a relationship between two assets. Requires write scope.
     """
     if asset_id not in assets_store:
         raise HTTPException(status_code=404, detail="Source asset not found")
@@ -577,9 +523,10 @@ async def get_asset_relationships(
     asset_id: str,
     relationship_type: Optional[RelationshipTypeEnum] = None,
     direction: str = Query("both", pattern="^(inbound|outbound|both)$"),
+    current_user: str = Depends(get_current_active_user),
 ):
     """
-    Get all relationships for an asset.
+    Get all relationships for an asset. Requires authentication.
     """
     if asset_id not in assets_store:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -605,9 +552,12 @@ async def get_asset_relationships(
 
 
 @router.delete("/relationships/{relationship_id}")
-async def delete_relationship(relationship_id: str):
+async def delete_relationship(
+    relationship_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Delete a relationship between assets.
+    Delete a relationship between assets. Requires write scope.
     """
     if relationship_id not in relationships_store:
         raise HTTPException(status_code=404, detail="Relationship not found")
@@ -622,9 +572,12 @@ async def delete_relationship(relationship_id: str):
 
 
 @router.post("/groups", response_model=AssetGroup, status_code=201)
-async def create_asset_group(group: AssetGroupCreate):
+async def create_asset_group(
+    group: AssetGroupCreate,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Create an asset group (static or dynamic).
+    Create an asset group (static or dynamic). Requires write scope.
     """
     group_id = generate_id()
     now = datetime.utcnow()
@@ -642,9 +595,11 @@ async def create_asset_group(group: AssetGroupCreate):
 
 
 @router.get("/groups", response_model=AssetGroupListResponse)
-async def list_asset_groups():
+async def list_asset_groups(
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    List all asset groups.
+    List all asset groups. Requires authentication.
     """
     groups = list(groups_store.values())
     return AssetGroupListResponse(
@@ -654,9 +609,12 @@ async def list_asset_groups():
 
 
 @router.get("/groups/{group_id}", response_model=AssetGroup)
-async def get_asset_group(group_id: str):
+async def get_asset_group(
+    group_id: str,
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Get a specific asset group.
+    Get a specific asset group. Requires authentication.
     """
     if group_id not in groups_store:
         raise HTTPException(status_code=404, detail="Asset group not found")
@@ -664,9 +622,13 @@ async def get_asset_group(group_id: str):
 
 
 @router.put("/groups/{group_id}", response_model=AssetGroup)
-async def update_asset_group(group_id: str, update: AssetGroupUpdate):
+async def update_asset_group(
+    group_id: str,
+    update: AssetGroupUpdate,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Update an asset group.
+    Update an asset group. Requires write scope.
     """
     if group_id not in groups_store:
         raise HTTPException(status_code=404, detail="Asset group not found")
@@ -687,9 +649,12 @@ async def update_asset_group(group_id: str, update: AssetGroupUpdate):
 
 
 @router.delete("/groups/{group_id}")
-async def delete_asset_group(group_id: str):
+async def delete_asset_group(
+    group_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Delete an asset group.
+    Delete an asset group. Requires write scope.
     """
     if group_id not in groups_store:
         raise HTTPException(status_code=404, detail="Asset group not found")
@@ -704,9 +669,10 @@ async def get_group_assets(
     group_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=500),
+    current_user: str = Depends(get_current_active_user),
 ):
     """
-    Get all assets in a group.
+    Get all assets in a group. Requires authentication.
     """
     if group_id not in groups_store:
         raise HTTPException(status_code=404, detail="Asset group not found")
@@ -745,9 +711,13 @@ async def get_group_assets(
 
 
 @router.post("/groups/{group_id}/assets/{asset_id}")
-async def add_asset_to_group(group_id: str, asset_id: str):
+async def add_asset_to_group(
+    group_id: str,
+    asset_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Add an asset to a static group.
+    Add an asset to a static group. Requires write scope.
     """
     if group_id not in groups_store:
         raise HTTPException(status_code=404, detail="Asset group not found")
@@ -767,9 +737,13 @@ async def add_asset_to_group(group_id: str, asset_id: str):
 
 
 @router.delete("/groups/{group_id}/assets/{asset_id}")
-async def remove_asset_from_group(group_id: str, asset_id: str):
+async def remove_asset_from_group(
+    group_id: str,
+    asset_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Remove an asset from a static group.
+    Remove an asset from a static group. Requires write scope.
     """
     if group_id not in groups_store:
         raise HTTPException(status_code=404, detail="Asset group not found")
@@ -794,9 +768,12 @@ async def remove_asset_from_group(group_id: str, asset_id: str):
 
 
 @router.post("/discovery/scans", response_model=DiscoveryScan, status_code=201)
-async def create_discovery_scan(scan_request: DiscoveryScanCreate):
+async def create_discovery_scan(
+    scan_request: DiscoveryScanCreate,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Create a new asset discovery scan.
+    Create a new asset discovery scan. Requires write scope.
     """
     scan_id = generate_id()
     now = datetime.utcnow()
@@ -840,9 +817,10 @@ async def create_discovery_scan(scan_request: DiscoveryScanCreate):
 @router.get("/discovery/scans", response_model=DiscoveryScanListResponse)
 async def list_discovery_scans(
     status: Optional[str] = Query(None, description="Filter by status"),
+    current_user: str = Depends(get_current_active_user),
 ):
     """
-    List all discovery scans.
+    List all discovery scans. Requires authentication.
     """
     scans = list(scans_store.values())
     if status:
@@ -855,9 +833,12 @@ async def list_discovery_scans(
 
 
 @router.get("/discovery/scans/{scan_id}", response_model=DiscoveryScan)
-async def get_discovery_scan(scan_id: str):
+async def get_discovery_scan(
+    scan_id: str,
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Get a specific discovery scan.
+    Get a specific discovery scan. Requires authentication.
     """
     if scan_id not in scans_store:
         raise HTTPException(status_code=404, detail="Scan not found")
@@ -865,9 +846,12 @@ async def get_discovery_scan(scan_id: str):
 
 
 @router.post("/discovery/scans/{scan_id}/run")
-async def run_discovery_scan(scan_id: str):
+async def run_discovery_scan(
+    scan_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Manually trigger a discovery scan to run.
+    Manually trigger a discovery scan to run. Requires write scope.
     """
     if scan_id not in scans_store:
         raise HTTPException(status_code=404, detail="Scan not found")
@@ -894,9 +878,12 @@ async def run_discovery_scan(scan_id: str):
 
 
 @router.post("/discovery/scans/{scan_id}/cancel")
-async def cancel_discovery_scan(scan_id: str):
+async def cancel_discovery_scan(
+    scan_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Cancel a running discovery scan.
+    Cancel a running discovery scan. Requires write scope.
     """
     if scan_id not in scans_store:
         raise HTTPException(status_code=404, detail="Scan not found")
@@ -912,9 +899,12 @@ async def cancel_discovery_scan(scan_id: str):
 
 
 @router.get("/discovery/scans/{scan_id}/results", response_model=DiscoveryScanResult)
-async def get_scan_results(scan_id: str):
+async def get_scan_results(
+    scan_id: str,
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Get detailed results from a completed scan.
+    Get detailed results from a completed scan. Requires authentication.
     """
     if scan_id not in scans_store:
         raise HTTPException(status_code=404, detail="Scan not found")
@@ -938,9 +928,12 @@ async def get_scan_results(scan_id: str):
 
 
 @router.delete("/discovery/scans/{scan_id}")
-async def delete_discovery_scan(scan_id: str):
+async def delete_discovery_scan(
+    scan_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Delete a discovery scan configuration.
+    Delete a discovery scan configuration. Requires write scope.
     """
     if scan_id not in scans_store:
         raise HTTPException(status_code=404, detail="Scan not found")
@@ -955,9 +948,12 @@ async def delete_discovery_scan(scan_id: str):
 
 
 @router.post("/topology", response_model=NetworkTopology)
-async def generate_topology(query: TopologyQuery):
+async def generate_topology(
+    query: TopologyQuery,
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Generate network topology visualization data.
+    Generate network topology visualization data. Requires authentication.
     """
     nodes = []
     edges = []
@@ -1040,9 +1036,10 @@ async def generate_topology(query: TopologyQuery):
 async def get_asset_topology(
     asset_id: str,
     max_depth: int = Query(2, ge=1, le=5, description="Maximum depth of relationships"),
+    current_user: str = Depends(get_current_active_user),
 ):
     """
-    Get network topology centered on a specific asset.
+    Get network topology centered on a specific asset. Requires authentication.
     """
     if asset_id not in assets_store:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -1060,9 +1057,12 @@ async def get_asset_topology(
 
 
 @router.post("/cmdb/configs", status_code=201)
-async def create_cmdb_config(config: CMDBSyncConfig):
+async def create_cmdb_config(
+    config: CMDBSyncConfig,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Create a CMDB synchronization configuration.
+    Create a CMDB synchronization configuration. Requires write scope.
     """
     config_id = generate_id()
     config_dict = config.model_dump()
@@ -1075,17 +1075,22 @@ async def create_cmdb_config(config: CMDBSyncConfig):
 
 
 @router.get("/cmdb/configs")
-async def list_cmdb_configs():
+async def list_cmdb_configs(
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    List all CMDB synchronization configurations.
+    List all CMDB synchronization configurations. Requires authentication.
     """
     return {"configs": list(cmdb_configs_store.values()), "total": len(cmdb_configs_store)}
 
 
 @router.get("/cmdb/configs/{config_id}")
-async def get_cmdb_config(config_id: str):
+async def get_cmdb_config(
+    config_id: str,
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Get a specific CMDB configuration.
+    Get a specific CMDB configuration. Requires authentication.
     """
     if config_id not in cmdb_configs_store:
         raise HTTPException(status_code=404, detail="CMDB config not found")
@@ -1093,9 +1098,12 @@ async def get_cmdb_config(config_id: str):
 
 
 @router.post("/cmdb/configs/{config_id}/sync", response_model=CMDBSyncResult)
-async def trigger_cmdb_sync(config_id: str):
+async def trigger_cmdb_sync(
+    config_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Manually trigger CMDB synchronization.
+    Manually trigger CMDB synchronization. Requires write scope.
     """
     if config_id not in cmdb_configs_store:
         raise HTTPException(status_code=404, detail="CMDB config not found")
@@ -1127,9 +1135,12 @@ async def trigger_cmdb_sync(config_id: str):
 
 
 @router.delete("/cmdb/configs/{config_id}")
-async def delete_cmdb_config(config_id: str):
+async def delete_cmdb_config(
+    config_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Delete a CMDB configuration.
+    Delete a CMDB configuration. Requires write scope.
     """
     if config_id not in cmdb_configs_store:
         raise HTTPException(status_code=404, detail="CMDB config not found")
@@ -1147,9 +1158,10 @@ async def delete_cmdb_config(config_id: str):
 async def import_assets(
     file: UploadFile = File(...),
     config: AssetImportConfig = Body(default_factory=AssetImportConfig),
+    current_user: str = Depends(require_write_scope),
 ):
     """
-    Import assets from a file (CSV, JSON, or XLSX).
+    Import assets from a file (CSV, JSON, or XLSX). Requires write scope.
     """
     import_id = generate_id()
     now = datetime.utcnow()
@@ -1184,9 +1196,12 @@ async def import_assets(
 
 
 @router.post("/export", response_model=AssetExportResult)
-async def export_assets(config: AssetExportConfig):
+async def export_assets(
+    config: AssetExportConfig,
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Export assets to a file (CSV, JSON, or XLSX).
+    Export assets to a file (CSV, JSON, or XLSX). Requires authentication.
     """
     export_id = generate_id()
     now = datetime.utcnow()
@@ -1213,9 +1228,12 @@ async def export_assets(config: AssetExportConfig):
 
 
 @router.get("/export/{export_id}/download")
-async def download_export(export_id: str):
+async def download_export(
+    export_id: str,
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Download an exported file.
+    Download an exported file. Requires authentication.
     """
     # In production, this would retrieve the actual file
     return {"status": "success", "message": "Download started", "export_id": export_id}
@@ -1227,9 +1245,11 @@ async def download_export(export_id: str):
 
 
 @router.get("/statistics", response_model=AssetStatistics)
-async def get_asset_statistics():
+async def get_asset_statistics(
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Get comprehensive asset inventory statistics.
+    Get comprehensive asset inventory statistics. Requires authentication.
     """
     assets = list(assets_store.values())
     total = len(assets)
@@ -1334,9 +1354,10 @@ async def get_asset_statistics():
 async def get_asset_trends(
     period: str = Query("daily", pattern="^(daily|weekly|monthly)$"),
     days: int = Query(30, ge=7, le=365),
+    current_user: str = Depends(get_current_active_user),
 ):
     """
-    Get asset inventory trends over time.
+    Get asset inventory trends over time. Requires authentication.
     """
     # Generate simulated trend data
     import random
@@ -1389,9 +1410,10 @@ async def get_asset_activity(
     asset_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
+    current_user: str = Depends(get_current_active_user),
 ):
     """
-    Get activity log for an asset.
+    Get activity log for an asset. Requires authentication.
     """
     if asset_id not in assets_store:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -1418,9 +1440,12 @@ async def get_asset_activity(
 
 
 @router.post("/bulk/update", response_model=BulkAssetUpdateResult)
-async def bulk_update_assets(bulk_update: BulkAssetUpdate):
+async def bulk_update_assets(
+    bulk_update: BulkAssetUpdate,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Bulk update multiple assets.
+    Bulk update multiple assets. Requires write scope.
     """
     updated = 0
     failed = 0
@@ -1460,9 +1485,12 @@ async def bulk_update_assets(bulk_update: BulkAssetUpdate):
 
 
 @router.post("/bulk/tag", response_model=BulkOperationResult)
-async def bulk_tag_assets(bulk_tag: BulkAssetTag):
+async def bulk_tag_assets(
+    bulk_tag: BulkAssetTag,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Bulk add or remove tags from assets.
+    Bulk add or remove tags from assets. Requires write scope.
     """
     succeeded = 0
     failed = 0
@@ -1504,9 +1532,12 @@ async def bulk_tag_assets(bulk_tag: BulkAssetTag):
 
 
 @router.post("/bulk/delete", response_model=BulkOperationResult)
-async def bulk_delete_assets(bulk_delete: BulkAssetDelete):
+async def bulk_delete_assets(
+    bulk_delete: BulkAssetDelete,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Bulk delete (or decommission) assets.
+    Bulk delete (or decommission) assets. Requires write scope.
     """
     succeeded = 0
     failed = 0
@@ -1541,9 +1572,12 @@ async def bulk_delete_assets(bulk_delete: BulkAssetDelete):
 
 
 @router.post("/bulk/recalculate-risk", response_model=BulkOperationResult)
-async def bulk_recalculate_risk(asset_ids: List[str] = Body(None)):
+async def bulk_recalculate_risk(
+    asset_ids: List[str] = Body(None),
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Recalculate risk scores for assets (all if no IDs provided).
+    Recalculate risk scores for assets (all if no IDs provided). Requires write scope.
     """
     target_ids = asset_ids if asset_ids else list(assets_store.keys())
 
@@ -1583,9 +1617,12 @@ async def bulk_recalculate_risk(asset_ids: List[str] = Body(None)):
 
 
 @router.get("/{asset_id}/risk-score", response_model=AssetRiskScore)
-async def get_asset_risk_score(asset_id: str):
+async def get_asset_risk_score(
+    asset_id: str,
+    current_user: str = Depends(get_current_active_user),
+):
     """
-    Get detailed risk score for an asset.
+    Get detailed risk score for an asset. Requires authentication.
     """
     if asset_id not in assets_store:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -1597,9 +1634,12 @@ async def get_asset_risk_score(asset_id: str):
 
 
 @router.post("/{asset_id}/risk-score/recalculate", response_model=AssetRiskScore)
-async def recalculate_asset_risk(asset_id: str):
+async def recalculate_asset_risk(
+    asset_id: str,
+    current_user: str = Depends(require_write_scope),
+):
     """
-    Force recalculation of an asset's risk score.
+    Force recalculation of an asset's risk score. Requires write scope.
     """
     if asset_id not in assets_store:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -1617,7 +1657,7 @@ async def recalculate_asset_risk(asset_id: str):
 
 
 # =============================================================================
-# Health Check
+# Health Check (MUST come before /{asset_id} routes)
 # =============================================================================
 
 
@@ -1691,3 +1731,90 @@ async def health_check():
         issues=issues,
         recommendations=recommendations,
     )
+
+
+# =============================================================================
+# Single Asset Operations (MUST come after all static routes to avoid conflicts)
+# =============================================================================
+
+
+@router.get("/{asset_id}", response_model=Asset)
+async def get_asset(
+    asset_id: str,
+    current_user: str = Depends(get_current_active_user),
+):
+    """
+    Get a specific asset by ID. Requires authentication.
+
+    Note: This route is defined after static routes (/groups, /statistics, etc.)
+    to prevent FastAPI from matching those paths as asset IDs.
+    """
+    if asset_id not in assets_store:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return Asset(**assets_store[asset_id])
+
+
+@router.put("/{asset_id}", response_model=Asset)
+async def update_asset(
+    asset_id: str,
+    update: AssetUpdate,
+    current_user: str = Depends(require_write_scope),
+):
+    """
+    Update an existing asset. Requires write scope.
+    """
+    if asset_id not in assets_store:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    asset = assets_store[asset_id]
+    update_data = update.model_dump(exclude_unset=True)
+
+    # Track changes for activity log
+    changes = {}
+    for key, value in update_data.items():
+        if key in asset and asset[key] != value:
+            changes[key] = {"old": asset[key], "new": value}
+
+    # Apply updates
+    for key, value in update_data.items():
+        if value is not None:
+            asset[key] = value
+
+    asset["updated_at"] = datetime.utcnow().isoformat()
+    asset["last_seen"] = datetime.utcnow().isoformat()
+
+    # Recalculate risk score
+    risk_score = calculate_risk_score(asset)
+    asset["risk_score"] = risk_score.model_dump()
+
+    # Log activity
+    if changes:
+        log_activity(asset_id, "updated", "Asset updated", {"changes": changes})
+
+    logger.info(f"Updated asset: {asset_id}")
+    return Asset(**asset)
+
+
+@router.delete("/{asset_id}")
+async def delete_asset(
+    asset_id: str,
+    soft_delete: bool = Query(True),
+    current_user: str = Depends(require_write_scope),
+):
+    """
+    Delete an asset. By default performs soft delete (sets status to decommissioned).
+    Requires write scope.
+    """
+    if asset_id not in assets_store:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    if soft_delete:
+        assets_store[asset_id]["status"] = "decommissioned"
+        assets_store[asset_id]["updated_at"] = datetime.utcnow().isoformat()
+        log_activity(asset_id, "decommissioned", "Asset marked as decommissioned")
+        return {"status": "success", "message": "Asset marked as decommissioned"}
+    else:
+        asset_name = assets_store[asset_id].get("name", "Unknown")
+        del assets_store[asset_id]
+        logger.info(f"Deleted asset: {asset_id}")
+        return {"status": "success", "message": f"Asset '{asset_name}' permanently deleted"}

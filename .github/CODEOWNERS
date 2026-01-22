@@ -1,0 +1,25 @@
+# CODEOWNERS - Defines who is responsible for code review
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+* @david-dashti
+
+# API and authentication (security-sensitive)
+/src/defensive_toolkit/api/ @david-dashti
+/src/defensive_toolkit/api/auth.py @david-dashti
+
+# Security modules (require security review)
+/src/defensive_toolkit/hardening/ @david-dashti
+/src/defensive_toolkit/vulnerability_mgmt/ @david-dashti
+/src/defensive_toolkit/threat_intel/ @david-dashti
+/src/defensive_toolkit/incident_response/ @david-dashti
+
+# Infrastructure and deployment
+/infra/ @david-dashti
+/.github/ @david-dashti
+
+# Detection rules
+/rules/ @david-dashti
+
+# Rust code
+/rust/ @david-dashti
