@@ -18,6 +18,7 @@ Integrations supported:
 - PagerDuty (Events API)
 """
 
+import ipaddress
 import json
 import logging
 import os
@@ -29,6 +30,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Dict, List, Optional
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 # Import ActionResult from parent - handle both direct and module import
@@ -61,6 +63,66 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_webhook_url(url: str) -> None:
+    """
+    Validate webhook URL to prevent SSRF attacks.
+
+    Raises ValueError if URL is invalid or targets internal resources.
+    """
+    try:
+        parsed = urlparse(url)
+
+        # Must be HTTPS (or HTTP for localhost testing only)
+        if parsed.scheme not in ("https", "http"):
+            raise ValueError(f"Invalid URL scheme: {parsed.scheme}. Must be http or https.")
+
+        # Must have a hostname
+        if not parsed.hostname:
+            raise ValueError("URL must have a hostname")
+
+        hostname = parsed.hostname.lower()
+
+        # Block localhost and loopback
+        if hostname in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):  # nosec B104 - blocking, not binding
+            raise ValueError("Cannot make requests to localhost")
+
+        # Block internal/private IP ranges
+        try:
+            ip = ipaddress.ip_address(hostname)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise ValueError(f"Cannot make requests to private/internal IP: {hostname}")
+        except ValueError as e:
+            # Re-raise if it's our security error, otherwise it's just not an IP (hostname)
+            if "Cannot make requests" in str(e):
+                raise
+            # Not an IP address, it's a hostname - that's OK
+            pass
+
+        # Block common internal hostnames
+        internal_patterns = [
+            "internal", "intranet", "corp", "private",
+            "metadata", "169.254.169.254",  # Cloud metadata endpoints
+        ]
+        for pattern in internal_patterns:
+            if pattern in hostname:
+                raise ValueError(f"Cannot make requests to internal hostname: {hostname}")
+
+        # Block file:// and other dangerous schemes
+        if parsed.scheme == "file":
+            raise ValueError("file:// URLs are not allowed")
+
+    except ValueError:
+        raise
+    except Exception as e:
+        raise ValueError(f"Invalid URL: {e}")
+
+
+def _safe_urlopen(url: str, req: Request, timeout: int = 30):
+    """Safely open URL after validation."""
+    _validate_webhook_url(url)
+    return urlopen(req, timeout=timeout)  # nosec B310 - URL validated above
 
 
 def send_alert(
@@ -269,7 +331,7 @@ def _send_slack_alert(
     try:
         data = json.dumps(payload).encode("utf-8")
         req = Request(webhook_url, data=data, headers={"Content-Type": "application/json"})
-        response = urlopen(req, timeout=30)
+        response = _safe_urlopen(webhook_url, req, timeout=30)
 
         if response.status == 200:
             return ActionResult(
@@ -323,7 +385,7 @@ def _send_teams_alert(
     try:
         data = json.dumps(payload).encode("utf-8")
         req = Request(webhook_url, data=data, headers={"Content-Type": "application/json"})
-        response = urlopen(req, timeout=30)
+        response = _safe_urlopen(webhook_url, req, timeout=30)
 
         if response.status == 200:
             return ActionResult(success=True, message="Teams alert sent successfully")
@@ -367,7 +429,7 @@ def _send_pagerduty_alert(
         url = "https://events.pagerduty.com/v2/enqueue"
         data = json.dumps(payload).encode("utf-8")
         req = Request(url, data=data, headers={"Content-Type": "application/json"})
-        response = urlopen(req, timeout=30)
+        response = _safe_urlopen(url, req, timeout=30)
 
         result = json.loads(response.read().decode("utf-8"))
 
@@ -475,7 +537,7 @@ def _create_jira_ticket(
             data=data,
             headers={"Content-Type": "application/json", "Authorization": f"Basic {auth}"},
         )
-        response = urlopen(req, timeout=30)
+        response = _safe_urlopen(url, req, timeout=30)
 
         result = json.loads(response.read().decode("utf-8"))
 
@@ -542,7 +604,7 @@ def _create_servicenow_ticket(
                 "Authorization": f"Basic {auth}",
             },
         )
-        response = urlopen(req, timeout=30)
+        response = _safe_urlopen(url, req, timeout=30)
 
         result = json.loads(response.read().decode("utf-8"))
         incident = result.get("result", {})

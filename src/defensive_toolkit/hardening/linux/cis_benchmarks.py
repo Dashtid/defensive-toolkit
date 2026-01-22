@@ -75,11 +75,25 @@ class LinuxHardeningScanner:
         self.is_root = os.geteuid() == 0 if hasattr(os, "geteuid") else False
 
     def _run_command(self, cmd: str, timeout: int = 30) -> tuple[int, str, str]:
-        """Run shell command and return (returncode, stdout, stderr)."""
+        """Run shell command and return (returncode, stdout, stderr).
+
+        Security note: shell=True is intentionally used here because CIS benchmark
+        checks require shell features (pipes, redirects, globbing). All commands
+        are hardcoded in this module, not user-provided. Do not pass untrusted
+        input to this method.
+        """
+        # Basic command validation - reject obviously dangerous patterns
+        dangerous_patterns = ["$(", "`", "&&", "||", ";", "|&"]
+        # Allow pipes (|) as they're needed for CIS checks, but not command chaining
+        for pattern in dangerous_patterns:
+            if pattern in cmd and pattern != "|":
+                logger.warning(f"[!] Blocked potentially dangerous command pattern: {pattern}")
+                return -1, "", f"Command contains blocked pattern: {pattern}"
+
         try:
             result = subprocess.run(
                 cmd,
-                shell=True,
+                shell=True,  # nosec B602 - required for CIS benchmark checks with pipes
                 capture_output=True,
                 text=True,
                 timeout=timeout,

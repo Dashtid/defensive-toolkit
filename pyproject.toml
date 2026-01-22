@@ -49,6 +49,7 @@ dependencies = [
     "bcrypt>=4.0.0,<5.0.0",  # bcrypt 5.0 incompatible with passlib 1.7.4
     "python-multipart>=0.0.9",
     "prometheus-fastapi-instrumentator>=7.0.0",
+    "defusedxml>=0.7.1",  # Safe XML parsing (prevents XXE attacks)
 ]
 
 [project.optional-dependencies]
@@ -325,4 +326,7 @@ exclude = [
 
 [tool.bandit]
 exclude_dirs = ["tests", "venv", ".venv", "examples"]
-skips = ["B101", "B601", "B603", "B607"]  # Allow assert, subprocess for security tools
+# B101: assert statements (OK in security tools)
+# B106/B107: false positives on token_type="bearer", default params
+# B601/B603/B607: subprocess calls (legitimate for security tooling)
+skips = ["B101", "B106", "B107", "B601", "B603", "B607"]

@@ -25,11 +25,14 @@ Usage:
 """
 
 import argparse
+import ast
 import hashlib
 import json
 import logging
+import operator
 import os
 import platform
+import re
 import subprocess
 import sys
 import uuid
@@ -428,17 +431,86 @@ class RunbookEngine:
         return obj
 
     def _evaluate_condition(self, condition: Optional[str]) -> bool:
-        """Evaluate step condition"""
+        """Evaluate step condition safely without eval()"""
         if not condition:
             return True
 
         try:
             condition = self._substitute_variables(condition)
-            # Safe evaluation with limited builtins
-            return eval(condition, {"__builtins__": {}}, self.variables)
+            return self._safe_eval_condition(condition)
         except Exception as e:
             logger.warning(f"[!] Condition evaluation failed: {e}")
             return False
+
+    def _safe_eval_condition(self, condition: str) -> bool:
+        """Safely evaluate a condition string without using eval()"""
+        condition = condition.strip()
+
+        # Handle boolean literals
+        if condition.lower() == "true":
+            return True
+        if condition.lower() == "false":
+            return False
+
+        # Handle 'and' / 'or' (split on lowest precedence first)
+        if " or " in condition:
+            parts = condition.split(" or ", 1)
+            return self._safe_eval_condition(parts[0]) or self._safe_eval_condition(parts[1])
+
+        if " and " in condition:
+            parts = condition.split(" and ", 1)
+            return self._safe_eval_condition(parts[0]) and self._safe_eval_condition(parts[1])
+
+        # Handle 'not in' before 'in'
+        if " not in " in condition:
+            left, right = condition.split(" not in ", 1)
+            left_val = self._safe_get_value(left.strip())
+            right_val = self._safe_get_value(right.strip())
+            return left_val not in right_val
+
+        if " in " in condition:
+            left, right = condition.split(" in ", 1)
+            left_val = self._safe_get_value(left.strip())
+            right_val = self._safe_get_value(right.strip())
+            return left_val in right_val
+
+        # Handle comparison operators
+        ops = {
+            "==": operator.eq,
+            "!=": operator.ne,
+            "<=": operator.le,
+            ">=": operator.ge,
+            "<": operator.lt,
+            ">": operator.gt,
+        }
+
+        for op_str, op_func in ops.items():
+            if op_str in condition:
+                left, right = condition.split(op_str, 1)
+                left_val = self._safe_get_value(left.strip())
+                right_val = self._safe_get_value(right.strip())
+                return op_func(left_val, right_val)
+
+        # If no operator found, treat as truthy check on variable
+        val = self._safe_get_value(condition)
+        return bool(val)
+
+    def _safe_get_value(self, token: str) -> Any:
+        """Safely get value from token - either literal or variable"""
+        token = token.strip()
+
+        # Try to parse as literal (string, number, list, dict, bool, None)
+        try:
+            return ast.literal_eval(token)
+        except (ValueError, SyntaxError):
+            pass
+
+        # Check if it's a variable reference
+        if token in self.variables:
+            return self.variables[token]
+
+        # Return as string if nothing else matches
+        return token
 
     def _offer_rollback(self):
         """Offer to rollback executed actions"""

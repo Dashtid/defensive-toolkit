@@ -10,11 +10,12 @@ import json
 import logging
 import platform
 import re
+import shlex
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import yaml
 
@@ -128,11 +129,27 @@ class PolicyChecker:
         }
 
         try:
-            # Execute command
+            # Execute command with security validation
             if isinstance(command, str):
-                proc = subprocess.run(
-                    command, shell=True, capture_output=True, text=True, timeout=30
-                )
+                # Validate command doesn't contain dangerous injection patterns
+                dangerous_patterns = ["$(", "`", "&&", "||", ";", "|&", "\n", "\r"]
+                for pattern in dangerous_patterns:
+                    if pattern in command:
+                        result["status"] = "ERROR"
+                        result["message"] = f"Command blocked: contains unsafe pattern '{pattern}'"
+                        return result
+
+                # Use shlex.split to safely parse the command, avoiding shell=True
+                try:
+                    cmd_parts = shlex.split(command)
+                    proc = subprocess.run(
+                        cmd_parts, capture_output=True, text=True, timeout=30
+                    )
+                except ValueError as e:
+                    # If shlex fails (complex shell syntax), log warning and skip
+                    result["status"] = "ERROR"
+                    result["message"] = f"Command parse error: {e}"
+                    return result
             else:
                 proc = subprocess.run(command, capture_output=True, text=True, timeout=30)
 

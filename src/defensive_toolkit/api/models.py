@@ -4840,7 +4840,7 @@ class AssetSearchQuery(BaseModel):
 class AssetRelationshipCreate(BaseModel):
     """Create a relationship between assets"""
 
-    source_asset_id: str
+    # source_asset_id comes from URL path parameter, not request body
     target_asset_id: str
     relationship_type: RelationshipTypeEnum
     description: Optional[str] = None
