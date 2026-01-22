@@ -40,7 +40,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Run Hadolint on API Dockerfile
       uses: hadolint/hadolint-action@v3.1.0
@@ -87,7 +87,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Prepare platform slug
       id: platform
@@ -162,7 +162,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Download API image artifact
       uses: actions/download-artifact@v4
@@ -262,7 +262,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Download API image artifact
       uses: actions/download-artifact@v4
@@ -372,7 +372,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Run Docker Bench for Security
       run: |
@@ -404,7 +404,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Download API image artifact
       uses: actions/download-artifact@v4
