@@ -43,7 +43,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Run Hadolint on API Dockerfile
-      uses: hadolint/hadolint-action@v3.1.0
+      uses: hadolint/hadolint-action@v3.3.0
       with:
         dockerfile: infra/docker/Dockerfile
         failure-threshold: error
@@ -51,7 +51,7 @@ jobs:
         output-file: hadolint-api.sarif
 
     - name: Run Hadolint on Nginx Dockerfile
-      uses: hadolint/hadolint-action@v3.1.0
+      uses: hadolint/hadolint-action@v3.3.0
       with:
         dockerfile: infra/nginx/Dockerfile
         failure-threshold: error
