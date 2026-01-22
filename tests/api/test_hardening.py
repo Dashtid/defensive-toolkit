@@ -291,16 +291,36 @@ class TestLinuxScanEndpoint:
 class TestWindowsScanEndpoint:
     """Tests for Windows hardening scan endpoint."""
 
-    def test_scan_windows_not_implemented(self, auth_headers):
-        """Test Windows scan returns 501 Not Implemented."""
+    def test_scan_windows_system(self, auth_headers):
+        """Test Windows scan returns scan results."""
         scan_data = {"target": "localhost", "os_type": "windows", "cis_level": 1}
 
         response = client.post(
             "/api/v1/hardening/scan/windows", json=scan_data, headers=auth_headers
         )
 
-        assert response.status_code == 501
-        assert "not yet implemented" in response.json()["detail"].lower()
+        assert response.status_code == 200
+        data = response.json()
+        assert data["os_type"] == "windows"
+        assert data["target"] == "localhost"
+        assert data["total_checks"] == 17
+        assert "scan_id" in data
+        assert "checks" in data
+        assert "categories" in data
+        # Verify Windows-specific check IDs
+        check_ids = [c["check_id"] for c in data["checks"]]
+        assert all(cid.startswith("WIN-") for cid in check_ids)
+
+    def test_scan_windows_wrong_os_type(self, auth_headers):
+        """Test Windows scan rejects wrong os_type."""
+        scan_data = {"target": "localhost", "os_type": "linux", "cis_level": 1}
+
+        response = client.post(
+            "/api/v1/hardening/scan/windows", json=scan_data, headers=auth_headers
+        )
+
+        assert response.status_code == 400
+        assert "windows systems only" in response.json()["detail"].lower()
 
 
 # =============================================================================
@@ -330,14 +350,17 @@ class TestGenericScanEndpoint:
             assert response.json()["os_type"] == "linux"
 
     def test_scan_routes_to_windows(self, auth_headers):
-        """Test generic scan routes to Windows scanner (returns 501)."""
+        """Test generic scan routes to Windows scanner."""
         scan_data = {"target": "localhost", "os_type": "windows", "cis_level": 1}
 
         response = client.post(
             "/api/v1/hardening/scan", json=scan_data, headers=auth_headers
         )
 
-        assert response.status_code == 501
+        assert response.status_code == 200
+        data = response.json()
+        assert data["os_type"] == "windows"
+        assert data["total_checks"] == 17
 
     def test_scan_unsupported_os(self, auth_headers):
         """Test generic scan rejects unsupported OS type."""

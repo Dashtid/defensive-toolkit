@@ -140,6 +140,20 @@ def get_linux_scanner(target: str = "localhost", cis_level: int = 1):
         )
 
 
+def get_windows_scanner(target: str = "localhost", cis_level: int = 1):
+    """Get Windows hardening scanner instance."""
+    try:
+        from defensive_toolkit.hardening.windows.cis_benchmarks import WindowsHardeningScanner
+
+        return WindowsHardeningScanner(target=target, cis_level=cis_level)
+    except ImportError as e:
+        logger.error(f"Failed to import WindowsHardeningScanner: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Windows hardening scanner module not available",
+        )
+
+
 # =============================================================================
 # Scan Endpoints
 # =============================================================================
@@ -222,15 +236,73 @@ async def scan_windows_system(
     current_user: str = Depends(get_current_active_user),
 ):
     """
-    Run Windows Security Baseline scan.
+    Run Windows CIS Benchmark and Security Baseline scan.
 
-    Currently returns placeholder - Windows scanner implementation pending.
+    Scans the target system for compliance including:
+    - BitLocker encryption
+    - Windows Defender configuration
+    - Firewall profiles
+    - UAC settings
+    - Network hardening (SMB, LLMNR, NetBIOS)
+    - Account policies
+    - Audit logging
+    - Secure Boot
+    - Credential Guard
     """
-    # Windows scanner not yet implemented
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Windows hardening scanner not yet implemented",
-    )
+    if request.os_type != "windows":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This endpoint is for Windows systems only",
+        )
+
+    scanner = get_windows_scanner(target=request.target, cis_level=request.cis_level)
+    scan_id = str(uuid.uuid4())
+
+    try:
+        result = scanner.run_all_checks()
+
+        # Convert to response model
+        checks = [
+            HardeningCheckResult(
+                check_id=c.check_id,
+                title=c.title,
+                description=c.description,
+                category=c.category,
+                severity=c.severity,
+                passed=c.passed,
+                current_value=c.current_value,
+                expected_value=c.expected_value,
+                remediation=c.remediation,
+                cis_reference=c.cis_reference,
+            )
+            for c in result.checks
+        ]
+
+        response = HardeningScanResponse(
+            scan_id=scan_id,
+            target=result.target,
+            os_type=result.os_type,
+            cis_level=result.cis_level,
+            total_checks=result.total_checks,
+            passed=result.passed,
+            failed=result.failed,
+            skipped=result.skipped,
+            compliance_percentage=result.compliance_percentage,
+            checks=checks,
+            categories=result.categories,
+        )
+
+        # Store for later retrieval
+        _scan_results[scan_id] = response
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Windows hardening scan failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Hardening scan failed: {str(e)}",
+        )
 
 
 @router.post("/scan", response_model=HardeningScanResponse)
