@@ -165,13 +165,13 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Download API image artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: api-image-linux-amd64
         path: /tmp
 
     - name: Download Nginx image artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: nginx-image-linux-amd64
         path: /tmp
@@ -265,7 +265,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Download API image artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: api-image-linux-amd64
         path: /tmp
@@ -308,7 +308,7 @@ jobs:
 
     steps:
     - name: Download API image artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: api-image-linux-amd64
         path: /tmp
@@ -407,13 +407,13 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Download API image artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: api-image-linux-amd64
         path: /tmp
 
     - name: Download Nginx image artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: nginx-image-linux-amd64
         path: /tmp
