@@ -4,7 +4,7 @@
 # ============================================================================
 # Stage 1: Builder - Install dependencies and build wheels
 # ============================================================================
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 # Set working directory
 WORKDIR /build
@@ -42,7 +42,7 @@ RUN uv pip install gunicorn
 # ============================================================================
 # Stage 2: Runtime - Minimal production image
 # ============================================================================
-FROM python:3.11-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 # Set metadata
 LABEL maintainer="david.at.dashti@outlook.com"
