@@ -1,7 +1,7 @@
 # Nginx Dockerfile for Defensive Toolkit
 # Minimal and secure Nginx image with custom configuration
 
-FROM nginx:1.25-alpine
+FROM nginx:1.29-alpine
 
 # Set metadata
 LABEL maintainer="david.at.dashti@outlook.com"
