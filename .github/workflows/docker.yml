@@ -113,7 +113,7 @@ jobs:
           type=sha,prefix={{branch}}-
 
     - name: Build API Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         file: ./infra/docker/Dockerfile
@@ -134,7 +134,7 @@ jobs:
         retention-days: 1
 
     - name: Build Nginx Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: ./infra/nginx
         file: ./infra/nginx/Dockerfile
