@@ -25,7 +25,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "yara-python>=4.5.0",
+    "yara-python>=4.5.4",
     "sigma-cli>=1.0.0",
     "scapy>=2.5.0",
     "python-dateutil>=2.9.0",
